@@ -7,13 +7,16 @@ class RoomConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             with(pluginManager) {
-                apply("org.jetbrains.kotlin.android")
                 apply("com.google.devtools.ksp")
                 apply("androidx.room")
             }
 
             val extension = extensions.getByName("android") as LibraryExtension
             configureKotlinAndroid(extension)
+
+            extensions.configure<androidx.room.gradle.RoomExtension>("room") {
+                schemaDirectory("$projectDir/schemas")
+            }
 
             dependencies {
                 add("implementation", libs.findLibrary("room-runtime").get())

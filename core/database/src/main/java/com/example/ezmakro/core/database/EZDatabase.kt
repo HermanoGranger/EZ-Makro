@@ -1,0 +1,50 @@
+package com.example.ezmakro.core.database
+
+import androidx.room.Database
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.example.ezmakro.core.database.converter.ScalarConverters
+import com.example.ezmakro.core.database.dao.DiaryEntryDao
+import com.example.ezmakro.core.database.dao.FoodItemDao
+import com.example.ezmakro.core.database.dao.RecipeDao
+import com.example.ezmakro.core.database.dao.WeightLogDao
+import com.example.ezmakro.core.database.entity.DiaryEntryEntity
+import com.example.ezmakro.core.database.entity.FoodFtsEntity
+import com.example.ezmakro.core.database.entity.FoodItemEntity
+import com.example.ezmakro.core.database.entity.RecipeEntity
+import com.example.ezmakro.core.database.entity.RecipeIngredientEntity
+import com.example.ezmakro.core.database.entity.WeightLogEntity
+
+/**
+ * The single Room database for EZ Makro (ADR-002: Room = Single Source of Truth).
+ *
+ * Room 2.8 backs FTS4 for local full-text food-name search.
+ *
+ * Version 1 — the initial schema. Migrations will be added here as the schema
+ * evolves; the migration test harness lives in the test source set.
+ */
+@Database(
+    entities = [
+        FoodItemEntity::class,
+        FoodFtsEntity::class,
+        RecipeEntity::class,
+        RecipeIngredientEntity::class,
+        DiaryEntryEntity::class,
+        WeightLogEntity::class,
+    ],
+    version = 1,
+)
+@TypeConverters(ScalarConverters::class)
+abstract class EZDatabase : RoomDatabase() {
+    abstract fun foodItemDao(): FoodItemDao
+
+    abstract fun recipeDao(): RecipeDao
+
+    abstract fun diaryEntryDao(): DiaryEntryDao
+
+    abstract fun weightLogDao(): WeightLogDao
+
+    companion object {
+        const val DB_NAME = "ez_makro.db"
+    }
+}
