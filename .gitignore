@@ -9,4 +9,6 @@
 .cxx
 local.properties
 *.log
+buildSrc/build/
+**/build/
 

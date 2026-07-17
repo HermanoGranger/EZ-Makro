@@ -21,7 +21,7 @@ Data                    ── Repository ── Local (Room)  ┐
 ## Module (siehe auch android-module-structure Skill)
 
 - `:app` — Compose-Navigation, Koin-Assemblierung
-- `:core-domain` — Models, Value Objects, UseCases, Berechnungslogik
+- `:core:domain` — Models, Value Objects, UseCases, Berechnungslogik
   (KEINE Android-Abhängigkeit)
 - `:core-data` — Repository-Impl, RemoteDataSource (Ktor), LocalDataSource
   (Room), Mapper, DTOs
@@ -64,7 +64,7 @@ Koin. Pro Layer ein Koin-Modul; `:app` assembliert alle Module in
 
 ## Build & Qualität
 
-- Gradle Version Catalog + `build-logic` Convention Plugins
+- Gradle Version Catalog + `buildSrc` Convention Plugins
 - Detekt + Ktlint als lokales Gate (`./gradlew check`) vor jedem Commit
 - Kein CI (Solo-Projekt) — siehe ADR-006
 - Keine App-Widgets (aus Scope gestrichen, ADR-005 verworfen)

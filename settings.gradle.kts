@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "EZ Makro"
+rootProject.name = "ez-makro"
 include(":app")
- 
+include(":core:domain")

@@ -17,7 +17,7 @@ projektspezifische Konventionen.
   - Entities: `<Name>Entity`, DAOs: `<Name>Dao`,
   - DTOs: `<Name>Dto`, Mapper: `mapToDomain()` / `mapToEntity()`,
   - DataSources: `Local<Name>DataSource` / `Remote<Name>DataSource`,
-  - Repository-Interfaces in `:core-domain`, Impl in `:core-data`.
+  - Repository-Interfaces in `:core:domain`, Impl in `:core-data`.
 - **Presentation (MVI):**
   - State: `<Screen>State`, Action: `<Screen>Action`, Event: `<Screen>Event`,
   - ViewModel: `<Screen>ViewModel`, UiModel: `<Name>UiModel`.

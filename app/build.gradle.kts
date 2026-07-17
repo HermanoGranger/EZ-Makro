@@ -1,17 +1,14 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.ezmakro.android.application)
+    alias(libs.plugins.ezmakro.compose)
+    alias(libs.plugins.ezmakro.koin)
 }
 
 android {
     namespace = "com.example.ezmakro"
-    compileSdk {
-        version = release(36)
-    }
 
     defaultConfig {
         applicationId = "com.example.ezmakro"
-        minSdk = 25
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -23,21 +20,38 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+
+    testOptions {
+        unitTests.all {
+            it.useJUnitPlatform()
+        }
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    implementation(project(":core:domain"))
+
+    implementation(libs.findLibrary("androidx-core-ktx").get())
+    implementation(libs.findLibrary("androidx-lifecycle-runtime-ktx").get())
+    implementation(libs.findLibrary("androidx-activity-compose").get())
+    implementation(libs.findLibrary("androidx-lifecycle-viewmodel-compose").get())
+    implementation(libs.findLibrary("androidx-navigation-compose").get())
+
+    implementation(libs.findLibrary("koin-android").get())
+    implementation(libs.findLibrary("koin-androidx-compose").get())
+
+    testImplementation(libs.findLibrary("junit5-jupiter-aggregator").get())
+    testImplementation(libs.findLibrary("assertk").get())
+    testImplementation(libs.findLibrary("kotlinx-coroutines-test").get())
+    testRuntimeOnly(libs.findLibrary("junit5-jupiter-engine").get())
+    testRuntimeOnly(libs.findLibrary("junit5-platform-launcher").get())
+
+    androidTestImplementation(libs.findLibrary("androidx-junit").get())
+    androidTestImplementation(libs.findLibrary("androidx-espresso-core").get())
+    androidTestImplementation(libs.findLibrary("androidx-compose-ui-test-junit4").get())
+    debugImplementation(libs.findLibrary("androidx-compose-ui-test-manifest").get())
 }
