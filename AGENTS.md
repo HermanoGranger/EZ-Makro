@@ -29,6 +29,9 @@ diese werden automatisch geladen, wenn relevant.
 - DOD: `docs/definition-of-done.md`
 - Roadmap: `docs/roadmap.md`
 
+### Nach Phase 0.5 zusätzlich
+- Domain Model: `docs/domain-model.md`
+
 Vor Beginn einer neuen Phase: das entsprechende Kapitel im Phasenplan lesen.
 Diese Dokumente NICHT komplett in den Kontext kopieren — gezielt das jeweils
 relevante Kapitel nachschlagen.
