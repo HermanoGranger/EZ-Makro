@@ -89,6 +89,7 @@ ktor-serialization-kotlinx-json = { group = "io.ktor", name = "ktor-serializatio
 ktor-client-logging = { group = "io.ktor", name = "ktor-client-logging", version.ref = "ktor" }
 ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 
+
 # Serialization / Coroutines
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
@@ -102,6 +103,9 @@ coil-network-ktor = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", v
 
 # Build plugin classpath (buildSrc)
 kotlin-compose-gradle-plugin = { group = "org.jetbrains.kotlin.plugin.compose", name = "org.jetbrains.kotlin.plugin.compose.gradle.plugin", version.ref = "kotlin" }
+kotlin-serialization-gradle-plugin = { group = "org.jetbrains.kotlin.plugin.serialization", name = "org.jetbrains.kotlin.plugin.serialization.gradle.plugin", version.ref = "kotlin" }
+ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+room-gradle-plugin = { group = "androidx.room", name = "androidx.room.gradle.plugin", version.ref = "room" }
 
 # Camera / Barcode
 androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
@@ -165,3 +169,6 @@ ezmakro-android-library = { id = "ezmakro.android.library" }
 ezmakro-domain-module = { id = "ezmakro.domain.module" }
 ezmakro-compose = { id = "ezmakro.compose" }
 ezmakro-koin = { id = "ezmakro.koin" }
+ezmakro-ktor = { id = "ezmakro.ktor" }
+ezmakro-room = { id = "ezmakro.room" }
+ezmakro-kotlinx-serialization = { id = "ezmakro.kotlinx.serialization" }

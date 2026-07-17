@@ -7,6 +7,9 @@ complexity:
     functionThreshold: 8
     constructorThreshold: 10
     ignoreDefaultParameters: true
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 20
 
 style:
   MagicNumber:
@@ -24,4 +27,5 @@ naming:
   FunctionNaming:
     active: true
     functionPattern: '[a-z][a-zA-Z0-9]*'
+    ignoreAnnotated: ['Composable']
     excludes: ['**/test/**', '**/androidTest/**']

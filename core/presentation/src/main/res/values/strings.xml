@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_no_internet">Keine Internetverbindung</string>
+    <string name="error_request_timeout">Zeitüberschreitung der Anfrage</string>
+    <string name="error_unauthorized">Nicht autorisiert</string>
+    <string name="error_forbidden">Zugriff verweigert</string>
+    <string name="error_not_found">Nicht gefunden</string>
+    <string name="error_conflict">Konflikt bei der Anfrage</string>
+    <string name="error_too_many_requests">Zu viele Anfragen, bitte später erneut</string>
+    <string name="error_payload_too_large">Daten sind zu groß</string>
+    <string name="error_server">Serverfehler</string>
+    <string name="error_service_unavailable">Dienst vorübergehend nicht verfügbar</string>
+    <string name="error_serialization">Daten konnten nicht gelesen werden</string>
+    <string name="error_disk_full">Speicherplatz ist voll</string>
+    <string name="error_unknown">Ein unbekannter Fehler ist aufgetreten</string>
+</resources>
