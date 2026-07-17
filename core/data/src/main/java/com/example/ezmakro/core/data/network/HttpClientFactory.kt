@@ -7,6 +7,7 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -19,26 +20,40 @@ import kotlinx.serialization.json.Json
 object HttpClientFactory {
     const val BASE_URL = "https://world.openfoodfacts.org"
 
-    fun create(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    isLenient = true
-                    encodeDefaults = true
-                },
-            )
-        }
-        install(Logging) {
-            logger = object : Logger {
-                override fun log(message: String) {
-                    com.example.ezmakro.core.data.logging.AppLogger.d(message, tag = "HttpClient")
-                }
+    /**
+     * Mandatory OpenFoodFacts User-Agent (App name, version, contact). OFF
+     * rate-limits or blocks requests without a meaningful User-Agent (scope /
+     * ADR). Sent on every request via [io.ktor.client.plugins.defaultRequest].
+     *
+     * TODO(Phase 4): replace the placeholder contact with a real address/URL
+     * before release, and wire the version from BuildConfig.
+     */
+    const val USER_AGENT = "EZMakro/0.1 (Android; contact: TODO@example.com)"
+
+    fun create(engine: HttpClientEngine): HttpClient =
+        HttpClient(engine) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                        encodeDefaults = true
+                    },
+                )
             }
-            level = LogLevel.ALL
+            install(Logging) {
+                logger =
+                    object : Logger {
+                        override fun log(message: String) {
+                            com.example.ezmakro.core.data.logging.AppLogger
+                                .d(message, tag = "HttpClient")
+                        }
+                    }
+                level = LogLevel.ALL
+            }
+            defaultRequest {
+                url(BASE_URL)
+                headers.append(HttpHeaders.UserAgent, USER_AGENT)
+            }
         }
-        defaultRequest {
-            url(BASE_URL)
-        }
-    }
 }

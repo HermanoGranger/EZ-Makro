@@ -7,7 +7,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -19,10 +18,12 @@ import kotlinx.coroutines.flow.map
 class SettingsDataStore(
     private val dataStore: DataStore<Preferences>,
 ) {
-    fun getString(key: String): Flow<String?> =
-        dataStore.data.map { it[stringPreferencesKey(key)] }
+    fun getString(key: String): Flow<String?> = dataStore.data.map { it[stringPreferencesKey(key)] }
 
-    suspend fun setString(key: String, value: String) {
+    suspend fun setString(
+        key: String,
+        value: String,
+    ) {
         dataStore.edit { it[stringPreferencesKey(key)] = value }
     }
 
@@ -37,5 +38,4 @@ class SettingsDataStore(
 
 private val Context.dataStore by preferencesDataStore(name = "ezmakro_settings")
 
-fun createSettingsDataStore(context: Context): SettingsDataStore =
-    SettingsDataStore(context.dataStore)
+fun createSettingsDataStore(context: Context): SettingsDataStore = SettingsDataStore(context.dataStore)

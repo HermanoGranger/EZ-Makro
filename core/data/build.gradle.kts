@@ -16,6 +16,7 @@ android {
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:database"))
 
     implementation(libs.findLibrary("koin-android").get())
     implementation(libs.findLibrary("datastore-preferences").get())

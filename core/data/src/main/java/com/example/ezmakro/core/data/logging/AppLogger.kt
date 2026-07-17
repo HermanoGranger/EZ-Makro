@@ -10,18 +10,29 @@ import co.touchlab.kermit.Logger
 object AppLogger {
     private val logger = Logger.withTag("EZMakro")
 
-    fun v(message: String, tag: String? = null) =
-        logger.v(message, tag = tag ?: "EZMakro")
+    fun v(
+        message: String,
+        tag: String? = null,
+    ) = logger.v(message, tag = tag ?: "EZMakro")
 
-    fun d(message: String, tag: String? = null) =
-        logger.d(message, tag = tag ?: "EZMakro")
+    fun d(
+        message: String,
+        tag: String? = null,
+    ) = logger.d(message, tag = tag ?: "EZMakro")
 
-    fun i(message: String, tag: String? = null) =
-        logger.i(message, tag = tag ?: "EZMakro")
+    fun i(
+        message: String,
+        tag: String? = null,
+    ) = logger.i(message, tag = tag ?: "EZMakro")
 
-    fun w(message: String, tag: String? = null) =
-        logger.w(message, tag = tag ?: "EZMakro")
+    fun w(
+        message: String,
+        tag: String? = null,
+    ) = logger.w(message, tag = tag ?: "EZMakro")
 
-    fun e(message: String, throwable: Throwable? = null, tag: String? = null) =
-        logger.e(message, throwable, tag ?: "EZMakro")
+    fun e(
+        message: String,
+        throwable: Throwable? = null,
+        tag: String? = null,
+    ) = logger.e(message, throwable, tag ?: "EZMakro")
 }

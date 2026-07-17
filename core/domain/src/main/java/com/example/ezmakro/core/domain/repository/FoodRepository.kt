@@ -1,0 +1,51 @@
+package com.example.ezmakro.core.domain.repository
+
+import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.result.DataError
+import com.example.ezmakro.core.domain.result.EmptyResult
+import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Offline-first coordination between the local Room cache and the OpenFoodFacts
+ * remote source (ADR-002). The UI always observes local flows; remote calls
+ * only refresh the cache.
+ *
+ * ADR-004: a remote refresh MUST NOT silently overwrite a [FoodItem] whose
+ * status is [com.example.ezmakro.core.domain.model.CachedFoodItemStatus.UserModified];
+ * the user resets or re-fetches explicitly.
+ */
+interface FoodRepository {
+    /** Observe all locally cached / user-created foods (Single Source of Truth). */
+    fun observeAll(): Flow<List<FoodItem>>
+
+    /** Observe local FTS results for [query]. */
+    fun searchLocal(query: String): Flow<List<FoodItem>>
+
+    /**
+     * Search OFF and persist the results into the local cache. Existing
+     * UserModified entries are preserved (never overwritten). Returns the
+     * freshly fetched items on success.
+     */
+    suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network>
+
+    /**
+     * Look up [barcode] locally first, then OFF. Persists a remote hit. Returns
+     * `Success(null)` when neither source has the product, so callers can route
+     * into the "create own food" fallback with the barcode prefilled.
+     */
+    suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError>
+
+    /** Persist a user edit and flag the entry UserModified (ADR-004). */
+    suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local>
+
+    /** ADR-004: restore the untouched OFF snapshot. */
+    suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local>
+
+    /**
+     * ADR-004: re-fetch the current OFF version and replace the local entry,
+     * discarding local edits. Callers confirm with the user beforehand.
+     */
+    suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError>
+}

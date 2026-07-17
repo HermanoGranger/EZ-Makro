@@ -1,0 +1,229 @@
+package com.example.ezmakro.core.data.food
+
+import assertk.assertThat
+import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
+import assertk.assertions.isNull
+import com.example.ezmakro.core.domain.datasource.FoodLocalDataSource
+import com.example.ezmakro.core.domain.datasource.FoodRemoteDataSource
+import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
+import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.result.DataError
+import com.example.ezmakro.core.domain.result.EmptyResult
+import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Test
+
+private fun food(
+    id: String,
+    name: String = "Food",
+    barcode: String? = null,
+    status: CachedFoodItemStatus = CachedFoodItemStatus.Original,
+): FoodItem {
+    val base =
+        FoodItem(
+            id = FoodId(id),
+            name = name,
+            barcode = barcode,
+            nutritionPer100g = NutritionValues(100.0, 1.0, 1.0, 1.0, 1.0),
+            servingUnit = null,
+            isUserCreated = false,
+            cachedStatus = CachedFoodItemStatus.Original,
+            originalSnapshot = null,
+        )
+    val withSnapshot = base.copy(originalSnapshot = base)
+    return withSnapshot.copy(cachedStatus = status)
+}
+
+private class FakeLocal : FoodLocalDataSource {
+    val store = MutableStateFlow<Map<String, FoodItem>>(emptyMap())
+
+    override fun observeAll(): Flow<List<FoodItem>> = store.map { it.values.toList() }
+
+    override suspend fun getById(id: FoodId) = Result.Success(store.value[id.value])
+
+    override suspend fun getByBarcode(barcode: String): Result.Success<FoodItem?> =
+        Result.Success(store.value.values.firstOrNull { it.barcode == barcode })
+
+    override fun searchByName(query: String): Flow<List<FoodItem>> =
+        store.map { m -> m.values.filter { it.name.contains(query, ignoreCase = true) } }
+
+    override suspend fun upsert(foodItem: FoodItem): EmptyResult<DataError.Local> {
+        store.value = store.value + (foodItem.id.value to foodItem)
+        return Result.Success(Unit)
+    }
+
+    override suspend fun upsertAll(foodItems: List<FoodItem>): EmptyResult<DataError.Local> {
+        foodItems.forEach { upsert(it) }
+        return Result.Success(Unit)
+    }
+
+    override suspend fun deleteById(id: FoodId): EmptyResult<DataError.Local> {
+        store.value = store.value - id.value
+        return Result.Success(Unit)
+    }
+
+    override suspend fun markUserModified(id: FoodId): EmptyResult<DataError.Local> {
+        mutate(id) { it.copy(cachedStatus = CachedFoodItemStatus.UserModified) }
+        return Result.Success(Unit)
+    }
+
+    override suspend fun markUpdateAvailable(id: FoodId): EmptyResult<DataError.Local> {
+        mutate(id) {
+            if (it.cachedStatus == CachedFoodItemStatus.UserModified) {
+                it
+            } else {
+                it.copy(cachedStatus = CachedFoodItemStatus.UpdateAvailable)
+            }
+        }
+        return Result.Success(Unit)
+    }
+
+    override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> {
+        val snapshot = store.value[id.value]?.originalSnapshot ?: return Result.Success(Unit)
+        store.value = store.value + (id.value to snapshot.copy(originalSnapshot = snapshot))
+        return Result.Success(Unit)
+    }
+
+    private fun mutate(
+        id: FoodId,
+        block: (FoodItem) -> FoodItem,
+    ) {
+        store.value[id.value]?.let { store.value = store.value + (id.value to block(it)) }
+    }
+}
+
+private class FakeRemote(
+    var searchResult: Result<List<FoodItem>, DataError.Network> = Result.Success(emptyList()),
+    var barcodeResult: Result<FoodItem?, DataError.Network> = Result.Success(null),
+) : FoodRemoteDataSource {
+    override suspend fun searchByName(query: String) = searchResult
+
+    override suspend fun getByBarcode(barcode: String) = barcodeResult
+}
+
+class OfflineFirstFoodRepositoryTest {
+    @Test
+    fun `searchRemote persists results into the local cache`() =
+        runTest {
+            val local = FakeLocal()
+            val remote = FakeRemote(searchResult = Result.Success(listOf(food("1", "Apfel"))))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            repo.searchRemote("apf")
+
+            assertThat(local.store.value["1"]?.name).isEqualTo("Apfel")
+        }
+
+    @Test
+    fun `searchRemote never overwrites a UserModified entry`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Edit", status = CachedFoodItemStatus.UserModified))
+            val remote = FakeRemote(searchResult = Result.Success(listOf(food("1", "OFF Name"))))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            repo.searchRemote("x")
+
+            assertThat(local.store.value["1"]?.name).isEqualTo("My Edit")
+            assertThat(local.store.value["1"]?.cachedStatus)
+                .isEqualTo(CachedFoodItemStatus.UserModified)
+        }
+
+    @Test
+    fun `lookupByBarcode returns local hit without calling remote`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Cached", barcode = "999"))
+            val remote = FakeRemote(barcodeResult = Result.Error(DataError.Network.NO_INTERNET))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            val result = repo.lookupByBarcode("999")
+
+            assertThat((result as Result.Success).data?.name).isEqualTo("Cached")
+        }
+
+    @Test
+    fun `lookupByBarcode falls back to remote and caches the hit`() =
+        runTest {
+            val local = FakeLocal()
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "Fresh", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            val result = repo.lookupByBarcode("999")
+
+            assertThat((result as Result.Success).data?.name).isEqualTo("Fresh")
+            assertThat(local.store.value["1"]?.name).isEqualTo("Fresh")
+        }
+
+    @Test
+    fun `lookupByBarcode returns null when neither source has the product`() =
+        runTest {
+            val repo = OfflineFirstFoodRepository(FakeLocal(), FakeRemote())
+
+            val result = repo.lookupByBarcode("nope")
+
+            assertThat(result).isInstanceOf(Result.Success::class)
+            assertThat((result as Result.Success).data).isNull()
+        }
+
+    @Test
+    fun `saveUserEdit flags a cached entry as UserModified`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Original"))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.saveUserEdit(food("1", "Edited"))
+
+            assertThat(local.store.value["1"]?.cachedStatus)
+                .isEqualTo(CachedFoodItemStatus.UserModified)
+            assertThat(local.store.value["1"]?.name).isEqualTo("Edited")
+        }
+
+    @Test
+    fun `resetToOriginal restores the snapshot`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Original"))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            repo.saveUserEdit(food("1", "Edited"))
+
+            repo.resetToOriginal(FoodId("1"))
+
+            assertThat(local.store.value["1"]?.name).isEqualTo("Original")
+            assertThat(local.store.value["1"]?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `refetchFromOff replaces the local entry with the fresh OFF version`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Edited", barcode = "999", status = CachedFoodItemStatus.UserModified))
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Latest", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat((result as Result.Success).data?.name).isEqualTo("OFF Latest")
+            assertThat(local.store.value["1"]?.name).isEqualTo("OFF Latest")
+            assertThat(local.store.value["1"]?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `refetchFromOff errors when the entry has no barcode`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "NoBarcode", barcode = null))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Local.NOT_FOUND))
+        }
+}

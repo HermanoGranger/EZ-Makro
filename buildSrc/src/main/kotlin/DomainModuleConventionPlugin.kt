@@ -6,6 +6,8 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 class DomainModuleConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -18,6 +20,15 @@ class DomainModuleConventionPlugin : Plugin<Project> {
                 toolchain {
                     languageVersion.set(JavaLanguageVersion.of(21))
                 }
+                sourceCompatibility = org.gradle.api.JavaVersion.VERSION_17
+                targetCompatibility = org.gradle.api.JavaVersion.VERSION_17
+            }
+
+            // Emit JVM 17 bytecode so inline functions can be consumed by the
+            // Android modules (which target JVM 17), while still building with a
+            // JDK 21 toolchain.
+            tasks.withType<KotlinJvmCompile>().configureEach {
+                compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
             }
 
             tasks.withType<Test>().configureEach {

@@ -19,17 +19,18 @@ fun EZMakroTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val colorScheme = when {
-        dynamicColor -> {
-            if (darkTheme) {
-                dynamicDarkColorScheme(context)
-            } else {
-                dynamicLightColorScheme(context)
+    val colorScheme =
+        when {
+            dynamicColor -> {
+                if (darkTheme) {
+                    dynamicDarkColorScheme(context)
+                } else {
+                    dynamicLightColorScheme(context)
+                }
             }
+            darkTheme -> darkScheme
+            else -> lightScheme
         }
-        darkTheme -> darkScheme
-        else -> lightScheme
-    }
 
     MaterialTheme(
         colorScheme = colorScheme,

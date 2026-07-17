@@ -11,7 +11,9 @@ import androidx.compose.ui.res.stringResource
  * optional format args. Resolves via [asString].
  */
 sealed interface UiText {
-    data class DynamicString(val value: String) : UiText
+    data class DynamicString(
+        val value: String,
+    ) : UiText
 
     class StringResource(
         @StringRes val id: Int,
@@ -31,19 +33,17 @@ sealed interface UiText {
     }
 
     @Suppress("SpreadOperator")
-    fun asString(context: Context): String {
-        return when (this) {
+    fun asString(context: Context): String =
+        when (this) {
             is DynamicString -> value
             is StringResource -> context.getString(id, *args)
         }
-    }
 
     @Composable
     @Suppress("SpreadOperator")
-    fun asString(): String {
-        return when (this) {
+    fun asString(): String =
+        when (this) {
             is DynamicString -> value
             is StringResource -> stringResource(id, *args)
         }
-    }
 }

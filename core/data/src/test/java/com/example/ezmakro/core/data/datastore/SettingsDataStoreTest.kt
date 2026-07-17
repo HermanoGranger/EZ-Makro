@@ -1,24 +1,23 @@
 package com.example.ezmakro.core.data.datastore
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import assertk.assertThat
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import java.io.File
-import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNull
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.File
 
 class SettingsDataStoreTest {
-
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var settings: SettingsDataStore
     private lateinit var scope: CoroutineScope
@@ -28,30 +27,39 @@ class SettingsDataStoreTest {
         scope.cancel()
     }
 
-    private fun setup(@TempDir tempDir: File) {
+    private fun setup(
+        @TempDir tempDir: File,
+    ) {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        dataStore = PreferenceDataStoreFactory.create(
-            scope = scope,
-            produceFile = { tempDir.resolve("test_settings.preferences_pb") },
-        )
+        dataStore =
+            PreferenceDataStoreFactory.create(
+                scope = scope,
+                produceFile = { tempDir.resolve("test_settings.preferences_pb") },
+            )
         settings = SettingsDataStore(dataStore)
     }
 
     @Test
-    fun `setString then getString returns value`(@TempDir tempDir: File) = runTest {
+    fun `setString then getString returns value`(
+        @TempDir tempDir: File,
+    ) = runTest {
         setup(tempDir)
         settings.setString("theme", "dark")
         assertThat(settings.getString("theme").first()).isEqualTo("dark")
     }
 
     @Test
-    fun `getString returns null for missing key`(@TempDir tempDir: File) = runTest {
+    fun `getString returns null for missing key`(
+        @TempDir tempDir: File,
+    ) = runTest {
         setup(tempDir)
         assertThat(settings.getString("missing").first()).isNull()
     }
 
     @Test
-    fun `remove deletes key`(@TempDir tempDir: File) = runTest {
+    fun `remove deletes key`(
+        @TempDir tempDir: File,
+    ) = runTest {
         setup(tempDir)
         settings.setString("k", "v")
         settings.remove("k")
@@ -59,7 +67,9 @@ class SettingsDataStoreTest {
     }
 
     @Test
-    fun `clear removes all entries`(@TempDir tempDir: File) = runTest {
+    fun `clear removes all entries`(
+        @TempDir tempDir: File,
+    ) = runTest {
         setup(tempDir)
         settings.setString("a", "1")
         settings.setString("b", "2")

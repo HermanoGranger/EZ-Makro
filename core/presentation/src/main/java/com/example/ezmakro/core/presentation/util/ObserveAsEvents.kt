@@ -29,7 +29,6 @@ fun <T> ObserveAsEvents(
             .flowWithLifecycle(
                 lifecycle = lifecycleOwner.lifecycle,
                 minActiveState = minActiveState,
-            )
-            .collect { onEventUpdated(it) }
+            ).collect { onEventUpdated(it) }
     }
 }
