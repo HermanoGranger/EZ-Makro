@@ -2,6 +2,7 @@ package com.example.ezmakro.core.database.di
 
 import androidx.room.Room
 import com.example.ezmakro.core.database.EZDatabase
+import com.example.ezmakro.core.database.migration.ALL_MIGRATIONS
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -10,6 +11,7 @@ import org.koin.dsl.module
  *
  * The database is built once and reused (ADR-002: Room = Single Source of Truth).
  */
+@Suppress("SpreadOperator")
 val databaseModule =
     module {
         single<EZDatabase> {
@@ -18,7 +20,8 @@ val databaseModule =
                     context = androidContext(),
                     klass = EZDatabase::class.java,
                     name = EZDatabase.DB_NAME,
-                ).fallbackToDestructiveMigration()
+                ).addMigrations(*ALL_MIGRATIONS)
+                .fallbackToDestructiveMigration()
                 .build()
         }
 

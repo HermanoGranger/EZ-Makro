@@ -20,8 +20,13 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  *
  * Room 2.8 backs FTS4 for local full-text food-name search.
  *
- * Version 1 — the initial schema. Migrations will be added here as the schema
- * evolves; the migration test harness lives in the test source set.
+ * Version history:
+ * - 1: initial schema.
+ * - 2: Phase 5 — `food_items.is_favorite` and `food_items.last_used_at` columns
+ *   plus their indices, for the favorites and recently-used sections.
+ *
+ * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
+ * the migration test harness lives in the test source set.
  */
 @Database(
     entities = [
@@ -32,7 +37,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 1,
+    version = 2,
 )
 @TypeConverters(ScalarConverters::class)
 abstract class EZDatabase : RoomDatabase() {

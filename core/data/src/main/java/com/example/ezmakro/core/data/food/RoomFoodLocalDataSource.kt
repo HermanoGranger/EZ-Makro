@@ -23,6 +23,12 @@ class RoomFoodLocalDataSource(
 ) : FoodLocalDataSource {
     override fun observeAll(): Flow<List<FoodItem>> = dao.observeAll().map { list -> list.map { it.toFoodItem() } }
 
+    override fun observeFavorites(): Flow<List<FoodItem>> =
+        dao.observeFavorites().map { list -> list.map { it.toFoodItem() } }
+
+    override fun observeRecent(limit: Int): Flow<List<FoodItem>> =
+        dao.observeRecent(limit).map { list -> list.map { it.toFoodItem() } }
+
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
         runCatchingLocal { dao.getById(id.value)?.toFoodItem() }
 
@@ -78,6 +84,16 @@ class RoomFoodLocalDataSource(
                 origIsUserCreated = snapshot.isUserCreated,
             )
         }
+
+    override suspend fun setFavorite(
+        id: FoodId,
+        favorite: Boolean,
+    ): EmptyResult<DataError.Local> = runCatchingLocal { dao.setFavorite(id.value, favorite) }
+
+    override suspend fun markUsed(
+        id: FoodId,
+        usedAtEpochMillis: Long,
+    ): EmptyResult<DataError.Local> = runCatchingLocal { dao.markUsed(id.value, usedAtEpochMillis) }
 
     private fun ftsQuery(normalized: String): String = "$normalized*"
 }

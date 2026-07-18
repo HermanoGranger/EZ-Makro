@@ -16,9 +16,19 @@ import kotlinx.coroutines.flow.Flow
  * status is [com.example.ezmakro.core.domain.model.CachedFoodItemStatus.UserModified];
  * the user resets or re-fetches explicitly.
  */
+@Suppress("TooManyFunctions")
 interface FoodRepository {
     /** Observe all locally cached / user-created foods (Single Source of Truth). */
     fun observeAll(): Flow<List<FoodItem>>
+
+    /** Observe favorited foods for the favorites section of the food picker. */
+    fun observeFavorites(): Flow<List<FoodItem>>
+
+    /**
+     * Observe the [limit] most recently used foods, newest first. Used-tracking
+     * is wired with the meal log in Phase 7; until then this is empty.
+     */
+    fun observeRecent(limit: Int = DEFAULT_RECENT_LIMIT): Flow<List<FoodItem>>
 
     /** Observe local FTS results for [query]. */
     fun searchLocal(query: String): Flow<List<FoodItem>>
@@ -48,4 +58,17 @@ interface FoodRepository {
      * discarding local edits. Callers confirm with the user beforehand.
      */
     suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError>
+
+    /** Toggle the favorite flag for a food. */
+    suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local>
+
+    /**
+     * Stamp a food as just used (recent ordering). Wired with the meal log in
+     * Phase 7; defined now so the data contract is complete.
+     */
+    suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local>
+
+    companion object {
+        const val DEFAULT_RECENT_LIMIT = 20
+    }
 }

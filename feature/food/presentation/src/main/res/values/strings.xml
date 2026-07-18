@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="food_search_title">Lebensmittel</string>
+    <string name="food_search_hint">Suchen</string>
+    <string name="food_search_online">Online suchen</string>
+    <string name="food_section_favorites">Favoriten</string>
+    <string name="food_section_recent">Zuletzt verwendet</string>
+    <string name="food_section_local_results">Lokale Treffer</string>
+    <string name="food_section_online_results">OpenFoodFacts</string>
+    <string name="food_empty_favorites">Noch keine Favoriten</string>
+    <string name="food_empty_search">Keine Treffer</string>
+    <string name="food_scan_barcode">Barcode scannen</string>
+    <string name="food_create_own">Eigenes Lebensmittel</string>
+
+    <string name="food_detail_per_100g">Pro 100 g</string>
+    <string name="food_detail_kcal">Kalorien</string>
+    <string name="food_detail_protein">Protein</string>
+    <string name="food_detail_fat">Fett</string>
+    <string name="food_detail_carbs">Kohlenhydrate</string>
+    <string name="food_detail_fiber">Ballaststoffe</string>
+    <string name="food_detail_edit">Bearbeiten</string>
+    <string name="food_detail_favorite_add">Zu Favoriten</string>
+    <string name="food_detail_favorite_remove">Aus Favoriten entfernen</string>
+
+    <string name="food_badge_user_modified">Lokal angepasst</string>
+    <string name="food_badge_update_available">Update verfügbar</string>
+    <string name="food_action_reset_original">Auf Original zurücksetzen</string>
+    <string name="food_action_refetch">Neu von OpenFoodFacts</string>
+    <string name="food_refetch_confirm_title">Neu von OpenFoodFacts laden?</string>
+    <string name="food_refetch_confirm_message">Deine lokalen Anpassungen werden dabei verworfen.</string>
+    <string name="food_dialog_confirm">Fortfahren</string>
+    <string name="food_dialog_cancel">Abbrechen</string>
+
+    <string name="food_edit_title_new">Neues Lebensmittel</string>
+    <string name="food_edit_title_edit">Lebensmittel bearbeiten</string>
+    <string name="food_edit_name">Name</string>
+    <string name="food_edit_barcode">Barcode</string>
+    <string name="food_edit_kcal">Kalorien pro 100 g</string>
+    <string name="food_edit_protein">Protein pro 100 g</string>
+    <string name="food_edit_fat">Fett pro 100 g</string>
+    <string name="food_edit_carbs">Kohlenhydrate pro 100 g</string>
+    <string name="food_edit_fiber">Ballaststoffe pro 100 g</string>
+    <string name="food_edit_save">Speichern</string>
+    <string name="food_edit_error_name_blank">Name darf nicht leer sein</string>
+    <string name="food_edit_error_invalid_number">Ungültiger Wert</string>
+
+    <string name="food_scan_title">Barcode scannen</string>
+    <string name="food_scan_permission_required">Kamerazugriff erforderlich</string>
+    <string name="food_scan_not_found">Kein Treffer – lege ein eigenes Lebensmittel an</string>
+</resources>

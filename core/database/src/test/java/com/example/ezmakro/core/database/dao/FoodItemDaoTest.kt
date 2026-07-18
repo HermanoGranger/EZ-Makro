@@ -149,5 +149,69 @@ class FoodItemDaoTest : DatabaseTest() {
         assertThat(restored?.cachedStatus).isEqualTo("ORIGINAL")
     }
 
+    // --- Phase 5: favorites & recent ---
+
+    @Test
+    fun `setFavorite toggles the flag and observeFavorites reflects it`() =
+        runTest {
+            dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+            dao.upsertFood(FoodItemFixtures.food(id = "b", name = "Banane"))
+
+            dao.setFavorite("b", true)
+
+            dao.observeFavorites().test {
+                assertThat(awaitItem().map { it.id }).containsExactly("b")
+            }
+        }
+
+    @Test
+    fun `upsert does not clobber an existing favorite flag`() {
+        dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+        dao.setFavorite("a", true)
+
+        dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel neu"))
+
+        assertThat(dao.getById("a")?.isFavorite).isEqualTo(true)
+        assertThat(dao.getById("a")?.name).isEqualTo("Apfel neu")
+    }
+
+    @Test
+    fun `markUsed stamps last_used_at and observeRecent orders newest first`() =
+        runTest {
+            dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+            dao.upsertFood(FoodItemFixtures.food(id = "b", name = "Banane"))
+            dao.upsertFood(FoodItemFixtures.food(id = "c", name = "Clementine"))
+
+            dao.markUsed("a", 100L)
+            dao.markUsed("b", 300L)
+            dao.markUsed("c", 200L)
+
+            dao.observeRecent(limit = 2).test {
+                assertThat(awaitItem().map { it.id }).containsExactly("b", "c")
+            }
+        }
+
+    @Test
+    fun `observeRecent excludes never-used foods`() =
+        runTest {
+            dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+            dao.upsertFood(FoodItemFixtures.food(id = "b", name = "Banane"))
+            dao.markUsed("a", 100L)
+
+            dao.observeRecent(limit = 10).test {
+                assertThat(awaitItem().map { it.id }).containsExactly("a")
+            }
+        }
+
+    @Test
+    fun `upsert does not clobber an existing last_used_at`() {
+        dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+        dao.markUsed("a", 500L)
+
+        dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel neu"))
+
+        assertThat(dao.getById("a")?.lastUsedAt).isEqualTo(500L)
+    }
+
     private fun List<Int>.resolve(): List<String> = dao.getByRowIds(this).map { it.id }
 }

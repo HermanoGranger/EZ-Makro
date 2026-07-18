@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.ezmakro.android.application)
     alias(libs.plugins.ezmakro.compose)
     alias(libs.plugins.ezmakro.koin)
+    alias(libs.plugins.ezmakro.kotlinx.serialization)
 }
 
 android {
@@ -34,6 +35,11 @@ android {
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:database"))
+    implementation(project(":core:barcode"))
+    implementation(project(":core:design-system"))
+    implementation(project(":feature:food:presentation"))
 
     implementation(libs.findLibrary("androidx-core-ktx").get())
     implementation(libs.findLibrary("androidx-lifecycle-runtime-ktx").get())

@@ -11,8 +11,18 @@ import kotlinx.coroutines.flow.Flow
  * Local Single Source of Truth for food data (Room, ADR-002). The repository
  * writes remote results here and the UI observes only these flows.
  */
+@Suppress("TooManyFunctions")
 interface FoodLocalDataSource {
     fun observeAll(): Flow<List<FoodItem>>
+
+    /** Observe favorited foods, name-sorted. */
+    fun observeFavorites(): Flow<List<FoodItem>>
+
+    /**
+     * Observe the [limit] most recently used foods, newest first. Foods that
+     * were never used (lastUsedAt == null) are excluded.
+     */
+    fun observeRecent(limit: Int): Flow<List<FoodItem>>
 
     suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local>
 
@@ -34,4 +44,16 @@ interface FoodLocalDataSource {
 
     /** ADR-004: restore the untouched OFF snapshot and reset status to Original. */
     suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local>
+
+    /** Set the favorite flag for a food. */
+    suspend fun setFavorite(
+        id: FoodId,
+        favorite: Boolean,
+    ): EmptyResult<DataError.Local>
+
+    /** Stamp the food's last-used timestamp (epoch millis) for recent ordering. */
+    suspend fun markUsed(
+        id: FoodId,
+        usedAtEpochMillis: Long,
+    ): EmptyResult<DataError.Local>
 }

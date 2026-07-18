@@ -67,6 +67,8 @@ fun FoodItemEntity.toFoodItem(): FoodItem {
         isUserCreated = isUserCreated,
         cachedStatus = cachedStatus.toCachedStatus(),
         originalSnapshot = snapshot,
+        isFavorite = isFavorite,
+        lastUsedAt = lastUsedAt,
     )
 }
 

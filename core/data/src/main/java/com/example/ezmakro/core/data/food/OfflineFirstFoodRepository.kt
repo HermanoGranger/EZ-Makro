@@ -20,11 +20,17 @@ import kotlinx.coroutines.flow.Flow
  * ADR-004: a remote refresh never overwrites a [CachedFoodItemStatus.UserModified]
  * entry automatically. [refetchFromOff] is the explicit, user-confirmed override.
  */
+@Suppress("TooManyFunctions")
 class OfflineFirstFoodRepository(
     private val local: FoodLocalDataSource,
     private val remote: FoodRemoteDataSource,
+    private val now: () -> Long = { System.currentTimeMillis() },
 ) : FoodRepository {
     override fun observeAll(): Flow<List<FoodItem>> = local.observeAll()
+
+    override fun observeFavorites(): Flow<List<FoodItem>> = local.observeFavorites()
+
+    override fun observeRecent(limit: Int): Flow<List<FoodItem>> = local.observeRecent(limit)
 
     override fun searchLocal(query: String): Flow<List<FoodItem>> = local.searchByName(query)
 
@@ -88,6 +94,17 @@ class OfflineFirstFoodRepository(
             is Result.Error -> Result.Error(remoteHit.error)
         }
     }
+
+    override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
+        val current =
+            when (val result = local.getById(id)) {
+                is Result.Success -> result.data ?: return Result.Error(DataError.Local.NOT_FOUND)
+                is Result.Error -> return Result.Error(result.error)
+            }
+        return local.setFavorite(id, !current.isFavorite)
+    }
+
+    override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = local.markUsed(id, now())
 
     /**
      * ADR-004: persist an OFF result only if there is no existing UserModified

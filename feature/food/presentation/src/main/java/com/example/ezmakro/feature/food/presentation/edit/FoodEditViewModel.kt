@@ -1,0 +1,158 @@
+package com.example.ezmakro.feature.food.presentation.edit
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
+import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.repository.FoodRepository
+import com.example.ezmakro.core.domain.result.onFailure
+import com.example.ezmakro.core.domain.result.onSuccess
+import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.feature.food.presentation.R
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.UUID
+
+/**
+ * Edits an existing food ([foodId] non-null) or creates a new user food
+ * ([foodId] null). When arriving from a barcode miss, [prefillBarcode] seeds the
+ * barcode field (scope/Phase 4 fallback). Form fields survive process death via
+ * [SavedStateHandle].
+ */
+class FoodEditViewModel(
+    private val foodId: String?,
+    private val prefillBarcode: String?,
+    private val repository: FoodRepository,
+    private val savedStateHandle: SavedStateHandle,
+) : ViewModel() {
+    private val _state =
+        MutableStateFlow(
+            FoodEditState(
+                isEditingExisting = foodId != null,
+                barcode = savedStateHandle[KEY_BARCODE] ?: prefillBarcode.orEmpty(),
+                name = savedStateHandle[KEY_NAME] ?: "",
+            ),
+        )
+    val state = _state.asStateFlow()
+
+    private val _events = Channel<FoodEditEvent>()
+    val events = _events.receiveAsFlow()
+
+    init {
+        if (foodId != null) loadExisting(foodId)
+    }
+
+    fun onAction(action: FoodEditAction) {
+        when (action) {
+            is FoodEditAction.OnNameChange -> {
+                savedStateHandle[KEY_NAME] = action.value
+                _state.update { it.copy(name = action.value, nameError = null) }
+            }
+
+            is FoodEditAction.OnBarcodeChange -> {
+                savedStateHandle[KEY_BARCODE] = action.value
+                _state.update { it.copy(barcode = action.value) }
+            }
+
+            is FoodEditAction.OnKcalChange -> _state.update { it.copy(kcal = action.value, numberError = null) }
+            is FoodEditAction.OnProteinChange -> _state.update { it.copy(protein = action.value, numberError = null) }
+            is FoodEditAction.OnFatChange -> _state.update { it.copy(fat = action.value, numberError = null) }
+            is FoodEditAction.OnCarbsChange -> _state.update { it.copy(carbs = action.value, numberError = null) }
+            is FoodEditAction.OnFiberChange -> _state.update { it.copy(fiber = action.value, numberError = null) }
+
+            FoodEditAction.OnSaveClick -> save()
+            FoodEditAction.OnBackClick ->
+                viewModelScope.launch { _events.send(FoodEditEvent.NavigateBack) }
+        }
+    }
+
+    private fun loadExisting(id: String) {
+        viewModelScope.launch {
+            val food = repository.observeAll().first().firstOrNull { it.id.value == id } ?: return@launch
+            _state.update {
+                it.copy(
+                    name = it.name.ifEmpty { food.name },
+                    barcode = it.barcode.ifEmpty { food.barcode.orEmpty() },
+                    kcal = food.nutritionPer100g.kcal.toString(),
+                    protein = food.nutritionPer100g.proteinG.toString(),
+                    fat = food.nutritionPer100g.fatG.toString(),
+                    carbs = food.nutritionPer100g.carbsG.toString(),
+                    fiber = food.nutritionPer100g.fiberG.toString(),
+                )
+            }
+        }
+    }
+
+    private fun save() {
+        val name = _state.value.name.trim()
+        if (name.isBlank()) {
+            _state.update { it.copy(nameError = UiText.StringResource(R.string.food_edit_error_name_blank)) }
+            return
+        }
+        val nutrition = parseNutrition()
+        if (nutrition == null) {
+            _state.update {
+                it.copy(numberError = UiText.StringResource(R.string.food_edit_error_invalid_number))
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true) }
+            val id = foodId ?: UUID.randomUUID().toString()
+            val trimmedBarcode = _state.value.barcode.trim()
+            val barcode = trimmedBarcode.ifBlank { null }
+            val item =
+                FoodItem(
+                    id = FoodId(id),
+                    name = name,
+                    barcode = barcode,
+                    nutritionPer100g = nutrition,
+                    servingUnit = null,
+                    isUserCreated = foodId == null,
+                    cachedStatus = CachedFoodItemStatus.Original,
+                    originalSnapshot = null,
+                )
+            repository
+                .saveUserEdit(item)
+                .onSuccess {
+                    _state.update { it.copy(isSaving = false) }
+                    _events.send(FoodEditEvent.Saved(id))
+                }.onFailure {
+                    _state.update { it.copy(isSaving = false) }
+                }
+        }
+    }
+
+    private fun parseNutrition(): NutritionValues? =
+        try {
+            NutritionValues(
+                kcal = _state.value.kcal.parseNonNegative(),
+                proteinG = _state.value.protein.parseNonNegative(),
+                fatG = _state.value.fat.parseNonNegative(),
+                carbsG = _state.value.carbs.parseNonNegative(),
+                fiberG = _state.value.fiber.parseNonNegative(),
+            )
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+    private fun String.parseNonNegative(): Double {
+        val value = trim().replace(',', '.').ifBlank { "0" }.toDouble()
+        require(value >= 0.0)
+        return value
+    }
+
+    private companion object {
+        const val KEY_NAME = "food_edit_name"
+        const val KEY_BARCODE = "food_edit_barcode"
+    }
+}

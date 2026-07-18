@@ -7,7 +7,16 @@ plugins {
 android {
     namespace = "com.example.ezmakro.core.database"
 
+    // Expose the exported Room schemas to the (Robolectric) migration tests so
+    // MigrationTestHelper can locate the versioned schema JSONs.
+    sourceSets {
+        getByName("test") {
+            assets.srcDir("$projectDir/schemas")
+        }
+    }
+
     testOptions {
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.useJUnitPlatform()
         }

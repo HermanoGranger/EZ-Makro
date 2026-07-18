@@ -20,6 +20,8 @@ import androidx.room.PrimaryKey
         Index(value = ["barcode"], unique = false),
         Index(value = ["cached_status"]),
         Index(value = ["id"], unique = true),
+        Index(value = ["is_favorite"]),
+        Index(value = ["last_used_at"]),
     ],
 )
 data class FoodItemEntity(
@@ -71,6 +73,11 @@ data class FoodItemEntity(
     val origServingGramsEquivalent: Double?,
     @ColumnInfo(name = "orig_is_user_created")
     val origIsUserCreated: Boolean?,
+    @ColumnInfo(name = "is_favorite", defaultValue = "0")
+    val isFavorite: Boolean = false,
+    // Epoch-milli timestamp of last use; null until first used (recent ordering).
+    @ColumnInfo(name = "last_used_at")
+    val lastUsedAt: Long? = null,
 )
 
 /**

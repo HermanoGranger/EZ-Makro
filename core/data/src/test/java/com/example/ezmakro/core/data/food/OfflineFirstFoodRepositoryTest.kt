@@ -15,6 +15,7 @@ import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -44,6 +45,16 @@ private class FakeLocal : FoodLocalDataSource {
     val store = MutableStateFlow<Map<String, FoodItem>>(emptyMap())
 
     override fun observeAll(): Flow<List<FoodItem>> = store.map { it.values.toList() }
+
+    override fun observeFavorites(): Flow<List<FoodItem>> = store.map { m -> m.values.filter { it.isFavorite } }
+
+    override fun observeRecent(limit: Int): Flow<List<FoodItem>> =
+        store.map { m ->
+            m.values
+                .filter { it.lastUsedAt != null }
+                .sortedByDescending { it.lastUsedAt }
+                .take(limit)
+        }
 
     override suspend fun getById(id: FoodId) = Result.Success(store.value[id.value])
 
@@ -87,6 +98,22 @@ private class FakeLocal : FoodLocalDataSource {
     override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> {
         val snapshot = store.value[id.value]?.originalSnapshot ?: return Result.Success(Unit)
         store.value = store.value + (id.value to snapshot.copy(originalSnapshot = snapshot))
+        return Result.Success(Unit)
+    }
+
+    override suspend fun setFavorite(
+        id: FoodId,
+        favorite: Boolean,
+    ): EmptyResult<DataError.Local> {
+        mutate(id) { it.copy(isFavorite = favorite) }
+        return Result.Success(Unit)
+    }
+
+    override suspend fun markUsed(
+        id: FoodId,
+        usedAtEpochMillis: Long,
+    ): EmptyResult<DataError.Local> {
+        mutate(id) { it.copy(lastUsedAt = usedAtEpochMillis) }
         return Result.Success(Unit)
     }
 
@@ -225,5 +252,72 @@ class OfflineFirstFoodRepositoryTest {
             val result = repo.refetchFromOff(FoodId("1"))
 
             assertThat(result).isEqualTo(Result.Error(DataError.Local.NOT_FOUND))
+        }
+
+    @Test
+    fun `toggleFavorite flips the favorite flag`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Apfel"))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.toggleFavorite(FoodId("1"))
+            assertThat(local.store.value["1"]?.isFavorite).isEqualTo(true)
+
+            repo.toggleFavorite(FoodId("1"))
+            assertThat(local.store.value["1"]?.isFavorite).isEqualTo(false)
+        }
+
+    @Test
+    fun `toggleFavorite errors for an unknown food`() =
+        runTest {
+            val repo = OfflineFirstFoodRepository(FakeLocal(), FakeRemote())
+
+            val result = repo.toggleFavorite(FoodId("missing"))
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Local.NOT_FOUND))
+        }
+
+    @Test
+    fun `markUsed stamps the injected clock time`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Apfel"))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote(), now = { 1_234L })
+
+            repo.markUsed(FoodId("1"))
+
+            assertThat(local.store.value["1"]?.lastUsedAt).isEqualTo(1_234L)
+        }
+
+    @Test
+    fun `observeFavorites emits only favorited foods`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Apfel"))
+            local.upsert(food("2", "Banane"))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            repo.toggleFavorite(FoodId("2"))
+
+            val favorites = repo.observeFavorites().first()
+
+            assertThat(favorites.map { it.id.value }).isEqualTo(listOf("2"))
+        }
+
+    @Test
+    fun `observeRecent returns most recently used first within the limit`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "Apfel"))
+            local.upsert(food("2", "Banane"))
+            local.upsert(food("3", "Clementine"))
+            local.markUsed(FoodId("1"), 100L)
+            local.markUsed(FoodId("2"), 300L)
+            local.markUsed(FoodId("3"), 200L)
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            val recent = repo.observeRecent(limit = 2).first()
+
+            assertThat(recent.map { it.id.value }).isEqualTo(listOf("2", "3"))
         }
 }

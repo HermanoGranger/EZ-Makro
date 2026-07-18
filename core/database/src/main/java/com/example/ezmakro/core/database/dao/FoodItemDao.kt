@@ -28,14 +28,16 @@ interface FoodItemDao {
             serving_label, serving_grams_equivalent, is_user_created, cached_status,
             orig_name, orig_barcode, orig_nutri_kcal, orig_nutri_protein_g,
             orig_nutri_fat_g, orig_nutri_carbs_g, orig_nutri_fiber_g,
-            orig_serving_label, orig_serving_grams_equivalent, orig_is_user_created
+            orig_serving_label, orig_serving_grams_equivalent, orig_is_user_created,
+            is_favorite, last_used_at
         ) VALUES (
             :id, :name, :barcode,
             :nutriKcal, :nutriProteinG, :nutriFatG, :nutriCarbsG, :nutriFiberG,
             :servingLabel, :servingGramsEquivalent, :isUserCreated, :cachedStatus,
             :origName, :origBarcode, :origNutriKcal, :origNutriProteinG,
             :origNutriFatG, :origNutriCarbsG, :origNutriFiberG,
-            :origServingLabel, :origServingGrams, :origIsUserCreated
+            :origServingLabel, :origServingGrams, :origIsUserCreated,
+            0, NULL
         )
         ON CONFLICT(id) DO UPDATE SET
             name = excluded.name,
@@ -102,6 +104,29 @@ interface FoodItemDao {
 
     @Query("SELECT * FROM food_items ORDER BY name COLLATE NOCASE")
     fun observeAll(): Flow<List<FoodItemEntity>>
+
+    @Query("SELECT * FROM food_items WHERE is_favorite = 1 ORDER BY name COLLATE NOCASE")
+    fun observeFavorites(): Flow<List<FoodItemEntity>>
+
+    @Query(
+        "SELECT * FROM food_items WHERE last_used_at IS NOT NULL " +
+            "ORDER BY last_used_at DESC LIMIT :limit",
+    )
+    fun observeRecent(limit: Int): Flow<List<FoodItemEntity>>
+
+    /** Toggle/set the favorite flag. Never touched by [upsert] re-syncs. */
+    @Query("UPDATE food_items SET is_favorite = :favorite WHERE id = :id")
+    fun setFavorite(
+        id: String,
+        favorite: Boolean,
+    )
+
+    /** Stamp last-used for recent ordering. Never touched by [upsert] re-syncs. */
+    @Query("UPDATE food_items SET last_used_at = :usedAt WHERE id = :id")
+    fun markUsed(
+        id: String,
+        usedAt: Long,
+    )
 
     @Query("SELECT * FROM food_items WHERE is_user_created = 0 ORDER BY name COLLATE NOCASE")
     fun observeCached(): Flow<List<FoodItemEntity>>

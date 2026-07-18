@@ -11,6 +11,11 @@ package com.example.ezmakro.core.domain.model
  *
  * [nutritionPer100g] is the reference nutrition expressed per 100 g. [servingUnit]
  * is optional: when present, the food can also be logged by count (e.g. "1 Ei").
+ *
+ * [isFavorite] marks the food for the favorites section in the food picker.
+ * [lastUsedAt] is the epoch-milli timestamp of the last time the food was used;
+ * it drives the "recently used" ordering and is `null` until first use (wired in
+ * Phase 7 with the meal log).
  */
 data class FoodItem(
     val id: FoodId,
@@ -21,6 +26,8 @@ data class FoodItem(
     val isUserCreated: Boolean,
     val cachedStatus: CachedFoodItemStatus,
     val originalSnapshot: FoodItem?,
+    val isFavorite: Boolean = false,
+    val lastUsedAt: Long? = null,
 ) {
     init {
         require(name.isNotBlank()) { "FoodItem name must not be blank" }
@@ -28,6 +35,9 @@ data class FoodItem(
             require(cachedStatus is CachedFoodItemStatus.Original || originalSnapshot != null) {
                 "Cached OFF entries that are not Original must keep an originalSnapshot"
             }
+        }
+        lastUsedAt?.let {
+            require(it >= 0L) { "lastUsedAt must be a non-negative epoch-milli timestamp, was $it" }
         }
     }
 }
