@@ -28,5 +28,21 @@ val MIGRATION_1_2 =
         }
     }
 
+/**
+ * Phase 6: adds the `category` and `is_meal_prep` columns to `recipes`.
+ * Existing rows default to `category = NULL` and `is_meal_prep = 0`.
+ */
+val MIGRATION_2_3 =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE recipes ADD COLUMN category TEXT",
+            )
+            db.execSQL(
+                "ALTER TABLE recipes ADD COLUMN is_meal_prep INTEGER NOT NULL DEFAULT 0",
+            )
+        }
+    }
+
 /** All migrations, in order, for registration with the Room builder. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)

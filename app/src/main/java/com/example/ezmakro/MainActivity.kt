@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ezmakro.core.designsystem.theme.EZMakroTheme
 import com.example.ezmakro.feature.food.presentation.navigation.FoodSearch
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
+import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +35,7 @@ private fun EzMakroApp() {
                 startDestination = FoodSearch,
             ) {
                 foodGraph(navController = navController, onNavigateBack = onNavigateBack)
+                recipeGraph(navController = navController, onNavigateBack = onNavigateBack)
             }
         }
     }

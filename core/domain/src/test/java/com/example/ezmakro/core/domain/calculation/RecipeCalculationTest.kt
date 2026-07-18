@@ -327,4 +327,55 @@ class RecipeCalculationTest {
             )
         }
     }
+
+    @Test
+    fun `nutritionPer100g rounding stays precise for odd ratios`() {
+        val f = food(per100g = NutritionValues(123.0, 9.5, 4.25, 2.0, 1.0))
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Test",
+                ingredients = listOf(ingredient(f, 333.0)),
+                finalWeight = FinalWeight(500.0),
+                portions = 1,
+            )
+        // total = 3.33 * 123 = 409.59 kcal over 500 g => 81.918 kcal / 100 g
+        val per100 = recipe.nutritionPer100g()!!
+        assertEquals(81.918, per100.kcal, 1e-9)
+        assertEquals(9.5 * 3.33 / 5.0, per100.proteinG, 1e-9)
+    }
+
+    @Test
+    fun `scale changes total but not per100g basis`() {
+        val f = food(per100g = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0))
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Test",
+                ingredients = listOf(ingredient(f, 100.0)),
+                finalWeight = FinalWeight(100.0),
+                portions = 1,
+                scale = 3.0,
+            )
+        // total = 300 kcal, per100g = 300/100 = 300 (final weight is fixed dish weight)
+        assertEquals(300.0, recipe.totalNutrition().kcal, 1e-9)
+        assertEquals(300.0, recipe.nutritionPer100g()!!.kcal, 1e-9)
+    }
+
+    @Test
+    fun `recipe carries category and meal prep flag`() {
+        val f = food()
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Test",
+                ingredients = listOf(ingredient(f, 100.0)),
+                finalWeight = null,
+                portions = 1,
+                category = "Frühstück",
+                isMealPrep = true,
+            )
+        assertEquals("Frühstück", recipe.category)
+        assertEquals(true, recipe.isMealPrep)
+    }
 }

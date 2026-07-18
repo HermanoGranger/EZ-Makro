@@ -21,6 +21,10 @@ data class Recipe(
     val finalWeight: FinalWeight?,
     val portions: Int,
     val scale: Double = 1.0,
+    /** Free-form category label for grouping in the recipe list (local, no enum). */
+    val category: String? = null,
+    /** Marks the dish as prepared ahead for multiple days (meal prep). */
+    val isMealPrep: Boolean = false,
 ) {
     init {
         require(name.isNotBlank()) { "Recipe name must not be blank" }

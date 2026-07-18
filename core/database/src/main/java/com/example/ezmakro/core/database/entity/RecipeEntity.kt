@@ -22,6 +22,10 @@ data class RecipeEntity(
     val finalWeightGrams: Double?,
     val portions: Int,
     val scale: Double,
+    @ColumnInfo(name = "category")
+    val category: String?,
+    @ColumnInfo(name = "is_meal_prep", defaultValue = "0")
+    val isMealPrep: Boolean,
 )
 
 /**

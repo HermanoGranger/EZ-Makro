@@ -5,7 +5,9 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.platform.app.InstrumentationRegistry
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.database.migration.MIGRATION_1_2
+import com.example.ezmakro.core.database.migration.MIGRATION_2_3
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,8 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Validates the Phase 5 migration 1 → 2 (favorites + last-used columns).
- * Uses the exported schema JSONs under `schemas/`.
+ * Validates the schema migrations using the exported schema JSONs under `schemas/`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -60,6 +61,27 @@ class MigrationTest {
             check(c.moveToFirst()) { "expected the pre-migration row to survive" }
             assertThat(c.getInt(0)).isEqualTo(0)
             assertThat(c.isNull(1)).isEqualTo(true)
+        }
+        migrated.close()
+    }
+
+    @Test
+    fun `migrate 2 to 3 adds recipe category and meal prep columns`() {
+        helper.createDatabase(dbName, 2).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO recipes (id, name, final_weight_grams, portions, scale)
+                VALUES ('r1', 'Pfannkuchen', 500.0, 2, 1.0)
+                """.trimIndent(),
+            )
+        }
+
+        val migrated = helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3)
+
+        migrated.query("SELECT category, is_meal_prep FROM recipes WHERE id = 'r1'").use { c ->
+            check(c.moveToFirst()) { "expected the pre-migration recipe to survive" }
+            assertThat(c.isNull(0)).isTrue()
+            assertThat(c.getInt(1)).isEqualTo(0)
         }
         migrated.close()
     }

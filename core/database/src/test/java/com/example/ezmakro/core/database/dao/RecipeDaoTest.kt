@@ -25,6 +25,8 @@ class RecipeDaoTest : DatabaseTest() {
             finalWeightGrams = null,
             portions = 2,
             scale = 1.0,
+            category = null,
+            isMealPrep = false,
         )
 
     private fun ingredient(

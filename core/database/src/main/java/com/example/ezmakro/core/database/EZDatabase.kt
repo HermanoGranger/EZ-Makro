@@ -24,6 +24,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  * - 1: initial schema.
  * - 2: Phase 5 — `food_items.is_favorite` and `food_items.last_used_at` columns
  *   plus their indices, for the favorites and recently-used sections.
+ * - 3: Phase 6 — `recipes.category` and `recipes.is_meal_prep` columns.
  *
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
@@ -37,7 +38,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 2,
+    version = 3,
 )
 @TypeConverters(ScalarConverters::class)
 abstract class EZDatabase : RoomDatabase() {

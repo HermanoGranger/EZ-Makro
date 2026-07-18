@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_list_title">Rezepte</string>
+    <string name="recipe_list_empty">Noch keine Rezepte</string>
+    <string name="recipe_list_create">Neues Rezept</string>
+    <string name="recipe_list_meal_prep">Meal Prep</string>
+    <string name="recipe_list_quick_meal">Schnell-Kombo</string>
+
+    <string name="recipe_detail_title">Rezept</string>
+    <string name="recipe_detail_total">Gesamt</string>
+    <string name="recipe_detail_per_portion">Pro Portion</string>
+    <string name="recipe_detail_per_100g">Pro 100 g</string>
+    <string name="recipe_detail_no_final_weight">Endgewicht nicht erfasst – \"pro 100 g\" nicht verfügbar</string>
+    <string name="recipe_detail_ingredients">Zutaten</string>
+    <string name="recipe_detail_portions">Portionen: %1$d</string>
+    <string name="recipe_detail_category">Kategorie: %1$s</string>
+    <string name="recipe_detail_duplicate">Duplizieren</string>
+    <string name="recipe_detail_edit">Bearbeiten</string>
+    <string name="recipe_detail_scale">Skalieren</string>
+    <string name="recipe_detail_delete">Löschen</string>
+    <string name="recipe_detail_delete_confirm">Rezept wirklich löschen?</string>
+
+    <string name="recipe_editor_title_new">Neues Rezept</string>
+    <string name="recipe_editor_title_edit">Rezept bearbeiten</string>
+    <string name="recipe_editor_title_quick">Schnell-Kombo</string>
+    <string name="recipe_editor_name">Name</string>
+    <string name="recipe_editor_category">Kategorie (optional)</string>
+    <string name="recipe_editor_portions">Portionen</string>
+    <string name="recipe_editor_final_weight">Endgewicht (g)</string>
+    <string name="recipe_editor_scale">Skalierung (x)</string>
+    <string name="recipe_editor_calculation_mode">Berechnungsart</string>
+    <string name="recipe_editor_mode_portion">Portionen</string>
+    <string name="recipe_editor_mode_weight">Gewicht</string>
+    <string name="recipe_editor_meal_prep">Meal Prep</string>
+    <string name="recipe_editor_add_ingredient">Zutat hinzufügen</string>
+    <string name="recipe_editor_ingredient_raw_weight">Rohgewicht (g)</string>
+    <string name="recipe_editor_ingredient_serving_count">Anzahl (%1$s)</string>
+    <string name="recipe_editor_save">Speichern</string>
+    <string name="recipe_editor_error_name_blank">Name darf nicht leer sein</string>
+    <string name="recipe_editor_error_invalid_number">Ungültiger Wert</string>
+    <string name="recipe_editor_error_no_ingredients">Mindestens eine Zutat nötig</string>
+    <string name="recipe_editor_error_ingredient_weight">Zutat braucht Rohgewicht oder Anzahl</string>
+
+    <string name="recipe_ingredient_picker_title">Zutat wählen</string>
+    <string name="recipe_ingredient_picker_empty">Keine Lebensmittel</string>
+</resources>
