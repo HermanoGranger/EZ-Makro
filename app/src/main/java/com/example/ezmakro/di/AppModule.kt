@@ -4,8 +4,10 @@ import com.example.ezmakro.core.barcode.di.barcodeModule
 import com.example.ezmakro.core.data.di.coreDataModule
 import com.example.ezmakro.core.data.di.diaryDataModule
 import com.example.ezmakro.core.data.di.foodDataModule
+import com.example.ezmakro.core.data.di.goalDataModule
 import com.example.ezmakro.core.data.di.recipeDataModule
 import com.example.ezmakro.core.database.di.databaseModule
+import com.example.ezmakro.feature.dashboard.presentation.di.dashboardPresentationModule
 import com.example.ezmakro.feature.diary.presentation.di.diaryPresentationModule
 import com.example.ezmakro.feature.food.presentation.di.foodPresentationModule
 import com.example.ezmakro.feature.recipes.presentation.di.recipePresentationModule
@@ -18,10 +20,12 @@ val appModule =
             coreDataModule,
             foodDataModule,
             recipeDataModule,
+            goalDataModule,
             diaryDataModule,
             barcodeModule,
             foodPresentationModule,
             recipePresentationModule,
             diaryPresentationModule,
+            dashboardPresentationModule,
         )
     }

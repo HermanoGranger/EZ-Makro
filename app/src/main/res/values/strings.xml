@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">EZ Makro</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="diary_title">Tagebuch</string>
+    <string name="food_title">Lebensmittel</string>
+    <string name="recipe_title">Rezepte</string>
 </resources>

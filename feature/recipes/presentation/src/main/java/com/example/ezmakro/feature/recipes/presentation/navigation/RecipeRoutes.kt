@@ -11,6 +11,9 @@ import com.example.ezmakro.feature.recipes.presentation.list.RecipeListRoot
 import kotlinx.serialization.Serializable
 
 @Serializable
+object Recipe
+
+@Serializable
 data class RecipeList(
     val addToDiaryDate: String? = null,
 )
@@ -31,7 +34,7 @@ fun NavGraphBuilder.recipeGraph(
     onNavigateBack: () -> Unit,
     onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
 ) {
-    navigation<RecipeList>(startDestination = RecipeList) {
+    navigation<Recipe>(startDestination = RecipeList) {
         composable<RecipeList> { backStackEntry ->
             val route = backStackEntry.toRoute<RecipeList>()
             RecipeListRoot(
