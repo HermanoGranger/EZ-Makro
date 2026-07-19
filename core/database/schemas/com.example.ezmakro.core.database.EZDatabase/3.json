@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "531875a89c08da6c2dcafc151bb8a6ae",
+    "identityHash": "a36bcf5e9dc5fa76207910fe8818c2e0",
     "entities": [
       {
         "tableName": "food_items",
@@ -360,7 +360,7 @@
       },
       {
         "tableName": "diary_entries",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `slot` TEXT NOT NULL, `date` TEXT NOT NULL, `food_item_id` TEXT, `recipe_id` TEXT, `amount_grams` REAL, `portion_count` REAL, PRIMARY KEY(`id`), FOREIGN KEY(`food_item_id`) REFERENCES `food_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`recipe_id`) REFERENCES `recipes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `slot` TEXT NOT NULL, `date` TEXT NOT NULL, `food_item_id` TEXT, `recipe_id` TEXT, `amount_grams` REAL, `portion_count` REAL, `food_snapshot` TEXT DEFAULT NULL, `recipe_snapshot` TEXT DEFAULT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`food_item_id`) REFERENCES `food_items`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`recipe_id`) REFERENCES `recipes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -399,6 +399,18 @@
             "fieldPath": "portionCount",
             "columnName": "portion_count",
             "affinity": "REAL"
+          },
+          {
+            "fieldPath": "foodSnapshot",
+            "columnName": "food_snapshot",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
+          },
+          {
+            "fieldPath": "recipeSnapshot",
+            "columnName": "recipe_snapshot",
+            "affinity": "TEXT",
+            "defaultValue": "NULL"
           }
         ],
         "primaryKey": {
@@ -488,7 +500,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '531875a89c08da6c2dcafc151bb8a6ae')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a36bcf5e9dc5fa76207910fe8818c2e0')"
     ]
   }
 }

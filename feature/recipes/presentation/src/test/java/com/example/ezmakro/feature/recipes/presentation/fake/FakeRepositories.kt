@@ -30,6 +30,9 @@ class FakeFoodRepository : FoodRepository {
 
     override fun searchLocal(query: String): Flow<List<FoodItem>> = items
 
+    override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
+        Result.Success(items.value.firstOrNull { it.id == id })
+
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
         Result.Success(emptyList())
 
@@ -78,6 +81,8 @@ class FakeRecipeRepository : RecipeRepository {
     override fun observeAll(): Flow<List<Recipe>> = store.map { it.values.toList() }
 
     override fun observeById(id: RecipeId): Flow<Recipe?> = store.map { it[id.value] }
+
+    override suspend fun getById(id: RecipeId): Result<Recipe?, DataError.Local> = Result.Success(store.value[id.value])
 
     override suspend fun save(recipe: Recipe): EmptyResult<DataError.Local> {
         saved += recipe

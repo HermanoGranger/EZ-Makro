@@ -28,6 +28,7 @@ dependencies {
 
     implementation(libs.findLibrary("koin-android").get())
     implementation(libs.findLibrary("kotlinx-coroutines-android").get())
+    implementation(libs.findLibrary("kotlinx-serialization-json").get())
 
     testImplementation(libs.findLibrary("kotlinx-coroutines-test").get())
     testImplementation(libs.findLibrary("junit5-jupiter-api").get())

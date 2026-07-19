@@ -18,6 +18,9 @@ interface DiaryEntryDao {
     @Delete
     fun delete(entity: DiaryEntryEntity)
 
+    @Query("DELETE FROM diary_entries WHERE id = :id")
+    fun deleteById(id: String)
+
     @Query("SELECT * FROM diary_entries WHERE id = :id")
     fun getById(id: String): DiaryEntryEntity?
 

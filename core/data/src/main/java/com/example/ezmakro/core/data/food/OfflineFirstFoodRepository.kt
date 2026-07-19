@@ -34,6 +34,8 @@ class OfflineFirstFoodRepository(
 
     override fun searchLocal(query: String): Flow<List<FoodItem>> = local.searchByName(query)
 
+    override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = local.getById(id)
+
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
         remote.searchByName(query).onSuccess { items ->
             items.forEach { cacheWithoutOverwritingUserEdits(it) }

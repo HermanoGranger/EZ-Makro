@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.food.presentation.R
 import com.example.ezmakro.feature.food.presentation.model.FoodUi
@@ -41,6 +42,7 @@ fun FoodSearchRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToScanner: () -> Unit,
     onNavigateToCreate: (String?) -> Unit,
+    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
     viewModel: FoodSearchViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -50,10 +52,19 @@ fun FoodSearchRoot(
             is FoodSearchEvent.NavigateToDetail -> onNavigateToDetail(event.foodId)
             FoodSearchEvent.NavigateToScanner -> onNavigateToScanner()
             is FoodSearchEvent.NavigateToCreate -> onNavigateToCreate(event.barcode)
+            is FoodSearchEvent.AddToDiary -> onAddToDiary(event.foodId, event.date, event.slot, event.amountGrams)
         }
     }
 
     FoodSearchScreen(state = state, onAction = viewModel::onAction)
+
+    if (state.pendingAddFoodId != null) {
+        AddToDiarySheet(
+            isRecipe = false,
+            onDismiss = { viewModel.onAction(FoodSearchAction.OnDismissAddToDiary) },
+            onConfirm = { slot, amount -> viewModel.onAction(FoodSearchAction.OnConfirmAddToDiary(slot, amount)) },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

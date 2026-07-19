@@ -1,5 +1,7 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Macro and calorie values for a food or dish, always expressed relative to a
  * defined basis (e.g. per 100 g or per 1 portion). The basis is communicated
@@ -9,6 +11,7 @@ package com.example.ezmakro.core.domain.model
  * All components are non-negative. Fiber is tracked separately from
  * carbohydrates (ADR/scope: Ballaststoffe is its own tracked macro).
  */
+@Serializable
 data class NutritionValues(
     val kcal: Double,
     val proteinG: Double,

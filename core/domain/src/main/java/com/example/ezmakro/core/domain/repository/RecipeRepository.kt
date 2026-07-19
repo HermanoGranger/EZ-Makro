@@ -22,6 +22,9 @@ interface RecipeRepository {
     /** Observe a single recipe by id, or null when it does not exist. */
     fun observeById(id: RecipeId): Flow<Recipe?>
 
+    /** Fetch a single recipe by id, or null when it does not exist. */
+    suspend fun getById(id: RecipeId): Result<Recipe?, DataError.Local>
+
     /** Persist a new or updated recipe (ingredients written atomically). */
     suspend fun save(recipe: Recipe): EmptyResult<DataError.Local>
 

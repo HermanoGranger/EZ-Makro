@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":core:design-system"))
     implementation(project(":feature:food:presentation"))
     implementation(project(":feature:recipes:presentation"))
+    implementation(project(":feature:diary:presentation"))
 
     implementation(libs.findLibrary("androidx-core-ktx").get())
     implementation(libs.findLibrary("androidx-lifecycle-runtime-ktx").get())

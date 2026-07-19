@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.recipes.presentation.R
 import org.koin.androidx.compose.koinViewModel
@@ -32,6 +34,7 @@ fun RecipeListRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToEditor: (String?) -> Unit,
     onNavigateToQuickMeal: () -> Unit,
+    onAddToDiary: (String, String, MealSlot, Double) -> Unit = { _, _, _, _ -> },
     viewModel: RecipeListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -40,6 +43,8 @@ fun RecipeListRoot(
         when (event) {
             is RecipeListEvent.NavigateToDetail -> onNavigateToDetail(event.recipeId)
             is RecipeListEvent.NavigateToEditor -> onNavigateToEditor(event.recipeId)
+            is RecipeListEvent.AddToDiary ->
+                onAddToDiary(event.recipeId, event.date, event.slot, event.portions)
         }
     }
 
@@ -48,6 +53,14 @@ fun RecipeListRoot(
         onAction = viewModel::onAction,
         onNavigateToQuickMeal = onNavigateToQuickMeal,
     )
+
+    if (state.pendingAddRecipeId != null) {
+        AddToDiarySheet(
+            isRecipe = true,
+            onDismiss = { viewModel.onAction(RecipeListAction.OnDismissAddToDiary) },
+            onConfirm = { slot, portions -> viewModel.onAction(RecipeListAction.OnConfirmAddToDiary(slot, portions)) },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

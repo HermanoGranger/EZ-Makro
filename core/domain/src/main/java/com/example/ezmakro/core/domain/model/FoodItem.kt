@@ -1,5 +1,7 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Aggregate Root: a food item tracked by the app.
  *
@@ -17,6 +19,7 @@ package com.example.ezmakro.core.domain.model
  * it drives the "recently used" ordering and is `null` until first use (wired in
  * Phase 7 with the meal log).
  */
+@Serializable
 data class FoodItem(
     val id: FoodId,
     val name: String,

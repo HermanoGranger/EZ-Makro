@@ -1,5 +1,6 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 /**
@@ -7,6 +8,7 @@ import kotlin.jvm.JvmInline
  * Prevents accidental mixing with recipe IDs or raw strings at compile time.
  */
 @JvmInline
+@Serializable
 value class FoodId(
     val value: String,
 )
@@ -15,6 +17,7 @@ value class FoodId(
  * Branded ID for a [Recipe].
  */
 @JvmInline
+@Serializable
 value class RecipeId(
     val value: String,
 )
@@ -23,6 +26,7 @@ value class RecipeId(
  * Branded ID for a [DiaryEntry].
  */
 @JvmInline
+@Serializable
 value class DiaryEntryId(
     val value: String,
 )
@@ -31,6 +35,7 @@ value class DiaryEntryId(
  * Branded ID for a [WeightLog] entry.
  */
 @JvmInline
+@Serializable
 value class WeightLogId(
     val value: String,
 )

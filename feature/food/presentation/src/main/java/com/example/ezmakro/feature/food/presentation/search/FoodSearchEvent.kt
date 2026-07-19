@@ -11,4 +11,16 @@ sealed interface FoodSearchEvent {
     data class NavigateToCreate(
         val barcode: String?,
     ) : FoodSearchEvent
+
+    /**
+     * Cross-feature "add to diary" contract: the food picker was opened from the
+     * diary for [date]; selecting [foodId], [slot] and [amountGrams] logs it to
+     * the meal log.
+     */
+    data class AddToDiary(
+        val foodId: String,
+        val date: String,
+        val slot: com.example.ezmakro.core.domain.model.MealSlot,
+        val amountGrams: Double,
+    ) : FoodSearchEvent
 }

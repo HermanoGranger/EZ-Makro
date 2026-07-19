@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="diary_title">Tagebuch</string>
+    <string name="diary_empty">Noch keine Einträge für diesen Tag</string>
+    <string name="diary_copy_yesterday">Gestern kopieren</string>
+    <string name="diary_copy_yesterday_success">%1$d Einträge von gestern kopiert</string>
+    <string name="diary_slot_breakfast">Frühstück</string>
+    <string name="diary_slot_lunch">Mittag</string>
+    <string name="diary_slot_dinner">Abend</string>
+    <string name="diary_slot_snacks">Snacks</string>
+    <string name="diary_slot_total">Tagesgesamt</string>
+    <string name="diary_kcal">%1$s kcal</string>
+    <string name="diary_add">Hinzufügen</string>
+    <string name="diary_add_recipe">Rezept</string>
+    <string name="diary_history">Verlauf</string>
+    <string name="diary_history_empty">Kein Verlauf</string>
+    <string name="diary_history_entries">%1$d Einträge</string>
+    <string name="diary_delete_confirm">Eintrag wirklich löschen?</string>
+    <string name="diary_slot_empty">—</string>
+    <string name="diary_entry_delete">Löschen</string>
+
+    <string name="quick_add_title">Quick Add</string>
+    <string name="quick_add_name">Name</string>
+    <string name="quick_add_kcal">kcal / 100 g</string>
+    <string name="quick_add_protein">Protein / 100 g</string>
+    <string name="quick_add_fat">Fett / 100 g</string>
+    <string name="quick_add_carbs">Kohlenhydrate / 100 g</string>
+    <string name="quick_add_fiber">Ballaststoffe / 100 g</string>
+    <string name="quick_add_amount">Menge (g)</string>
+    <string name="quick_add_slot">Mahlzeit</string>
+    <string name="quick_add_save">Speichern</string>
+    <string name="quick_add_error_name">Name darf nicht leer sein</string>
+    <string name="quick_add_error_amount">Menge muss größer als 0 sein</string>
+</resources>

@@ -14,6 +14,7 @@ class DomainModuleConventionPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("org.jetbrains.kotlin.jvm")
+                apply("org.jetbrains.kotlin.plugin.serialization")
             }
 
             extensions.configure<JavaPluginExtension> {
@@ -39,6 +40,7 @@ class DomainModuleConventionPlugin : Plugin<Project> {
                 add("testImplementation", libs.findLibrary("kotlin-testcore").get())
                 add("testImplementation", libs.findLibrary("kotlin-testjunit5").get())
                 add("testImplementation", libs.findLibrary("assertk").get())
+                add("implementation", libs.findLibrary("kotlinx-serialization-json").get())
             }
         }
     }

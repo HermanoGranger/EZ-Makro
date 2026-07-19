@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.list
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.repository.RecipeRepository
@@ -17,10 +18,16 @@ import kotlinx.coroutines.launch
  * Lists all recipes (name-sorted from the repository). Navigation to the editor
  * or detail is emitted as [RecipeListEvent]s; data mutations happen in the
  * editor/detail view models.
+ *
+ * When opened from the diary ([addToDiaryDate] != null) selecting a recipe sets
+ * [RecipeListState.pendingAddRecipeId], which the UI uses to show the
+ * slot/portions sheet.
  */
 class RecipeListViewModel(
     private val repository: RecipeRepository,
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
+    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")
     private val _state = MutableStateFlow(RecipeListState(isLoading = true))
     val state = _state.asStateFlow()
 
@@ -37,14 +44,38 @@ class RecipeListViewModel(
 
     fun onAction(action: RecipeListAction) {
         when (action) {
-            is RecipeListAction.OnRecipeClick ->
-                viewModelScope.launch { _events.send(RecipeListEvent.NavigateToDetail(action.recipeId)) }
+            is RecipeListAction.OnRecipeClick -> {
+                if (addToDiaryDate != null) {
+                    _state.update { it.copy(pendingAddRecipeId = action.recipeId) }
+                } else {
+                    viewModelScope.launch { _events.send(RecipeListEvent.NavigateToDetail(action.recipeId)) }
+                }
+            }
 
             is RecipeListAction.OnCreateClick ->
                 viewModelScope.launch { _events.send(RecipeListEvent.NavigateToEditor(recipeId = null)) }
 
             is RecipeListAction.OnCreateQuickMealClick ->
                 viewModelScope.launch { _events.send(RecipeListEvent.NavigateToEditor(recipeId = null)) }
+
+            RecipeListAction.OnDismissAddToDiary ->
+                _state.update { it.copy(pendingAddRecipeId = null) }
+
+            is RecipeListAction.OnConfirmAddToDiary -> {
+                val recipeId = _state.value.pendingAddRecipeId ?: return
+                val date = addToDiaryDate ?: return
+                _state.update { it.copy(pendingAddRecipeId = null) }
+                viewModelScope.launch {
+                    _events.send(
+                        RecipeListEvent.AddToDiary(
+                            recipeId = recipeId,
+                            date = date,
+                            slot = action.slot,
+                            portions = action.portions,
+                        ),
+                    )
+                }
+            }
         }
     }
 }

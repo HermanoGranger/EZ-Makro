@@ -1,7 +1,9 @@
 package com.example.ezmakro.feature.food.presentation.search
 
+import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.feature.food.presentation.fake.FakeFoodRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -85,5 +87,45 @@ class FoodSearchViewModelTest {
             dispatcher.scheduler.runCurrent()
 
             assertEquals(FoodId("7"), repository.lastToggledFavorite)
+        }
+
+    @Test
+    fun foodClick_inDiaryMode_setsPendingAddFoodId_withoutEmitting() =
+        runTest {
+            val diaryVm =
+                FoodSearchViewModel(
+                    repository = repository,
+                    savedStateHandle = SavedStateHandle(mapOf("addToDiaryDate" to "2026-07-19")),
+                )
+            diaryVm.events.test {
+                diaryVm.onAction(FoodSearchAction.OnFoodClick("42"))
+                expectNoEvents()
+            }
+            assertEquals("42", diaryVm.state.value.pendingAddFoodId)
+        }
+
+    @Test
+    fun confirmAddToDiary_emitsAddToDiaryWithSlotAndAmount() =
+        runTest {
+            val diaryVm =
+                FoodSearchViewModel(
+                    repository = repository,
+                    savedStateHandle = SavedStateHandle(mapOf("addToDiaryDate" to "2026-07-19")),
+                )
+            diaryVm.onAction(FoodSearchAction.OnFoodClick("42"))
+            diaryVm.events.test {
+                diaryVm.onAction(FoodSearchAction.OnConfirmAddToDiary(MealSlot.LUNCH, 150.0))
+                val event = awaitItem()
+                assertEquals(
+                    FoodSearchEvent.AddToDiary(
+                        foodId = "42",
+                        date = "2026-07-19",
+                        slot = MealSlot.LUNCH,
+                        amountGrams = 150.0,
+                    ),
+                    event,
+                )
+            }
+            assertEquals(null, diaryVm.state.value.pendingAddFoodId)
         }
 }

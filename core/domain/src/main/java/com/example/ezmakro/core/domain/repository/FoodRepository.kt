@@ -33,6 +33,9 @@ interface FoodRepository {
     /** Observe local FTS results for [query]. */
     fun searchLocal(query: String): Flow<List<FoodItem>>
 
+    /** Get a single food by id, or null when it does not exist. */
+    suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local>
+
     /**
      * Search OFF and persist the results into the local cache. Existing
      * UserModified entries are preserved (never overwritten). Returns the

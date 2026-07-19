@@ -1,5 +1,7 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Aggregate Root: a recipe composed of raw ingredients.
  *
@@ -14,6 +16,7 @@ package com.example.ezmakro.core.domain.model
  * - [scale] allows meal-prep scaling of the whole dish without altering the
  *   ingredient list.
  */
+@Serializable
 data class Recipe(
     val id: RecipeId,
     val name: String,

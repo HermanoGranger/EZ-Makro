@@ -11,6 +11,13 @@ sealed interface FoodSearchAction {
         val foodId: String,
     ) : FoodSearchAction
 
+    data object OnDismissAddToDiary : FoodSearchAction
+
+    data class OnConfirmAddToDiary(
+        val slot: com.example.ezmakro.core.domain.model.MealSlot,
+        val amountGrams: Double,
+    ) : FoodSearchAction
+
     data class OnToggleFavorite(
         val foodId: String,
     ) : FoodSearchAction

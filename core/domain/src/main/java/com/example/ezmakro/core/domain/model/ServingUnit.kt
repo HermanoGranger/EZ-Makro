@@ -1,5 +1,7 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * A non-gram serving description such as "1 Ei", "1 Scheibe", "1 EL", mapped to
  * a gram equivalent so ingredients can be entered without forcing gram input
@@ -8,6 +10,7 @@ package com.example.ezmakro.core.domain.model
  * [gramsEquivalent] is the weight of one unit of this serving. [label] is the
  * human-readable form shown in the UI (e.g. "1 Ei").
  */
+@Serializable
 data class ServingUnit(
     val label: String,
     val gramsEquivalent: Double,

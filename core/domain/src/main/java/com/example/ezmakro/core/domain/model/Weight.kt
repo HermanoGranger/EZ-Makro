@@ -1,5 +1,6 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 /**
@@ -11,6 +12,7 @@ import kotlin.jvm.JvmInline
  * calculation bugs at compile time.
  */
 @JvmInline
+@Serializable
 value class RawWeight(
     val grams: Double,
 ) {
@@ -29,6 +31,7 @@ value class RawWeight(
  * sum of raw weights (ADR-003).
  */
 @JvmInline
+@Serializable
 value class FinalWeight(
     val grams: Double,
 ) {

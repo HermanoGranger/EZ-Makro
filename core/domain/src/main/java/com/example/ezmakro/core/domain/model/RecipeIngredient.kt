@@ -1,5 +1,7 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * A single ingredient line inside a [Recipe]. Always references its food in the
  * RAW state ([rawWeight]); cooking-related weight changes are captured only at
@@ -9,6 +11,7 @@ package com.example.ezmakro.core.domain.model
  * be expressed by [servingCount]; [rawWeight] is then derived. Exactly one of
  * [rawWeight] / [servingCount] must be provided.
  */
+@Serializable
 data class RecipeIngredient(
     val food: FoodItem,
     val rawWeight: RawWeight?,

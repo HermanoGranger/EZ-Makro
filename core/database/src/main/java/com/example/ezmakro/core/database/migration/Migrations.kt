@@ -29,8 +29,12 @@ val MIGRATION_1_2 =
     }
 
 /**
- * Phase 6: adds the `category` and `is_meal_prep` columns to `recipes`.
- * Existing rows default to `category = NULL` and `is_meal_prep = 0`.
+ * Phase 6 + 7: adds the `category` and `is_meal_prep` columns to `recipes`, and
+ * the immutable `food_snapshot` / `recipe_snapshot` JSON columns to
+ * `diary_entries` (the meal-log v1 design). Existing rows default to NULL.
+ *
+ * The app is pre-release with `fallbackToDestructiveMigration` enabled and no
+ * production users, so this single 2→3 step establishes the complete v1 schema.
  */
 val MIGRATION_2_3 =
     object : Migration(2, 3) {
@@ -40,6 +44,12 @@ val MIGRATION_2_3 =
             )
             db.execSQL(
                 "ALTER TABLE recipes ADD COLUMN is_meal_prep INTEGER NOT NULL DEFAULT 0",
+            )
+            db.execSQL(
+                "ALTER TABLE diary_entries ADD COLUMN food_snapshot TEXT DEFAULT NULL",
+            )
+            db.execSQL(
+                "ALTER TABLE diary_entries ADD COLUMN recipe_snapshot TEXT DEFAULT NULL",
             )
         }
     }

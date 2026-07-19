@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.food.presentation.search
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.FoodId
@@ -21,7 +22,9 @@ import kotlinx.coroutines.launch
 
 class FoodSearchViewModel(
     private val repository: FoodRepository,
+    savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
+    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")
     private val _state = MutableStateFlow(FoodSearchState())
     val state = _state.asStateFlow()
 
@@ -45,8 +48,32 @@ class FoodSearchViewModel(
 
             FoodSearchAction.OnSearchOnlineClick -> searchOnline()
 
-            is FoodSearchAction.OnFoodClick ->
-                viewModelScope.launch { _events.send(FoodSearchEvent.NavigateToDetail(action.foodId)) }
+            is FoodSearchAction.OnFoodClick -> {
+                if (addToDiaryDate != null) {
+                    _state.update { it.copy(pendingAddFoodId = action.foodId) }
+                } else {
+                    viewModelScope.launch { _events.send(FoodSearchEvent.NavigateToDetail(action.foodId)) }
+                }
+            }
+
+            FoodSearchAction.OnDismissAddToDiary ->
+                _state.update { it.copy(pendingAddFoodId = null) }
+
+            is FoodSearchAction.OnConfirmAddToDiary -> {
+                val foodId = _state.value.pendingAddFoodId ?: return
+                val date = addToDiaryDate ?: return
+                _state.update { it.copy(pendingAddFoodId = null) }
+                viewModelScope.launch {
+                    _events.send(
+                        FoodSearchEvent.AddToDiary(
+                            foodId = foodId,
+                            date = date,
+                            slot = action.slot,
+                            amountGrams = action.amountGrams,
+                        ),
+                    )
+                }
+            }
 
             is FoodSearchAction.OnToggleFavorite ->
                 viewModelScope.launch { repository.toggleFavorite(FoodId(action.foodId)) }

@@ -12,7 +12,11 @@ import com.example.ezmakro.feature.food.presentation.search.FoodSearchRoot
 import kotlinx.serialization.Serializable
 
 @Serializable
-object FoodSearch
+data class FoodSearch(
+    /** When set, selecting a food adds it to the diary for this date instead of
+     *  opening the detail screen (cross-feature "add to diary" contract). */
+    val addToDiaryDate: String? = null,
+)
 
 @Serializable
 data class FoodDetail(
@@ -31,6 +35,7 @@ object BarcodeScan
 fun NavGraphBuilder.foodGraph(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
+    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
 ) {
     navigation<FoodSearch>(startDestination = FoodSearch) {
         composable<FoodSearch> {
@@ -38,6 +43,7 @@ fun NavGraphBuilder.foodGraph(
                 onNavigateToDetail = { foodId -> navController.navigate(FoodDetail(foodId)) },
                 onNavigateToScanner = { navController.navigate(BarcodeScan) },
                 onNavigateToCreate = { barcode -> navController.navigate(FoodEdit(prefillBarcode = barcode)) },
+                onAddToDiary = onAddToDiary,
             )
         }
         composable<FoodDetail> { backStackEntry ->

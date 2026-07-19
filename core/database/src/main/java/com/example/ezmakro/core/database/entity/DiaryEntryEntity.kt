@@ -9,7 +9,15 @@ import androidx.room.PrimaryKey
 /**
  * Persistent form of [com.example.ezmakro.core.domain.model.DiaryEntry].
  *
- * References either a food or a recipe (never both) via the nullable FK columns.
+ * A diary entry is an **immutable historical record** of a logged consumption.
+ * At creation time the relevant descriptive and nutritional data of the
+ * referenced [FoodItem] / [Recipe] is materialized into the JSON snapshot
+ * columns ([foodSnapshot] / [recipeSnapshot]) so the entry never needs to
+ * reload the source entity to render or calculate its historical values.
+ *
+ * The original source id ([foodItemId] / [recipeId]) is retained for
+ * traceability only; it is NOT used to resolve nutrition.
+ *
  * [amountGrams] (raw amount for food, or grams of prepared dish) and
  * [portionCount] are mutually exclusive for recipe entries, matching the domain
  * invariants.
@@ -49,4 +57,8 @@ data class DiaryEntryEntity(
     val amountGrams: Double?,
     @ColumnInfo(name = "portion_count")
     val portionCount: Double?,
+    @ColumnInfo(name = "food_snapshot", defaultValue = "NULL")
+    val foodSnapshot: String? = null,
+    @ColumnInfo(name = "recipe_snapshot", defaultValue = "NULL")
+    val recipeSnapshot: String? = null,
 )

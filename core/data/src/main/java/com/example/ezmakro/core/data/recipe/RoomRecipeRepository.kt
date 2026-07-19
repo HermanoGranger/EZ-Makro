@@ -22,6 +22,8 @@ class RoomRecipeRepository(
 
     override fun observeById(id: RecipeId): Flow<Recipe?> = local.observeById(id)
 
+    override suspend fun getById(id: RecipeId): Result<Recipe?, DataError.Local> = local.getById(id)
+
     override suspend fun save(recipe: Recipe): EmptyResult<DataError.Local> = local.upsertRecipeWithIngredients(recipe)
 
     override suspend fun delete(id: RecipeId): EmptyResult<DataError.Local> = local.deleteById(id)
