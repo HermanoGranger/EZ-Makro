@@ -19,7 +19,7 @@ val recipePresentationModule =
     module {
         viewModelOf(::RecipeListViewModel)
 
-        viewModel { (recipeId: String, isQuickMeal: Boolean) ->
+        viewModel { (recipeId: String?, isQuickMeal: Boolean) ->
             RecipeEditorViewModel(
                 recipeId = recipeId,
                 isQuickMeal = isQuickMeal,

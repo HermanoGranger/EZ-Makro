@@ -29,7 +29,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val date = LocalDate.of(2026, 7, 19)
+    private val date = LocalDate.now()
     private val goal = NutritionGoal(kcal = 2000.0, proteinG = 150.0, fatG = 56.0, carbsG = 225.0, fiberG = 30.0)
     private lateinit var diary: FakeDiaryRepository
     private lateinit var goals: FakeGoalRepository

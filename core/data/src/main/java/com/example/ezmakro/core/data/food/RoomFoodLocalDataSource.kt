@@ -9,7 +9,9 @@ import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 /**
@@ -36,19 +38,21 @@ class RoomFoodLocalDataSource(
         runCatchingLocal { dao.getByBarcode(barcode)?.toFoodItem() }
 
     override fun searchByName(query: String): Flow<List<FoodItem>> =
-        dao.observeAll().map {
-            val normalized = query.trim().lowercase()
-            if (normalized.isEmpty()) {
-                emptyList()
-            } else {
-                val rowIds = dao.searchRowIds(ftsQuery(normalized))
-                if (rowIds.isEmpty()) {
+        dao
+            .observeAll()
+            .map {
+                val normalized = query.trim().lowercase()
+                if (normalized.isEmpty()) {
                     emptyList()
                 } else {
-                    dao.getByRowIds(rowIds).map { entity -> entity.toFoodItem() }
+                    val rowIds = dao.searchRowIds(ftsQuery(normalized))
+                    if (rowIds.isEmpty()) {
+                        emptyList()
+                    } else {
+                        dao.getByRowIds(rowIds).map { entity -> entity.toFoodItem() }
+                    }
                 }
-            }
-        }
+            }.flowOn(Dispatchers.IO)
 
     override suspend fun upsert(foodItem: FoodItem): EmptyResult<DataError.Local> =
         runCatchingLocal { dao.upsertFood(foodItem) }

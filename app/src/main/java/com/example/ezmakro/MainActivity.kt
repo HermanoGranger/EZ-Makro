@@ -26,6 +26,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.example.ezmakro.core.designsystem.theme.EZMakroTheme
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
@@ -37,19 +38,23 @@ import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
+import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.Goals
+import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.dashboard.presentation.navigation.Dashboard
 import com.example.ezmakro.feature.dashboard.presentation.navigation.dashboardGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.Diary
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
-import com.example.ezmakro.feature.food.presentation.navigation.Food
-import com.example.ezmakro.feature.food.presentation.navigation.FoodSearch
+import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
+import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH
+import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH_PARAM_DATE
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
-import com.example.ezmakro.feature.recipes.presentation.navigation.RecipeList
+import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_LIST
+import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES
+import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES_PARAM_DATE
 import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import java.time.LocalDate
-import com.example.ezmakro.feature.recipes.presentation.navigation.Recipe as RecipeRoute
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,8 +96,8 @@ class MainActivity : ComponentActivity() {
             listOf(
                 BottomNavItem(Dashboard, R.string.dashboard_title, R.drawable.ic_dashboard),
                 BottomNavItem(Diary, R.string.diary_title, R.drawable.ic_diary),
-                BottomNavItem(Food, R.string.food_title, R.drawable.ic_food),
-                BottomNavItem(RecipeRoute, R.string.recipe_title, R.drawable.ic_recipe),
+                BottomNavItem(ROUTE_FOOD, R.string.food_title, R.drawable.ic_food),
+                BottomNavItem(ROUTE_RECIPES, R.string.recipe_title, R.drawable.ic_recipe),
             )
         NavigationBar {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -101,16 +106,28 @@ class MainActivity : ComponentActivity() {
                 val selected =
                     currentDestination
                         ?.hierarchy
-                        ?.any { it.hasRoute(item.route::class) } == true
+                        ?.any { dest ->
+                            when (val route = item.route) {
+                                is String -> dest.route == route
+                                else -> dest.hasRoute(route::class)
+                            }
+                        } == true
                 NavigationBarItem(
                     selected = selected,
                     onClick = {
-                        navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        val navOpts =
+                            navOptions {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
+                        when (val route = item.route) {
+                            is String -> navController.navigate(route, navOpts, null)
+                            else ->
+                                @Suppress("UNCHECKED_CAST")
+                                navController.navigate(route, navOpts, null)
                         }
                     },
                     icon = {
@@ -148,15 +165,15 @@ class MainActivity : ComponentActivity() {
                         restoreState = true
                     }
                 },
-                onNavigateToGoals = { /* Phase 9: navigate to goals */ },
+                onNavigateToGoals = { navController.navigate(Goals) },
             )
             diaryGraph(
                 navController = navController,
                 onNavigateToAddFood = { date ->
-                    navController.navigate(FoodSearch(addToDiaryDate = date))
+                    navController.navigate("$ROUTE_SEARCH?$ROUTE_SEARCH_PARAM_DATE=$date")
                 },
                 onNavigateToAddRecipe = { date ->
-                    navController.navigate(RecipeList(addToDiaryDate = date))
+                    navController.navigate("$ROUTE_LIST?$ROUTE_RECIPES_PARAM_DATE=$date")
                 },
             )
             foodGraph(
@@ -169,6 +186,7 @@ class MainActivity : ComponentActivity() {
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addRecipeToDiary,
             )
+            goalsGraph(onNavigateBack = onNavigateBack)
         }
     }
 

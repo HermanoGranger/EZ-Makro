@@ -1,12 +1,13 @@
 package com.example.ezmakro.feature.dashboard.presentation.di
 
 import com.example.ezmakro.feature.dashboard.presentation.DashboardViewModel
+import com.example.ezmakro.feature.dashboard.presentation.goals.GoalsViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 /**
- * Wires the Phase 8 dashboard presentation layer. The ViewModel receives the
- * diary and goal repositories (core-domain) via Koin.
+ * Wires the dashboard + goals presentation layer. ViewModels receive their
+ * repositories (core-domain) via Koin.
  */
 val dashboardPresentationModule =
     module {
@@ -16,4 +17,5 @@ val dashboardPresentationModule =
                 goalRepository = get(),
             )
         }
+        viewModel { GoalsViewModel(repository = get()) }
     }
