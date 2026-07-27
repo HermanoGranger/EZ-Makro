@@ -100,7 +100,7 @@ fun QuickAddScreen(
 
             SlotDropdown(state.slot) { onAction(QuickAddAction.OnSlotChange(it)) }
 
-            state.error?.let { Text(it) }
+            state.error?.let { Text(it.asString()) }
 
             Button(
                 onClick = { onAction(QuickAddAction.OnSaveClick) },

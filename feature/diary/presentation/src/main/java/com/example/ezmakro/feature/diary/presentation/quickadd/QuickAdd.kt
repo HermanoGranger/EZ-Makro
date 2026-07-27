@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
+import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.feature.diary.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +26,7 @@ data class QuickAddState(
     val amountGrams: String = "",
     val slot: MealSlot = MealSlot.BREAKFAST,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    val error: UiText? = null,
 )
 
 sealed interface QuickAddAction {
@@ -98,12 +100,14 @@ class QuickAddViewModel(
     private fun save() {
         val s = _state.value
         if (s.name.isBlank()) {
-            _state.update { it.copy(error = "Name darf nicht leer sein") }
+            val errorMsg = UiText.StringResource(R.string.quick_add_error_name)
+            _state.update { it.copy(error = errorMsg) }
             return
         }
         val amount = s.amountGrams.toDoubleOrNull()
         if (amount == null || amount <= 0.0) {
-            _state.update { it.copy(error = "Menge muss größer als 0 sein") }
+            val errorMsg = UiText.StringResource(R.string.quick_add_error_amount)
+            _state.update { it.copy(error = errorMsg) }
             return
         }
         _state.update { it.copy(isSaving = true) }
@@ -125,7 +129,10 @@ class QuickAddViewModel(
                 )
             when (result) {
                 is Result.Success -> _events.send(QuickAddEvent.Saved)
-                is Result.Error -> _state.update { it.copy(isSaving = false, error = "Speichern fehlgeschlagen") }
+                is Result.Error -> {
+                    val errorMsg = UiText.StringResource(R.string.quick_add_error_save)
+                    _state.update { it.copy(isSaving = false, error = errorMsg) }
+                }
             }
         }
     }

@@ -9,8 +9,10 @@ import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.repository.DiaryRepository
+import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
+import com.example.ezmakro.core.domain.result.Result
 import java.time.LocalDate
 import java.util.UUID
 
@@ -25,6 +27,7 @@ import java.util.UUID
  */
 class QuickAddUseCase(
     private val repository: DiaryRepository,
+    private val foodRepository: FoodRepository,
 ) {
     suspend operator fun invoke(
         name: String,
@@ -53,6 +56,11 @@ class QuickAddUseCase(
                 cachedStatus = CachedFoodItemStatus.Original,
                 originalSnapshot = null,
             )
+        when (foodRepository.saveUserEdit(food)) {
+            is Result.Error -> return Result.Error(DataError.Local.UNKNOWN)
+            is Result.Success -> { /* proceed */ }
+        }
+
         val entry =
             DiaryEntry(
                 id = DiaryEntryId(UUID.randomUUID().toString()),

@@ -66,7 +66,7 @@ private fun NavGraphBuilder.listComposable(
     onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit,
 ) {
     composable(
-        route = ROUTE_LIST,
+        route = "$ROUTE_LIST?$ROUTE_RECIPES_PARAM_DATE={$ROUTE_RECIPES_PARAM_DATE}",
         arguments =
             listOf(
                 navArgument(ROUTE_RECIPES_PARAM_DATE) {

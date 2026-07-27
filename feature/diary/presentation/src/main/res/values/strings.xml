@@ -31,4 +31,5 @@
     <string name="quick_add_save">Speichern</string>
     <string name="quick_add_error_name">Name darf nicht leer sein</string>
     <string name="quick_add_error_amount">Menge muss größer als 0 sein</string>
+    <string name="quick_add_error_save">Speichern fehlgeschlagen</string>
 </resources>

@@ -86,7 +86,7 @@ private fun NavGraphBuilder.searchComposable(
     onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit,
 ) {
     composable(
-        route = ROUTE_SEARCH,
+        route = "$ROUTE_SEARCH?$ROUTE_SEARCH_PARAM_DATE={$ROUTE_SEARCH_PARAM_DATE}",
         arguments =
             listOf(
                 navArgument(ROUTE_SEARCH_PARAM_DATE) {

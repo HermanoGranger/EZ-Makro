@@ -1,5 +1,7 @@
 package com.example.ezmakro.feature.diary.presentation.di
 
+import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
+import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
@@ -27,8 +29,10 @@ val diaryPresentationModule =
         viewModel { HistoryViewModel(get()) }
         viewModel { QuickAddViewModel(get(), get()) }
 
+        factory { AddFoodToDiaryUseCase(get()) }
+        factory { AddRecipeToDiaryUseCase(get()) }
         factory { CopyYesterdayUseCase(get()) }
         factory { DeleteDiaryEntryUseCase(get()) }
         factory { GetHistoryUseCase(get()) }
-        factory { QuickAddUseCase(get()) }
+        factory { QuickAddUseCase(get(), get()) }
     }

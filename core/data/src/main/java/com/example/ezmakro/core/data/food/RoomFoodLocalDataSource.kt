@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Room-backed Single Source of Truth for foods (ADR-002). Wraps [FoodItemDao],
@@ -104,16 +105,18 @@ class RoomFoodLocalDataSource(
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */
 @Suppress("TooGenericExceptionCaught")
-private inline fun <T> runCatchingLocal(block: () -> T): Result<T, DataError.Local> =
-    try {
-        Result.Success(block())
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        com.example.ezmakro.core.data.logging.AppLogger.e(
-            "Local data error",
-            e,
-            tag = "RoomFoodLocalDataSource",
-        )
-        Result.Error(DataError.Local.UNKNOWN)
+private suspend inline fun <T> runCatchingLocal(crossinline block: () -> T): Result<T, DataError.Local> =
+    withContext(Dispatchers.IO) {
+        try {
+            Result.Success(block())
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            com.example.ezmakro.core.data.logging.AppLogger.e(
+                "Local data error",
+                e,
+                tag = "RoomFoodLocalDataSource",
+            )
+            Result.Error(DataError.Local.UNKNOWN)
+        }
     }
