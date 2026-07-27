@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.example.ezmakro.core.domain.barcode.BarcodeScanner
@@ -14,16 +16,10 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-/**
- * CameraX + ML Kit implementation of [BarcodeScanner]. Collecting [scan] binds
- * an [ImageAnalysis] use case to [lifecycleOwner] and emits detected raw barcode
- * values; cancelling the collection unbinds the camera and releases resources.
- *
- * Camera permission handling is the caller's responsibility (feature UI, Phase 5).
- */
 class MlKitBarcodeScanner(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
+    private val previewView: PreviewView? = null,
 ) : BarcodeScanner {
     private val scanner = BarcodeScanning.getClient()
 
@@ -58,11 +54,13 @@ class MlKitBarcodeScanner(
             }
 
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
-                lifecycleOwner,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                analysis,
-            )
+            if (previewView != null) {
+                val preview = Preview.Builder().build()
+                preview.surfaceProvider = previewView.surfaceProvider
+                cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, analysis, preview)
+            } else {
+                cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
+            }
 
             awaitClose {
                 analysis.clearAnalyzer()

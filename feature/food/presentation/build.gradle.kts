@@ -38,6 +38,8 @@ dependencies {
     implementation(libs.findLibrary("androidx-lifecycle-runtime-compose").get())
     implementation(libs.findLibrary("androidx-navigation-compose").get())
 
+    implementation(libs.findBundle("camerax").get())
+
     testImplementation(libs.findLibrary("junit5-jupiter-aggregator").get())
     testImplementation(libs.findLibrary("assertk").get())
     testImplementation(libs.findLibrary("turbine").get())

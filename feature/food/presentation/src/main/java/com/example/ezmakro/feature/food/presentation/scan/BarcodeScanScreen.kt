@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,10 +20,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,8 +71,15 @@ fun BarcodeScanRoot(
         }
     }
 
-    if (state.hasCameraPermission) {
-        val scanner: BarcodeScanner = koinInject { parametersOf(context, lifecycleOwner) }
+    val previewView =
+        if (state.hasCameraPermission) {
+            remember { PreviewView(context) }
+        } else {
+            null
+        }
+
+    if (previewView != null) {
+        val scanner: BarcodeScanner = koinInject { parametersOf(context, lifecycleOwner, previewView) }
         LaunchedEffect(scanner) {
             scanner.scan().collect { barcode ->
                 viewModel.onAction(BarcodeScanAction.OnBarcodeDetected(barcode))
@@ -77,7 +87,11 @@ fun BarcodeScanRoot(
         }
     }
 
-    BarcodeScanScreen(state = state, onAction = viewModel::onAction)
+    BarcodeScanScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        previewView = previewView,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +99,7 @@ fun BarcodeScanRoot(
 fun BarcodeScanScreen(
     state: BarcodeScanState,
     onAction: (BarcodeScanAction) -> Unit,
+    previewView: PreviewView? = null,
 ) {
     Scaffold(
         topBar = {
@@ -98,19 +113,26 @@ fun BarcodeScanScreen(
             )
         },
     ) { padding ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentAlignment = Alignment.Center,
-        ) {
-            when {
-                !state.hasCameraPermission ->
-                    Text(stringResource(R.string.food_scan_permission_required))
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (previewView != null) {
+                AndroidView(
+                    factory = { previewView },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
 
-                state.isLookingUp -> CircularProgressIndicator()
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                when {
+                    !state.hasCameraPermission ->
+                        Text(stringResource(R.string.food_scan_permission_required))
 
-                state.error != null -> Text(state.error.asString())
+                    state.isLookingUp -> CircularProgressIndicator()
 
-                else -> Text(stringResource(R.string.food_scan_title))
+                    state.error != null -> Text(state.error.asString())
+                }
             }
         }
     }
