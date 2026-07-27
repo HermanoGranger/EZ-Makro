@@ -41,6 +41,8 @@
     <string name="recipe_editor_error_no_ingredients">Mindestens eine Zutat nötig</string>
     <string name="recipe_editor_error_ingredient_weight">Zutat braucht Rohgewicht oder Anzahl</string>
 
+    <string name="recipe_editor_error_save_failed">Fehler beim Speichern</string>
+
     <string name="recipe_ingredient_picker_title">Zutat wählen</string>
     <string name="recipe_ingredient_picker_empty">Keine Lebensmittel</string>
 </resources>

@@ -74,12 +74,13 @@ class RoomRecipeLocalDataSource(
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */
 @Suppress("TooGenericExceptionCaught")
-private inline fun <T> runCatchingLocal(block: () -> T): Result<T, DataError.Local> =
+private inline suspend fun <T> runCatchingLocal(block: suspend () -> T): Result<T, DataError.Local> =
     try {
         Result.Success(block())
     } catch (e: kotlinx.coroutines.CancellationException) {
         throw e
     } catch (e: Exception) {
+        android.util.Log.e("RoomRecipeLocalDataSource", "Local recipe data error", e)
         AppLogger.e("Local recipe data error", e, tag = "RoomRecipeLocalDataSource")
         Result.Error(DataError.Local.UNKNOWN)
     }

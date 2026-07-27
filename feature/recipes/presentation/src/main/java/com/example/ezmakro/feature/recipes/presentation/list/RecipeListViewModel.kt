@@ -27,7 +27,7 @@ class RecipeListViewModel(
     private val repository: RecipeRepository,
     savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
-    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")
+    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")?.takeIf { it.isNotEmpty() }
     private val _state = MutableStateFlow(RecipeListState(isLoading = true))
     val state = _state.asStateFlow()
 

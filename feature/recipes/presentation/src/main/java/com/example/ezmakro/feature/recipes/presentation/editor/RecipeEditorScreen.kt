@@ -151,6 +151,7 @@ private fun EditorForm(
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text(stringResource(R.string.recipe_editor_save)) }
+            state.saveError?.let { Text(text = it.asString()) }
         }
     }
 }

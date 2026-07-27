@@ -35,6 +35,7 @@ import java.util.UUID
  * @param isQuickMeal when true, renders the reduced "Schnell-Kombo" UI (no
  *   meal-prep / scale fields), still persisted as a full [Recipe].
  */
+@Suppress("TooManyFunctions")
 class RecipeEditorViewModel(
     private val recipeId: String?,
     private val isQuickMeal: Boolean,
@@ -190,7 +191,7 @@ class RecipeEditorViewModel(
         crossinline update: (RecipeEditorState) -> RecipeEditorState,
     ) {
         savedStateHandle[key] = value
-        _state.update(update)
+        _state.update { update(it).copy(saveError = null) }
     }
 
     private fun addIngredient(foodId: String) {
@@ -255,34 +256,50 @@ class RecipeEditorViewModel(
             }.launchIn(viewModelScope)
     }
 
-    private suspend fun save() {
+    private fun save() {
         val s = _state.value
         if (!validateForSave(s)) return
-        val name = s.name.trim()
-        val scale = requireNotNull(s.scale.parsePositiveDouble())
-        val portions =
-            if (s.calculationMode == RecipeCalculationMode.Weight) {
-                s.portions.parsePositiveInt() ?: 1
-            } else {
-                requireNotNull(s.portions.parsePositiveInt())
-            }
-        val fwRaw =
-            if (s.calculationMode == RecipeCalculationMode.Weight) {
-                s.finalWeight.parseNonNegativeDouble()
-            } else {
-                null
-            }
-        val finalWeight = fwRaw?.let { FinalWeight(it) }
-        val ingredients = buildIngredients(s.ingredients)
-        if (ingredients == null) return
+        _state.update { it.copy(isSaving = true, saveError = null) }
 
-        viewModelScope.launch {
-            _state.update { it.copy(isSaving = true) }
+        viewModelScope.launch { executeSave(s) }
+    }
+
+    private suspend fun executeSave(s: RecipeEditorState) {
+        try {
+            val scale = s.scale.parsePositiveDouble()
+            val portions =
+                if (s.calculationMode == RecipeCalculationMode.Weight) {
+                    s.portions.parsePositiveInt() ?: 1
+                } else {
+                    s.portions.parsePositiveInt()
+                }
+            if (scale == null || portions == null) {
+                _state.update {
+                    it.copy(
+                        isSaving = false,
+                        numberError = UiText.StringResource(R.string.recipe_editor_error_invalid_number),
+                    )
+                }
+                return
+            }
+            val fwRaw =
+                if (s.calculationMode == RecipeCalculationMode.Weight) {
+                    s.finalWeight.parseNonNegativeDouble()
+                } else {
+                    null
+                }
+            val finalWeight = fwRaw?.let { FinalWeight(it) }
+            val ingredients = buildIngredients(s.ingredients)
+            if (ingredients == null) {
+                _state.update { it.copy(isSaving = false) }
+                return
+            }
+
             val id = recipeId ?: UUID.randomUUID().toString()
             val recipe =
                 Recipe(
                     id = RecipeId(id),
-                    name = name,
+                    name = s.name.trim(),
                     ingredients = ingredients,
                     finalWeight = finalWeight,
                     portions = portions,
@@ -290,14 +307,26 @@ class RecipeEditorViewModel(
                     category = s.category.trim().ifBlank { null },
                     isMealPrep = if (s.isQuickMeal) false else s.isMealPrep,
                 )
-            recipeRepository
-                .save(recipe)
-                .onSuccess {
-                    _state.update { it.copy(isSaving = false) }
-                    _events.send(RecipeEditorEvent.Saved)
-                }.onFailure {
-                    _state.update { it.copy(isSaving = false) }
+            val result = recipeRepository.save(recipe)
+            result.onSuccess {
+                _state.update { it.copy(isSaving = false) }
+                _events.send(RecipeEditorEvent.Saved)
+            }
+            result.onFailure {
+                _state.update {
+                    it.copy(
+                        isSaving = false,
+                        saveError = UiText.DynamicString("Fehler beim Speichern: Datenbank-Fehler"),
+                    )
                 }
+            }
+        } catch (e: Exception) {
+            _state.update {
+                it.copy(
+                    isSaving = false,
+                    saveError = UiText.DynamicString("Fehler: ${e.message ?: e.javaClass.simpleName}"),
+                )
+            }
         }
     }
 

@@ -24,7 +24,7 @@ class FoodSearchViewModel(
     private val repository: FoodRepository,
     savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
-    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")
+    private val addToDiaryDate: String? = savedStateHandle.get<String>("addToDiaryDate")?.takeIf { it.isNotEmpty() }
     private val _state = MutableStateFlow(FoodSearchState())
     val state = _state.asStateFlow()
 

@@ -23,20 +23,20 @@ interface RecipeDao {
     fun upsertIngredients(ingredients: List<RecipeIngredientEntity>)
 
     @Delete
-    fun deleteRecipe(recipe: RecipeEntity)
+    suspend fun deleteRecipe(recipe: RecipeEntity)
 
     @Query("SELECT * FROM recipes WHERE id = :id")
-    fun getById(id: String): RecipeEntity?
+    suspend fun getById(id: String): RecipeEntity?
 
     @Query("SELECT * FROM recipes ORDER BY name COLLATE NOCASE")
     fun observeAll(): Flow<List<RecipeEntity>>
 
     @Query("SELECT * FROM recipe_ingredients WHERE recipe_id = :recipeId")
-    fun getIngredients(recipeId: String): List<RecipeIngredientEntity>
+    suspend fun getIngredients(recipeId: String): List<RecipeIngredientEntity>
 
     /** Atomically replace a recipe and its ingredient lines. */
     @Transaction
-    fun upsertRecipeWithIngredients(
+    suspend fun upsertRecipeWithIngredients(
         recipe: RecipeEntity,
         ingredients: List<RecipeIngredientEntity>,
     ) {
