@@ -42,7 +42,7 @@ import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.Goals
 import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.dashboard.presentation.navigation.Dashboard
 import com.example.ezmakro.feature.dashboard.presentation.navigation.dashboardGraph
-import com.example.ezmakro.feature.diary.presentation.navigation.Diary
+import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH
@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
         val items =
             listOf(
                 BottomNavItem(Dashboard, R.string.dashboard_title, R.drawable.ic_dashboard),
-                BottomNavItem(Diary, R.string.diary_title, R.drawable.ic_diary),
+                BottomNavItem(ROUTE_DIARY, R.string.diary_title, R.drawable.ic_diary),
                 BottomNavItem(ROUTE_FOOD, R.string.food_title, R.drawable.ic_food),
                 BottomNavItem(ROUTE_RECIPES, R.string.recipe_title, R.drawable.ic_recipe),
             )
@@ -157,7 +157,7 @@ class MainActivity : ComponentActivity() {
         ) {
             dashboardGraph(
                 onNavigateToDiary = {
-                    navController.navigate(Diary) {
+                    navController.navigate(ROUTE_DIARY) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }
@@ -201,7 +201,7 @@ class MainActivity : ComponentActivity() {
                         food?.let { addUseCase(it, slot, LocalDate.parse(date), amountGrams) }
                     }
             }
-            navController.popBackStack(Diary, inclusive = false)
+            navController.popBackStack(ROUTE_DIARY, inclusive = false)
         }
 
     private fun makeAddRecipeToDiary(navController: NavHostController): (String, String, MealSlot, Double) -> Unit =
@@ -215,7 +215,7 @@ class MainActivity : ComponentActivity() {
                         recipe?.let { addUseCase(it, slot, LocalDate.parse(date), portionCount = portions) }
                     }
             }
-            navController.popBackStack(Diary, inclusive = false)
+            navController.popBackStack(ROUTE_DIARY, inclusive = false)
         }
 }
 

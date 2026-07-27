@@ -72,7 +72,7 @@ class QuickAddViewModel(
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val date: LocalDate =
-        savedStateHandle.get<String>("date")?.let { LocalDate.parse(it) }
+        savedStateHandle.get<String>("date")?.takeIf { it.isNotEmpty() }?.let { LocalDate.parse(it) }
             ?: LocalDate.now()
 
     private val _state = MutableStateFlow(QuickAddState())

@@ -39,7 +39,7 @@ class DiaryDayViewModel(
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val date: LocalDate =
-        savedStateHandle.get<String>(ARG_DATE)?.let { LocalDate.parse(it) }
+        savedStateHandle.get<String>(ARG_DATE)?.takeIf { it.isNotEmpty() }?.let { LocalDate.parse(it) }
             ?: LocalDate.now()
 
     private val _state = MutableStateFlow(DiaryDayState(date = date))
