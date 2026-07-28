@@ -60,19 +60,19 @@ private class FakeRecipeDao : RecipeDao {
         }
     }
 
-    override fun deleteRecipe(recipe: RecipeEntity) {
+    override suspend fun deleteRecipe(recipe: RecipeEntity) {
         recipes.value = recipes.value - recipe.id
         ingredients.value = ingredients.value - recipe.id
     }
 
-    override fun getById(id: String): RecipeEntity? = recipes.value[id]
+    override suspend fun getById(id: String): RecipeEntity? = recipes.value[id]
 
     override fun observeAll(): Flow<List<RecipeEntity>> = recipes.map { it.values.toList() }
 
-    override fun getIngredients(recipeId: String): List<RecipeIngredientEntity> =
+    override suspend fun getIngredients(recipeId: String): List<RecipeIngredientEntity> =
         ingredients.value[recipeId] ?: emptyList()
 
-    override fun upsertRecipeWithIngredients(
+    override suspend fun upsertRecipeWithIngredients(
         recipe: RecipeEntity,
         ings: List<RecipeIngredientEntity>,
     ) {

@@ -266,47 +266,13 @@ class RecipeEditorViewModel(
 
     private suspend fun executeSave(s: RecipeEditorState) {
         try {
-            val scale = s.scale.parsePositiveDouble()
-            val portions =
-                if (s.calculationMode == RecipeCalculationMode.Weight) {
-                    s.portions.parsePositiveInt() ?: 1
-                } else {
-                    s.portions.parsePositiveInt()
-                }
-            if (scale == null || portions == null) {
-                _state.update {
-                    it.copy(
-                        isSaving = false,
-                        numberError = UiText.StringResource(R.string.recipe_editor_error_invalid_number),
-                    )
-                }
-                return
-            }
-            val fwRaw =
-                if (s.calculationMode == RecipeCalculationMode.Weight) {
-                    s.finalWeight.parseNonNegativeDouble()
-                } else {
-                    null
-                }
-            val finalWeight = fwRaw?.let { FinalWeight(it) }
+            val parsed = parseSaveInput(s) ?: return
             val ingredients = buildIngredients(s.ingredients)
             if (ingredients == null) {
                 _state.update { it.copy(isSaving = false) }
                 return
             }
-
-            val id = recipeId ?: UUID.randomUUID().toString()
-            val recipe =
-                Recipe(
-                    id = RecipeId(id),
-                    name = s.name.trim(),
-                    ingredients = ingredients,
-                    finalWeight = finalWeight,
-                    portions = portions,
-                    scale = scale,
-                    category = s.category.trim().ifBlank { null },
-                    isMealPrep = if (s.isQuickMeal) false else s.isMealPrep,
-                )
+            val recipe = buildRecipe(s, parsed, ingredients)
             val result = recipeRepository.save(recipe)
             result.onSuccess {
                 _state.update { it.copy(isSaving = false) }
@@ -320,7 +286,7 @@ class RecipeEditorViewModel(
                     )
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: IllegalArgumentException) {
             _state.update {
                 it.copy(
                     isSaving = false,
@@ -328,6 +294,56 @@ class RecipeEditorViewModel(
                 )
             }
         }
+    }
+
+    private data class ParsedSaveInput(
+        val scale: Double,
+        val portions: Int,
+        val finalWeight: FinalWeight?,
+    )
+
+    private fun parseSaveInput(s: RecipeEditorState): ParsedSaveInput? {
+        val scale = s.scale.parsePositiveDouble()
+        val portions =
+            if (s.calculationMode == RecipeCalculationMode.Weight) {
+                s.portions.parsePositiveInt() ?: 1
+            } else {
+                s.portions.parsePositiveInt()
+            }
+        if (scale == null || portions == null) {
+            _state.update {
+                it.copy(
+                    isSaving = false,
+                    numberError = UiText.StringResource(R.string.recipe_editor_error_invalid_number),
+                )
+            }
+            return null
+        }
+        val fwRaw =
+            if (s.calculationMode == RecipeCalculationMode.Weight) {
+                s.finalWeight.parseNonNegativeDouble()
+            } else {
+                null
+            }
+        return ParsedSaveInput(scale, portions, fwRaw?.let { FinalWeight(it) })
+    }
+
+    private fun buildRecipe(
+        s: RecipeEditorState,
+        parsed: ParsedSaveInput,
+        ingredients: List<RecipeIngredient>,
+    ): Recipe {
+        val id = recipeId ?: UUID.randomUUID().toString()
+        return Recipe(
+            id = RecipeId(id),
+            name = s.name.trim(),
+            ingredients = ingredients,
+            finalWeight = parsed.finalWeight,
+            portions = parsed.portions,
+            scale = parsed.scale,
+            category = s.category.trim().ifBlank { null },
+            isMealPrep = if (s.isQuickMeal) false else s.isMealPrep,
+        )
     }
 
     private fun validateForSave(s: RecipeEditorState): Boolean {
