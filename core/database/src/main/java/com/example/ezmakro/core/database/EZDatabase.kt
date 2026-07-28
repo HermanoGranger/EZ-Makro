@@ -26,9 +26,10 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  * - 2: Phase 5 — `food_items.is_favorite` and `food_items.last_used_at` columns
  *   plus their indices, for the favorites and recently-used sections.
  * - 3: Phase 6 — `recipes.category` and `recipes.is_meal_prep` columns.
- * - 3 (Phase 7): the diary's immutable JSON snapshots (`food_snapshot`,
- *   `recipe_snapshot`) are part of the v1 diary design and were added before any
- *   release, so no migration was needed — the schema is simply the complete v1.
+ *   Phase 7 — diary immutable JSON snapshots (`food_snapshot`,
+ *   `recipe_snapshot`) added as part of the v1 diary design.
+ * - 4: Phase 9 Step 1 — makes the five per-100 g nutrition columns nullable
+ *   in `food_items` so user-created foods can omit nutrition data.
  *
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
@@ -42,7 +43,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 3,
+    version = 4,
 )
 @TypeConverters(ScalarConverters::class, JsonConverters::class)
 abstract class EZDatabase : RoomDatabase() {

@@ -74,7 +74,7 @@ class RoomRecipeLocalDataSource(
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */
 @Suppress("TooGenericExceptionCaught")
-private inline suspend fun <T> runCatchingLocal(block: suspend () -> T): Result<T, DataError.Local> =
+private suspend inline fun <T> runCatchingLocal(block: suspend () -> T): Result<T, DataError.Local> =
     try {
         Result.Success(block())
     } catch (e: kotlinx.coroutines.CancellationException) {

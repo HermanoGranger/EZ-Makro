@@ -28,40 +28,37 @@ internal fun String.toCachedStatus(): CachedFoodItemStatus =
  * ADR-004 [FoodItem.originalSnapshot] from the `orig_*` columns when present.
  */
 fun FoodItemEntity.toFoodItem(): FoodItem {
-    val snapshotName = origName
     val snapshot =
-        if (snapshotName != null) {
+        origName?.let { name ->
             FoodItem(
                 id = FoodId(id),
-                name = snapshotName,
+                name = name,
                 barcode = origBarcode,
                 nutritionPer100g =
-                    NutritionValues(
-                        kcal = origNutriKcal ?: 0.0,
-                        proteinG = origNutriProteinG ?: 0.0,
-                        fatG = origNutriFatG ?: 0.0,
-                        carbsG = origNutriCarbsG ?: 0.0,
-                        fiberG = origNutriFiberG ?: 0.0,
+                    nutritionFromColumns(
+                        origNutriKcal,
+                        origNutriProteinG,
+                        origNutriFatG,
+                        origNutriCarbsG,
+                        origNutriFiberG,
                     ),
                 servingUnit = origServingUnit(),
                 isUserCreated = origIsUserCreated ?: false,
                 cachedStatus = CachedFoodItemStatus.Original,
                 originalSnapshot = null,
             )
-        } else {
-            null
         }
     return FoodItem(
         id = FoodId(id),
         name = name,
         barcode = barcode,
         nutritionPer100g =
-            NutritionValues(
-                kcal = nutriKcal,
-                proteinG = nutriProteinG,
-                fatG = nutriFatG,
-                carbsG = nutriCarbsG,
-                fiberG = nutriFiberG,
+            nutritionFromColumns(
+                nutriKcal,
+                nutriProteinG,
+                nutriFatG,
+                nutriCarbsG,
+                nutriFiberG,
             ),
         servingUnit = servingUnit(),
         isUserCreated = isUserCreated,
@@ -69,6 +66,29 @@ fun FoodItemEntity.toFoodItem(): FoodItem {
         originalSnapshot = snapshot,
         isFavorite = isFavorite,
         lastUsedAt = lastUsedAt,
+    )
+}
+
+private fun nutritionFromColumns(
+    kcal: Double?,
+    proteinG: Double?,
+    fatG: Double?,
+    carbsG: Double?,
+    fiberG: Double?,
+): NutritionValues? {
+    val hasAny =
+        kcal != null ||
+            proteinG != null ||
+            fatG != null ||
+            carbsG != null ||
+            fiberG != null
+    if (!hasAny) return null
+    return NutritionValues(
+        kcal = kcal ?: 0.0,
+        proteinG = proteinG ?: 0.0,
+        fatG = fatG ?: 0.0,
+        carbsG = carbsG ?: 0.0,
+        fiberG = fiberG ?: 0.0,
     )
 }
 
@@ -83,11 +103,11 @@ fun FoodItemDao.upsertFood(item: FoodItem) {
         id = item.id.value,
         name = item.name,
         barcode = item.barcode,
-        nutriKcal = item.nutritionPer100g.kcal,
-        nutriProteinG = item.nutritionPer100g.proteinG,
-        nutriFatG = item.nutritionPer100g.fatG,
-        nutriCarbsG = item.nutritionPer100g.carbsG,
-        nutriFiberG = item.nutritionPer100g.fiberG,
+        nutriKcal = item.nutritionPer100g?.kcal,
+        nutriProteinG = item.nutritionPer100g?.proteinG,
+        nutriFatG = item.nutritionPer100g?.fatG,
+        nutriCarbsG = item.nutritionPer100g?.carbsG,
+        nutriFiberG = item.nutritionPer100g?.fiberG,
         servingLabel = item.servingUnit?.label,
         servingGramsEquivalent = item.servingUnit?.gramsEquivalent,
         isUserCreated = item.isUserCreated,

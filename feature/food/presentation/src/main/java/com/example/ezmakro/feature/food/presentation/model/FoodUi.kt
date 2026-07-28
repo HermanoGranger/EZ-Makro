@@ -34,22 +34,25 @@ enum class FoodEditStatusUi {
 }
 
 private const val MACRO_DECIMAL_PLACES = 10.0
+private const val DASH = "\u2013"
 
 private fun Double.formatMacro(): String {
     val rounded = Math.round(this * MACRO_DECIMAL_PLACES) / MACRO_DECIMAL_PLACES
     return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
 }
 
+private fun Double?.formatOrDash(): String = this?.formatMacro() ?: DASH
+
 fun FoodItem.toFoodUi(): FoodUi =
     FoodUi(
         id = id.value,
         name = name,
         barcode = barcode,
-        kcalPer100g = nutritionPer100g.kcal.formatMacro(),
-        proteinPer100g = nutritionPer100g.proteinG.formatMacro(),
-        fatPer100g = nutritionPer100g.fatG.formatMacro(),
-        carbsPer100g = nutritionPer100g.carbsG.formatMacro(),
-        fiberPer100g = nutritionPer100g.fiberG.formatMacro(),
+        kcalPer100g = nutritionPer100g?.kcal.formatOrDash(),
+        proteinPer100g = nutritionPer100g?.proteinG.formatOrDash(),
+        fatPer100g = nutritionPer100g?.fatG.formatOrDash(),
+        carbsPer100g = nutritionPer100g?.carbsG.formatOrDash(),
+        fiberPer100g = nutritionPer100g?.fiberG.formatOrDash(),
         servingLabel = servingUnit?.label,
         isUserCreated = isUserCreated,
         isFavorite = isFavorite,

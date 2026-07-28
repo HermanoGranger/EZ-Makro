@@ -88,9 +88,27 @@ class FoodEditViewModelTest {
 
             val saved = repository.savedEdits.single()
             assertEquals("Banana", saved.name)
-            assertEquals(89.0, saved.nutritionPer100g.kcal, 0.0)
+            assertEquals(89.0, saved.nutritionPer100g!!.kcal, 0.0)
             assertEquals(true, saved.isUserCreated)
             assertEquals(CachedFoodItemStatus.Original, saved.cachedStatus)
+        }
+
+    @Test
+    fun saveWithoutPer100g_savesWithNullNutrition() =
+        runTest {
+            val viewModel = newViewModel(foodId = null)
+            viewModel.onAction(FoodEditAction.OnNameChange("Water"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.events.test {
+                val event = awaitItem()
+                assertTrue(event is FoodEditEvent.Saved)
+            }
+
+            val saved = repository.savedEdits.single()
+            assertEquals("Water", saved.name)
+            assertEquals(null, saved.nutritionPer100g)
         }
 
     @Test

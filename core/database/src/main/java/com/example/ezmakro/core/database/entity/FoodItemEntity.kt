@@ -11,7 +11,8 @@ import androidx.room.PrimaryKey
  *
  * [nutritionPer100g] is stored as five explicit columns (not JSON) so it stays
  * queryable and avoids any serialization dependency in the domain module. The
- * ADR-004 original snapshot (untouched OFF payload) is stored as explicit
+ * columns are nullable: `null` means the user did not provide per-100 g values.
+ * The ADR-004 original snapshot (untouched OFF payload) is stored as explicit
  * `orig_*` columns so "reset to original" is always possible.
  */
 @Entity(
@@ -33,15 +34,15 @@ data class FoodItemEntity(
     @ColumnInfo(name = "barcode")
     val barcode: String?,
     @ColumnInfo(name = "nutri_kcal")
-    val nutriKcal: Double,
+    val nutriKcal: Double?,
     @ColumnInfo(name = "nutri_protein_g")
-    val nutriProteinG: Double,
+    val nutriProteinG: Double?,
     @ColumnInfo(name = "nutri_fat_g")
-    val nutriFatG: Double,
+    val nutriFatG: Double?,
     @ColumnInfo(name = "nutri_carbs_g")
-    val nutriCarbsG: Double,
+    val nutriCarbsG: Double?,
     @ColumnInfo(name = "nutri_fiber_g")
-    val nutriFiberG: Double,
+    val nutriFiberG: Double?,
     @ColumnInfo(name = "serving_label")
     val servingLabel: String?,
     @ColumnInfo(name = "serving_grams_equivalent")

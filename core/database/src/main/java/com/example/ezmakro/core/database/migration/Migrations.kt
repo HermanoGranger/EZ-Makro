@@ -54,5 +54,38 @@ val MIGRATION_2_3 =
         }
     }
 
+/**
+ * Phase 9 Step 1: makes the five per-100 g nutrition columns nullable in
+ * `food_items` so user-created foods can be saved without nutrition data.
+ * Existing rows keep their values; the columns simply accept NULL now.
+ */
+val MIGRATION_3_4 =
+    object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val columns =
+                listOf(
+                    "nutri_kcal",
+                    "nutri_protein_g",
+                    "nutri_fat_g",
+                    "nutri_carbs_g",
+                    "nutri_fiber_g",
+                )
+            for (col in columns) {
+                db.execSQL(
+                    "ALTER TABLE food_items RENAME COLUMN $col TO ${col}_old",
+                )
+                db.execSQL(
+                    "ALTER TABLE food_items ADD COLUMN $col REAL",
+                )
+                db.execSQL(
+                    "UPDATE food_items SET $col = ${col}_old",
+                )
+                db.execSQL(
+                    "ALTER TABLE food_items DROP COLUMN ${col}_old",
+                )
+            }
+        }
+    }
+
 /** All migrations, in order, for registration with the Room builder. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)

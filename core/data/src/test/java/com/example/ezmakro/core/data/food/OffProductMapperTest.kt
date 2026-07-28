@@ -36,8 +36,8 @@ class OffProductMapperTest {
         assertThat(food.name).isEqualTo("Haferflocken")
         assertThat(food.barcode).isEqualTo("12345")
         assertThat(food.id.value).isEqualTo("12345")
-        assertThat(food.nutritionPer100g.kcal).isEqualTo(350.0)
-        assertThat(food.nutritionPer100g.fiberG).isEqualTo(8.0)
+        assertThat(food.nutritionPer100g!!.kcal).isEqualTo(350.0)
+        assertThat(food.nutritionPer100g!!.fiberG).isEqualTo(8.0)
         assertThat(food.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
         assertThat(food.originalSnapshot?.name).isEqualTo("Haferflocken")
     }
@@ -66,7 +66,7 @@ class OffProductMapperTest {
 
         val food = dto.toFoodItem()
         requireNotNull(food)
-        assertThat(food.nutritionPer100g.kcal).isCloseTo(100.0, 0.001)
+        assertThat(food.nutritionPer100g!!.kcal).isCloseTo(100.0, 0.001)
     }
 
     @Test
@@ -75,8 +75,8 @@ class OffProductMapperTest {
 
         val food = dto.toFoodItem()
         requireNotNull(food)
-        assertThat(food.nutritionPer100g.kcal).isEqualTo(0.0)
-        assertThat(food.nutritionPer100g.proteinG).isEqualTo(0.0)
+        assertThat(food.nutritionPer100g!!.kcal).isEqualTo(0.0)
+        assertThat(food.nutritionPer100g!!.proteinG).isEqualTo(0.0)
     }
 
     @Test

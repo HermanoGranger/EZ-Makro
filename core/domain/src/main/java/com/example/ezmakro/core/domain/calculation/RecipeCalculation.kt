@@ -14,7 +14,7 @@ import com.example.ezmakro.core.domain.model.RecipeIngredient
  */
 fun RecipeIngredient.nutrition(): NutritionValues {
     val grams = effectiveRawWeight().grams
-    return food.nutritionPer100g * (grams / 100.0)
+    return food.nutritionPer100g?.times(grams / 100.0) ?: NutritionValues.ZERO
 }
 
 /**
@@ -52,7 +52,7 @@ fun Recipe.nutritionPerPortion(): NutritionValues = totalNutrition() * (1.0 / po
  */
 fun FoodItem.nutritionForGrams(amountGrams: Double): NutritionValues {
     require(amountGrams >= 0.0) { "amountGrams must be non-negative" }
-    return nutritionPer100g * (amountGrams / 100.0)
+    return nutritionPer100g?.times(amountGrams / 100.0) ?: NutritionValues.ZERO
 }
 
 /**

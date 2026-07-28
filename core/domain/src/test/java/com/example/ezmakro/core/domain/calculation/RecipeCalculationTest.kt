@@ -20,7 +20,7 @@ import kotlin.test.assertNull
 
 private fun food(
     id: String = "f1",
-    per100g: NutritionValues = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0),
+    per100g: NutritionValues? = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0),
     servingUnit: ServingUnit? = null,
 ): FoodItem =
     FoodItem(
@@ -377,5 +377,18 @@ class RecipeCalculationTest {
             )
         assertEquals("Frühstück", recipe.category)
         assertEquals(true, recipe.isMealPrep)
+    }
+
+    @Test
+    fun `ingredient with null nutritionPer100g returns ZERO`() {
+        val f = food(per100g = null)
+        val ing = ingredient(f, 200.0)
+        assertEquals(NutritionValues.ZERO, ing.nutrition())
+    }
+
+    @Test
+    fun `nutritionForGrams with null nutritionPer100g returns ZERO`() {
+        val f = food(per100g = null)
+        assertEquals(NutritionValues.ZERO, f.nutritionForGrams(150.0))
     }
 }

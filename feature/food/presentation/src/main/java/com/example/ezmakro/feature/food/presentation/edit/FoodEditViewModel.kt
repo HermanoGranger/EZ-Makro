@@ -81,11 +81,11 @@ class FoodEditViewModel(
                 it.copy(
                     name = it.name.ifEmpty { food.name },
                     barcode = it.barcode.ifEmpty { food.barcode.orEmpty() },
-                    kcal = food.nutritionPer100g.kcal.toString(),
-                    protein = food.nutritionPer100g.proteinG.toString(),
-                    fat = food.nutritionPer100g.fatG.toString(),
-                    carbs = food.nutritionPer100g.carbsG.toString(),
-                    fiber = food.nutritionPer100g.fiberG.toString(),
+                    kcal = food.nutritionPer100g?.kcal?.toString() ?: "",
+                    protein = food.nutritionPer100g?.proteinG?.toString() ?: "",
+                    fat = food.nutritionPer100g?.fatG?.toString() ?: "",
+                    carbs = food.nutritionPer100g?.carbsG?.toString() ?: "",
+                    fiber = food.nutritionPer100g?.fiberG?.toString() ?: "",
                 )
             }
         }
@@ -98,12 +98,7 @@ class FoodEditViewModel(
             return
         }
         val nutrition = parseNutrition()
-        if (nutrition == null) {
-            _state.update {
-                it.copy(numberError = UiText.StringResource(R.string.food_edit_error_invalid_number))
-            }
-            return
-        }
+        if (_state.value.numberError != null) return
 
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
@@ -132,24 +127,52 @@ class FoodEditViewModel(
         }
     }
 
-    private fun parseNutrition(): NutritionValues? =
-        try {
-            NutritionValues(
-                kcal = _state.value.kcal.parseNonNegative(),
-                proteinG = _state.value.protein.parseNonNegative(),
-                fatG = _state.value.fat.parseNonNegative(),
-                carbsG = _state.value.carbs.parseNonNegative(),
-                fiberG = _state.value.fiber.parseNonNegative(),
-            )
-        } catch (_: IllegalArgumentException) {
-            null
+    private fun parseNutrition(): NutritionValues? {
+        val allBlank =
+            _state.value.kcal.isBlank() &&
+                _state.value.protein.isBlank() &&
+                _state.value.fat.isBlank() &&
+                _state.value.carbs.isBlank() &&
+                _state.value.fiber.isBlank()
+        if (allBlank) return null
+
+        val anyInvalid =
+            listOf(
+                _state.value.kcal,
+                _state.value.protein,
+                _state.value.fat,
+                _state.value.carbs,
+                _state.value.fiber,
+            ).any { it.isNotBlank() && !it.isValidNonNegativeNumber() }
+        if (anyInvalid) {
+            _state.update {
+                it.copy(numberError = UiText.StringResource(R.string.food_edit_error_invalid_number))
+            }
+            return null
         }
 
-    private fun String.parseNonNegative(): Double {
-        val value = trim().replace(',', '.').ifBlank { "0" }.toDouble()
-        require(value >= 0.0)
-        return value
+        return NutritionValues(
+            kcal = _state.value.kcal.parseOrZero(),
+            proteinG = _state.value.protein.parseOrZero(),
+            fatG = _state.value.fat.parseOrZero(),
+            carbsG = _state.value.carbs.parseOrZero(),
+            fiberG = _state.value.fiber.parseOrZero(),
+        )
     }
+
+    private fun String.isValidNonNegativeNumber(): Boolean =
+        try {
+            val value = trim().replace(',', '.').ifBlank { "0" }.toDouble()
+            value >= 0.0
+        } catch (_: NumberFormatException) {
+            false
+        }
+
+    private fun String.parseOrZero(): Double =
+        trim()
+            .replace(',', '.')
+            .ifBlank { "0" }
+            .toDouble()
 
     private companion object {
         const val KEY_NAME = "food_edit_name"

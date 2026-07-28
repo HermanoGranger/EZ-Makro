@@ -11,8 +11,10 @@ import kotlinx.serialization.Serializable
  *   optional [originalSnapshot] of the untouched OFF data so "reset to original"
  *   is always possible (ADR-004).
  *
- * [nutritionPer100g] is the reference nutrition expressed per 100 g. [servingUnit]
- * is optional: when present, the food can also be logged by count (e.g. "1 Ei").
+ * [nutritionPer100g] is the reference nutrition expressed per 100 g and is
+ * optional: `null` means the user did not provide per-100 g values (e.g. when
+ * creating a food without nutrition data). [servingUnit] is optional: when
+ * present, the food can also be logged by count (e.g. "1 Ei").
  *
  * [isFavorite] marks the food for the favorites section in the food picker.
  * [lastUsedAt] is the epoch-milli timestamp of the last time the food was used;
@@ -24,7 +26,7 @@ data class FoodItem(
     val id: FoodId,
     val name: String,
     val barcode: String?,
-    val nutritionPer100g: NutritionValues,
+    val nutritionPer100g: NutritionValues?,
     val servingUnit: ServingUnit?,
     val isUserCreated: Boolean,
     val cachedStatus: CachedFoodItemStatus,
