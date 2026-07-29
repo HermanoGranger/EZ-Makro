@@ -134,7 +134,7 @@ class RecipeListViewModelTest {
         }
 
     @Test
-    fun `confirm add to diary emits AddToDiary with slot and portions`() =
+    fun `confirm add to diary emits AddToDiary with slot and portions by default`() =
         runTest {
             val repo = FakeRecipeRepository()
             repo.emitRecipe(
@@ -167,7 +167,50 @@ class RecipeListViewModelTest {
                         recipeId = "r1",
                         date = "2026-07-19",
                         slot = MealSlot.DINNER,
-                        portions = 3.0,
+                        amount = 3.0,
+                        isGrams = false,
+                    ),
+                )
+            }
+            assertThat(vm.state.value.pendingAddRecipeId).isNull()
+        }
+
+    @Test
+    fun `confirm add to diary with grams emits AddToDiary with isGrams true`() =
+        runTest {
+            val repo = FakeRecipeRepository()
+            repo.emitRecipe(
+                Recipe(
+                    id = RecipeId("r1"),
+                    name = "T",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = FakeFoodRepository.food("f1"),
+                                rawWeight = RawWeight(100.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                ),
+            )
+            val vm =
+                RecipeListViewModel(
+                    repository = repo,
+                    savedStateHandle = SavedStateHandle(mapOf("addToDiaryDate" to "2026-07-19")),
+                )
+            vm.onAction(RecipeListAction.OnRecipeClick("r1"))
+            vm.events.test {
+                vm.onAction(RecipeListAction.OnConfirmAddToDiary(MealSlot.LUNCH, 150.0, isGrams = true))
+                val event = awaitItem()
+                assertThat(event).isEqualTo(
+                    RecipeListEvent.AddToDiary(
+                        recipeId = "r1",
+                        date = "2026-07-19",
+                        slot = MealSlot.LUNCH,
+                        amount = 150.0,
+                        isGrams = true,
                     ),
                 )
             }

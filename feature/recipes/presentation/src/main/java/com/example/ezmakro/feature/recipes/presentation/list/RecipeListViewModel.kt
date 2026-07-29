@@ -71,7 +71,8 @@ class RecipeListViewModel(
                             recipeId = recipeId,
                             date = date,
                             slot = action.slot,
-                            portions = action.portions,
+                            amount = action.amount,
+                            isGrams = action.isGrams,
                         ),
                     )
                 }

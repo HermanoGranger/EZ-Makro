@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
 
                 val addFoodToDiary: (String, String, MealSlot, Double) -> Unit =
                     makeAddFoodToDiary(navController)
-                val addRecipeToDiary: (String, String, MealSlot, Double) -> Unit =
+                val addRecipeToDiary: (String, String, MealSlot, Double, Boolean) -> Unit =
                     makeAddRecipeToDiary(navController)
 
                 Scaffold(
@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity() {
         navController: NavHostController,
         padding: androidx.compose.foundation.layout.PaddingValues,
         addFoodToDiary: (String, String, MealSlot, Double) -> Unit,
-        addRecipeToDiary: (String, String, MealSlot, Double) -> Unit,
+        addRecipeToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
     ) {
         val onNavigateBack: () -> Unit = { navController.popBackStack() }
         NavHost(
@@ -204,15 +204,23 @@ class MainActivity : ComponentActivity() {
             navController.popBackStack(ROUTE_DIARY, inclusive = false)
         }
 
-    private fun makeAddRecipeToDiary(navController: NavHostController): (String, String, MealSlot, Double) -> Unit =
-        { recipeId, date, slot, portions ->
+    private fun makeAddRecipeToDiary(
+        navController: NavHostController,
+    ): (String, String, MealSlot, Double, Boolean) -> Unit =
+        { recipeId, date, slot, amount, isGrams ->
             lifecycleScope.launch {
                 val recipeRepository = get<RecipeRepository>()
                 val addUseCase = get<AddRecipeToDiaryUseCase>()
                 recipeRepository
                     .getById(RecipeId(recipeId))
                     .onSuccess { recipe: Recipe? ->
-                        recipe?.let { addUseCase(it, slot, LocalDate.parse(date), portionCount = portions) }
+                        recipe?.let {
+                            if (isGrams) {
+                                addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
+                            } else {
+                                addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
+                            }
+                        }
                     }
             }
             navController.popBackStack(ROUTE_DIARY, inclusive = false)

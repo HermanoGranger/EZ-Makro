@@ -21,7 +21,8 @@ sealed interface RecipeListAction {
 
     data class OnConfirmAddToDiary(
         val slot: MealSlot,
-        val portions: Double,
+        val amount: Double,
+        val isGrams: Boolean = false,
     ) : RecipeListAction
 }
 
@@ -38,6 +39,7 @@ sealed interface RecipeListEvent {
         val recipeId: String,
         val date: String,
         val slot: MealSlot,
-        val portions: Double,
+        val amount: Double,
+        val isGrams: Boolean = false,
     ) : RecipeListEvent
 }

@@ -19,6 +19,9 @@
     <string name="diary_add_slot">Mahlzeit</string>
     <string name="diary_add_grams">Menge (g)</string>
     <string name="diary_add_portions">Portionen</string>
+    <string name="diary_add_mode_label">Menge erfassen als</string>
+    <string name="diary_add_mode_portions">Portionen</string>
+    <string name="diary_add_mode_grams">Gramm</string>
     <string name="diary_slot_breakfast">Frühstück</string>
     <string name="diary_slot_lunch">Mittag</string>
     <string name="diary_slot_dinner">Abend</string>

@@ -34,7 +34,7 @@ fun RecipeListRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToEditor: (String?) -> Unit,
     onNavigateToQuickMeal: () -> Unit,
-    onAddToDiary: (String, String, MealSlot, Double) -> Unit = { _, _, _, _ -> },
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
     viewModel: RecipeListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -44,7 +44,7 @@ fun RecipeListRoot(
             is RecipeListEvent.NavigateToDetail -> onNavigateToDetail(event.recipeId)
             is RecipeListEvent.NavigateToEditor -> onNavigateToEditor(event.recipeId)
             is RecipeListEvent.AddToDiary ->
-                onAddToDiary(event.recipeId, event.date, event.slot, event.portions)
+                onAddToDiary(event.recipeId, event.date, event.slot, event.amount, event.isGrams)
         }
     }
 
@@ -58,7 +58,13 @@ fun RecipeListRoot(
         AddToDiarySheet(
             isRecipe = true,
             onDismiss = { viewModel.onAction(RecipeListAction.OnDismissAddToDiary) },
-            onConfirm = { slot, portions -> viewModel.onAction(RecipeListAction.OnConfirmAddToDiary(slot, portions)) },
+            onConfirm = {
+                slot,
+                amount,
+                isGrams,
+                ->
+                viewModel.onAction(RecipeListAction.OnConfirmAddToDiary(slot, amount, isGrams))
+            },
         )
     }
 }

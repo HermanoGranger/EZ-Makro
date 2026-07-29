@@ -52,7 +52,13 @@ const val ROUTE_EDITOR_PARAM_QUICK = "isQuickMeal"
 fun NavGraphBuilder.recipeGraph(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
-    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
+    onAddToDiary: (
+        String,
+        String,
+        com.example.ezmakro.core.domain.model.MealSlot,
+        Double,
+        Boolean,
+    ) -> Unit = { _, _, _, _, _ -> },
 ) {
     navigation(startDestination = ROUTE_LIST, route = ROUTE_RECIPES) {
         listComposable(navController, onAddToDiary)
@@ -63,7 +69,7 @@ fun NavGraphBuilder.recipeGraph(
 
 private fun NavGraphBuilder.listComposable(
     navController: NavHostController,
-    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit,
+    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double, Boolean) -> Unit,
 ) {
     composable(
         route = "$ROUTE_LIST?$ROUTE_RECIPES_PARAM_DATE={$ROUTE_RECIPES_PARAM_DATE}",

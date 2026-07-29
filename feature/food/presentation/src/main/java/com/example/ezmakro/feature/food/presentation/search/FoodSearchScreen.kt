@@ -62,7 +62,7 @@ fun FoodSearchRoot(
         AddToDiarySheet(
             isRecipe = false,
             onDismiss = { viewModel.onAction(FoodSearchAction.OnDismissAddToDiary) },
-            onConfirm = { slot, amount -> viewModel.onAction(FoodSearchAction.OnConfirmAddToDiary(slot, amount)) },
+            onConfirm = { slot, amount, _ -> viewModel.onAction(FoodSearchAction.OnConfirmAddToDiary(slot, amount)) },
         )
     }
 }

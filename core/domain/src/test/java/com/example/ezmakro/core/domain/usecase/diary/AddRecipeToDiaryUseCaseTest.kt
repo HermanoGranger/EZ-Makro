@@ -89,4 +89,20 @@ class AddRecipeToDiaryUseCaseTest {
             assertThat(saved.slot).isEqualTo(MealSlot.DINNER)
             assertThat(saved.date).isEqualTo(date)
         }
+
+    @Test
+    fun `add recipe logs amountGrams when provided`() =
+        runBlocking {
+            val repo = FakeDiaryRepository()
+
+            AddRecipeToDiaryUseCase(repo)(recipe, MealSlot.BREAKFAST, date, amountGrams = 50.0)
+
+            val saved = repo.saved!!
+            assertThat(saved.recipe?.id).isEqualTo(RecipeId("r1"))
+            assertThat(saved.food).isNull()
+            assertThat(saved.portionCount).isNull()
+            assertThat(saved.amountGrams).isEqualTo(50.0)
+            assertThat(saved.slot).isEqualTo(MealSlot.BREAKFAST)
+            assertThat(saved.date).isEqualTo(date)
+        }
 }
