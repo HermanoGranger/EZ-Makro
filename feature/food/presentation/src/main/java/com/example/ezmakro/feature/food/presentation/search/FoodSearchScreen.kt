@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.food.presentation.R
@@ -42,7 +43,7 @@ fun FoodSearchRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToScanner: () -> Unit,
     onNavigateToCreate: (String?) -> Unit,
-    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
     viewModel: FoodSearchViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -52,7 +53,8 @@ fun FoodSearchRoot(
             is FoodSearchEvent.NavigateToDetail -> onNavigateToDetail(event.foodId)
             FoodSearchEvent.NavigateToScanner -> onNavigateToScanner()
             is FoodSearchEvent.NavigateToCreate -> onNavigateToCreate(event.barcode)
-            is FoodSearchEvent.AddToDiary -> onAddToDiary(event.foodId, event.date, event.slot, event.amountGrams)
+            is FoodSearchEvent.AddToDiary ->
+                onAddToDiary(event.foodId, event.date, event.slot, event.amount, !event.isPortions)
         }
     }
 
@@ -61,8 +63,13 @@ fun FoodSearchRoot(
     if (state.pendingAddFoodId != null) {
         AddToDiarySheet(
             isRecipe = false,
+            hasServingUnit = state.pendingAddFoodHasServingUnit,
             onDismiss = { viewModel.onAction(FoodSearchAction.OnDismissAddToDiary) },
-            onConfirm = { slot, amount, _ -> viewModel.onAction(FoodSearchAction.OnConfirmAddToDiary(slot, amount)) },
+            onConfirm = { slot, amount, isGrams ->
+                viewModel.onAction(
+                    FoodSearchAction.OnConfirmAddToDiary(slot = slot, amount = amount, isPortions = !isGrams),
+                )
+            },
         )
     }
 }

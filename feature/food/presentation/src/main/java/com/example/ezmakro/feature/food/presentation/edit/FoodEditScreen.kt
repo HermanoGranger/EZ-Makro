@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -112,6 +113,11 @@ private fun FoodEditForm(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        Text(
+            stringResource(R.string.food_edit_section_per_100g),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp),
+        )
         NumberField(state.kcal, R.string.food_edit_kcal) { onAction(FoodEditAction.OnKcalChange(it)) }
         NumberField(state.protein, R.string.food_edit_protein) { onAction(FoodEditAction.OnProteinChange(it)) }
         NumberField(state.fat, R.string.food_edit_fat) { onAction(FoodEditAction.OnFatChange(it)) }
@@ -119,6 +125,15 @@ private fun FoodEditForm(
         NumberField(state.fiber, R.string.food_edit_fiber) { onAction(FoodEditAction.OnFiberChange(it)) }
 
         state.numberError?.let { Text(it.asString()) }
+
+        Text(
+            stringResource(R.string.food_edit_section_serving),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        NumberField(state.portionGrams, R.string.food_edit_portion_grams) {
+            onAction(FoodEditAction.OnPortionGramsChange(it))
+        }
 
         Button(
             onClick = { onAction(FoodEditAction.OnSaveClick) },

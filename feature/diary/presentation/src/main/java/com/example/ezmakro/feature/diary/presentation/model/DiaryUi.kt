@@ -48,8 +48,8 @@ fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
     val name = food?.name ?: recipe?.name ?: ""
     val detail =
         if (food != null) {
-            val grams = amountGrams?.formatMacro() ?: "0"
-            "$grams g"
+            portionCount?.let { "${it.formatMacro()} Portionen" }
+                ?: amountGrams?.let { "${it.formatMacro()} g" } ?: ""
         } else {
             recipe?.let { r ->
                 portionCount?.let { "${it.formatMacro()} Portionen" }

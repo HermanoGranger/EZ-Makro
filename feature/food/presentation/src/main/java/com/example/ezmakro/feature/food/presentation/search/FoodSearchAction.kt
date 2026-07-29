@@ -15,7 +15,8 @@ sealed interface FoodSearchAction {
 
     data class OnConfirmAddToDiary(
         val slot: com.example.ezmakro.core.domain.model.MealSlot,
-        val amountGrams: Double,
+        val amount: Double,
+        val isPortions: Boolean = false,
     ) : FoodSearchAction
 
     data class OnToggleFavorite(

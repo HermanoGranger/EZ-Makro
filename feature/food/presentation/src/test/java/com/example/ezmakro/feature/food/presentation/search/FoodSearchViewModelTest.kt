@@ -121,7 +121,8 @@ class FoodSearchViewModelTest {
                         foodId = "42",
                         date = "2026-07-19",
                         slot = MealSlot.LUNCH,
-                        amountGrams = 150.0,
+                        amount = 150.0,
+                        isPortions = false,
                     ),
                     event,
                 )

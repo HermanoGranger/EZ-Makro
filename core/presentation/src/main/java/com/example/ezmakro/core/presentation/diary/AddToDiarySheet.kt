@@ -31,8 +31,9 @@ private enum class RecipeAmountMode { PORTIONS, GRAMS }
 @Composable
 fun AddToDiarySheet(
     isRecipe: Boolean,
+    hasServingUnit: Boolean = false,
     initialSlot: MealSlot = MealSlot.BREAKFAST,
-    initialAmount: String = if (isRecipe) "1" else "100",
+    initialAmount: String = if (isRecipe || hasServingUnit) "1" else "100",
     onDismiss: () -> Unit,
     onConfirm: (slot: MealSlot, amount: Double, isGrams: Boolean) -> Unit,
 ) {
@@ -40,6 +41,7 @@ fun AddToDiarySheet(
     var amountText by remember { mutableStateOf(initialAmount) }
     var amountMode by remember { mutableStateOf(RecipeAmountMode.PORTIONS) }
     val amountError = amountText.toDoubleOrNull()?.let { it <= 0.0 } ?: true
+    val showModeSelector = isRecipe || hasServingUnit
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -60,12 +62,12 @@ fun AddToDiarySheet(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 SlotSelector(selectedSlot = selectedSlot, onSelect = { selectedSlot = it })
-                if (isRecipe) {
+                if (showModeSelector) {
                     AmountModeSelector(amountMode = amountMode, onModeChange = { amountMode = it })
                 }
                 AmountField(
                     labelRes =
-                        if (!isRecipe) {
+                        if (!showModeSelector) {
                             R.string.diary_add_grams
                         } else if (amountMode == RecipeAmountMode.PORTIONS) {
                             R.string.diary_add_portions

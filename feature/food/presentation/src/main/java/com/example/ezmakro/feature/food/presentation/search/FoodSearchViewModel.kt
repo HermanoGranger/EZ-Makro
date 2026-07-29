@@ -50,7 +50,13 @@ class FoodSearchViewModel(
 
             is FoodSearchAction.OnFoodClick -> {
                 if (addToDiaryDate != null) {
-                    _state.update { it.copy(pendingAddFoodId = action.foodId) }
+                    val hasServingUnit = findFood(action.foodId)?.servingLabel != null
+                    _state.update {
+                        it.copy(
+                            pendingAddFoodId = action.foodId,
+                            pendingAddFoodHasServingUnit = hasServingUnit,
+                        )
+                    }
                 } else {
                     viewModelScope.launch { _events.send(FoodSearchEvent.NavigateToDetail(action.foodId)) }
                 }
@@ -62,14 +68,15 @@ class FoodSearchViewModel(
             is FoodSearchAction.OnConfirmAddToDiary -> {
                 val foodId = _state.value.pendingAddFoodId ?: return
                 val date = addToDiaryDate ?: return
-                _state.update { it.copy(pendingAddFoodId = null) }
+                _state.update { it.copy(pendingAddFoodId = null, pendingAddFoodHasServingUnit = false) }
                 viewModelScope.launch {
                     _events.send(
                         FoodSearchEvent.AddToDiary(
                             foodId = foodId,
                             date = date,
                             slot = action.slot,
-                            amountGrams = action.amountGrams,
+                            amount = action.amount,
+                            isPortions = action.isPortions,
                         ),
                     )
                 }
@@ -128,5 +135,13 @@ class FoodSearchViewModel(
                     }
                 }
         }
+    }
+
+    private fun findFood(foodId: String): com.example.ezmakro.feature.food.presentation.model.FoodUi? {
+        val s = _state.value
+        return s.favorites.firstOrNull { it.id == foodId }
+            ?: s.recent.firstOrNull { it.id == foodId }
+            ?: s.localResults.firstOrNull { it.id == foodId }
+            ?: s.onlineResults.firstOrNull { it.id == foodId }
     }
 }

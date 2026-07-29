@@ -15,6 +15,7 @@ data class FoodEditState(
     val fat: String = "",
     val carbs: String = "",
     val fiber: String = "",
+    val portionGrams: String = "",
     val nameError: UiText? = null,
     val numberError: UiText? = null,
     val isSaving: Boolean = false,

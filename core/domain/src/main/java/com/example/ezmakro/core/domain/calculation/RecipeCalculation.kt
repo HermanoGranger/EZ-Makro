@@ -56,6 +56,18 @@ fun FoodItem.nutritionForGrams(amountGrams: Double): NutritionValues {
 }
 
 /**
+ * Nutrition for a logged [portionCount] of a single [FoodItem], scaled from its
+ * per-100 g basis via the food's [ServingUnit.gramsEquivalent].
+ *
+ * Formula: nutritionPer100g × gramsEquivalent × portionCount / 100
+ */
+fun FoodItem.nutritionForPortions(portionCount: Double): NutritionValues {
+    require(portionCount >= 0.0) { "portionCount must be non-negative" }
+    val unit = checkNotNull(servingUnit) { "FoodItem must have servingUnit for portion logging" }
+    return nutritionPer100g?.times(unit.gramsEquivalent * portionCount / 100.0) ?: NutritionValues.ZERO
+}
+
+/**
  * Sum of all ingredients' raw weights (used for display only — NEVER as the
  * basis for "per 100 g", see [Recipe.nutritionPer100g]).
  */
@@ -75,7 +87,13 @@ fun Recipe.totalRawWeight(): RawWeight =
  *     without a measured final weight.
  */
 fun DiaryEntry.consumedNutrition(): NutritionValues {
-    food?.let { return it.nutritionForGrams(checkNotNull(amountGrams)) }
+    if (food != null) {
+        return if (portionCount != null) {
+            food.nutritionForPortions(portionCount)
+        } else {
+            food.nutritionForGrams(checkNotNull(amountGrams))
+        }
+    }
 
     val recipe = checkNotNull(recipe)
     portionCount?.let { return recipe.nutritionPerPortion() * it }

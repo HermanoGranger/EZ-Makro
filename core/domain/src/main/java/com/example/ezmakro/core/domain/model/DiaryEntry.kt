@@ -17,9 +17,10 @@ enum class MealSlot {
  * A diary entry references either a [FoodItem] (quick add / single food) or a
  * [Recipe]; never both.
  *
- * For a food, [amountGrams] is the consumed raw amount.
+ * For a food, the user logs EITHER [amountGrams] (raw amount) OR [portionCount]
+ * portions (if [FoodItem.servingUnit] is set) — exactly one must be provided.
  * For a recipe, the user logs EITHER [portionCount] portions OR [amountGrams]
- * of the prepared dish — exactly one must be set (the other is null).
+ * of the prepared dish — exactly one must be set.
  */
 data class DiaryEntry(
     val id: DiaryEntryId,
@@ -35,9 +36,19 @@ data class DiaryEntry(
         require(!(food != null && recipe != null)) { "DiaryEntry must not reference both food and recipe" }
 
         if (food != null) {
-            require(amountGrams != null) { "Food diary entry needs amountGrams" }
-            require(portionCount == null) { "Food diary entry must not set portionCount" }
-            require(amountGrams >= 0.0) { "amountGrams must be non-negative" }
+            require(amountGrams != null || portionCount != null) {
+                "Food diary entry needs either amountGrams or portionCount"
+            }
+            require(!(amountGrams != null && portionCount != null)) {
+                "Food diary entry must not set both amountGrams and portionCount"
+            }
+            if (portionCount != null) {
+                require(food.servingUnit != null) {
+                    "Food diary entry with portionCount needs food.servingUnit"
+                }
+                require(portionCount >= 0.0) { "portionCount must be non-negative" }
+            }
+            amountGrams?.let { require(it >= 0.0) { "amountGrams must be non-negative" } }
         }
         if (recipe != null) {
             require(amountGrams != null || portionCount != null) {

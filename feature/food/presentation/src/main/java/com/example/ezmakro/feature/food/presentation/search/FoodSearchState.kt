@@ -21,6 +21,7 @@ data class FoodSearchState(
     val isSearchingOnline: Boolean = false,
     val onlineError: UiText? = null,
     val pendingAddFoodId: String? = null,
+    val pendingAddFoodHasServingUnit: Boolean = false,
 ) {
     val isQuerying: Boolean get() = query.isNotBlank()
 }

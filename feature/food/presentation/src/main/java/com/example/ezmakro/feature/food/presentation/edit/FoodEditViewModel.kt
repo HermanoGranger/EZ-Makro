@@ -7,6 +7,7 @@ import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
@@ -67,6 +68,7 @@ class FoodEditViewModel(
             is FoodEditAction.OnFatChange -> _state.update { it.copy(fat = action.value, numberError = null) }
             is FoodEditAction.OnCarbsChange -> _state.update { it.copy(carbs = action.value, numberError = null) }
             is FoodEditAction.OnFiberChange -> _state.update { it.copy(fiber = action.value, numberError = null) }
+            is FoodEditAction.OnPortionGramsChange -> _state.update { it.copy(portionGrams = action.value) }
 
             FoodEditAction.OnSaveClick -> save()
             FoodEditAction.OnBackClick ->
@@ -86,6 +88,7 @@ class FoodEditViewModel(
                     fat = food.nutritionPer100g?.fatG?.toString() ?: "",
                     carbs = food.nutritionPer100g?.carbsG?.toString() ?: "",
                     fiber = food.nutritionPer100g?.fiberG?.toString() ?: "",
+                    portionGrams = food.servingUnit?.gramsEquivalent?.toString() ?: "",
                 )
             }
         }
@@ -105,13 +108,14 @@ class FoodEditViewModel(
             val id = foodId ?: UUID.randomUUID().toString()
             val trimmedBarcode = _state.value.barcode.trim()
             val barcode = trimmedBarcode.ifBlank { null }
+            val servingUnit = parseServingUnit()
             val item =
                 FoodItem(
                     id = FoodId(id),
                     name = name,
                     barcode = barcode,
                     nutritionPer100g = nutrition,
-                    servingUnit = null,
+                    servingUnit = servingUnit,
                     isUserCreated = foodId == null,
                     cachedStatus = CachedFoodItemStatus.Original,
                     originalSnapshot = null,
@@ -158,6 +162,20 @@ class FoodEditViewModel(
             carbsG = _state.value.carbs.parseOrZero(),
             fiberG = _state.value.fiber.parseOrZero(),
         )
+    }
+
+    private fun parseServingUnit(): ServingUnit? {
+        val gramsText = _state.value.portionGrams.trim()
+        if (gramsText.isBlank()) return null
+        val grams = gramsText.replace(',', '.').toDoubleOrNull() ?: return null
+        return if (grams > 0.0) {
+            val label = "1 Portion (${
+                if (grams % 1.0 == 0.0) grams.toInt().toString() else grams.toString()
+            } g)"
+            ServingUnit(label = label, gramsEquivalent = grams)
+        } else {
+            null
+        }
     }
 
     private fun String.isValidNonNegativeNumber(): Boolean =

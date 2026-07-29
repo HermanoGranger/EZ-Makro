@@ -29,6 +29,10 @@ sealed interface FoodEditAction {
         val value: String,
     ) : FoodEditAction
 
+    data class OnPortionGramsChange(
+        val value: String,
+    ) : FoodEditAction
+
     data object OnSaveClick : FoodEditAction
 
     data object OnBackClick : FoodEditAction

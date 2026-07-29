@@ -40,6 +40,9 @@
     <string name="food_edit_fat">Fett pro 100 g</string>
     <string name="food_edit_carbs">Kohlenhydrate pro 100 g</string>
     <string name="food_edit_fiber">Ballaststoffe pro 100 g</string>
+    <string name="food_edit_section_per_100g">Nährwerte pro 100 g</string>
+    <string name="food_edit_section_serving">Portionsgröße (optional)</string>
+    <string name="food_edit_portion_grams">Gramm pro Portion</string>
     <string name="food_edit_save">Speichern</string>
     <string name="food_edit_error_name_blank">Name darf nicht leer sein</string>
     <string name="food_edit_error_invalid_number">Ungültiger Wert</string>

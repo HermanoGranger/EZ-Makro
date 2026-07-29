@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.feature.food.presentation.detail.FoodDetailRoot
 import com.example.ezmakro.feature.food.presentation.edit.FoodEditRoot
 import com.example.ezmakro.feature.food.presentation.scan.BarcodeScanRoot
@@ -71,7 +72,7 @@ internal const val EDIT_ROUTE_MISSING_ID = "_none_"
 fun NavGraphBuilder.foodGraph(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
-    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit = { _, _, _, _ -> },
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
 ) {
     navigation(startDestination = ROUTE_SEARCH, route = ROUTE_FOOD) {
         searchComposable(navController, onAddToDiary)
@@ -83,7 +84,7 @@ fun NavGraphBuilder.foodGraph(
 
 private fun NavGraphBuilder.searchComposable(
     navController: NavHostController,
-    onAddToDiary: (String, String, com.example.ezmakro.core.domain.model.MealSlot, Double) -> Unit,
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
 ) {
     composable(
         route = "$ROUTE_SEARCH?$ROUTE_SEARCH_PARAM_DATE={$ROUTE_SEARCH_PARAM_DATE}",

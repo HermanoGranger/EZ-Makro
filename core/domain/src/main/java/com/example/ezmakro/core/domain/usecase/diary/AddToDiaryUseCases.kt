@@ -14,9 +14,10 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * Add a [FoodItem] to the meal log. The consumed [amountGrams] is the raw amount
- * of the food; the [FoodItem] snapshot is materialized by the repository so the
- * entry is an immutable historical record.
+ * Add a [FoodItem] to the meal log. A food entry logs EITHER [amountGrams]
+ * (raw amount) OR [portionCount] portions (if [FoodItem.servingUnit] is set).
+ * The [FoodItem] snapshot is materialized by the repository so the entry is an
+ * immutable historical record.
  */
 class AddFoodToDiaryUseCase(
     private val repository: DiaryRepository,
@@ -25,7 +26,8 @@ class AddFoodToDiaryUseCase(
         food: FoodItem,
         slot: MealSlot,
         date: LocalDate,
-        amountGrams: Double,
+        amountGrams: Double? = null,
+        portionCount: Double? = null,
     ): EmptyResult<DataError.Local> {
         val entry =
             DiaryEntry(
@@ -35,7 +37,7 @@ class AddFoodToDiaryUseCase(
                 food = food,
                 recipe = null,
                 amountGrams = amountGrams,
-                portionCount = null,
+                portionCount = portionCount,
             )
         return repository.save(entry)
     }
