@@ -37,7 +37,7 @@ data class QuickAdd(
 const val ROUTE_DIARY = "diary"
 const val ROUTE_DIARY_DAY_PARAM_DATE = "date"
 
-internal const val ROUTE_DIARY_DAY = "diary_day"
+const val ROUTE_DIARY_DAY = "diary_day"
 internal const val ROUTE_QUICK_ADD = "quick_add"
 internal const val ROUTE_HISTORY = "history"
 

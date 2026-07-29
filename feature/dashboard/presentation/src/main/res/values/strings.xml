@@ -12,6 +12,9 @@
     <string name="dashboard_over_goal">über Ziel</string>
     <string name="dashboard_open_diary">Zum Tagebuch</string>
     <string name="dashboard_configure_goals">Ziele anpassen</string>
+    <string name="dashboard_previous_day">Vorheriger Tag</string>
+    <string name="dashboard_next_day">Nächster Tag</string>
+    <string name="dashboard_today">Heute</string>
     <string name="macro_unit_g">%1$s g</string>
 
     <string name="goals_title">Tagesziele</string>

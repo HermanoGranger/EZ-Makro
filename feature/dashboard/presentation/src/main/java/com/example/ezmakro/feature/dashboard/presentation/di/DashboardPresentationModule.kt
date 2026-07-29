@@ -15,6 +15,7 @@ val dashboardPresentationModule =
             DashboardViewModel(
                 diaryRepository = get(),
                 goalRepository = get(),
+                currentDateProvider = get(),
             )
         }
         viewModel { GoalsViewModel(repository = get()) }

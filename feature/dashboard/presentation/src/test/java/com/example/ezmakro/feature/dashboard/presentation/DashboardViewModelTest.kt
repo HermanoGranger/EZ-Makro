@@ -13,6 +13,7 @@ import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.feature.dashboard.presentation.fake.FakeDiaryRepository
 import com.example.ezmakro.feature.dashboard.presentation.fake.FakeGoalRepository
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,7 @@ class DashboardViewModelTest {
     private val goal = NutritionGoal(kcal = 2000.0, proteinG = 150.0, fatG = 56.0, carbsG = 225.0, fiberG = 30.0)
     private lateinit var diary: FakeDiaryRepository
     private lateinit var goals: FakeGoalRepository
+    private lateinit var currentDateProvider: CurrentDateProvider
     private lateinit var viewModel: DashboardViewModel
 
     private fun food(id: String): FoodItem =
@@ -67,7 +69,13 @@ class DashboardViewModelTest {
         Dispatchers.setMain(testDispatcher)
         diary = FakeDiaryRepository()
         goals = FakeGoalRepository(goal)
-        viewModel = DashboardViewModel(diaryRepository = diary, goalRepository = goals)
+        currentDateProvider = CurrentDateProvider()
+        viewModel =
+            DashboardViewModel(
+                diaryRepository = diary,
+                goalRepository = goals,
+                currentDateProvider = currentDateProvider,
+            )
     }
 
     @AfterEach
@@ -124,5 +132,42 @@ class DashboardViewModelTest {
                 viewModel.onAction(DashboardAction.OnConfigureGoalsClick)
                 assertThat(awaitItem()).isEqualTo(DashboardEvent.NavigateToGoals)
             }
+        }
+
+    @Test
+    fun `OnPreviousDay changes dashboard date to yesterday`() =
+        runTest {
+            viewModel.onAction(DashboardAction.OnPreviousDay)
+            assertThat(viewModel.state.value.date).isEqualTo(date.minusDays(1))
+        }
+
+    @Test
+    fun `OnNextDay changes dashboard date to tomorrow`() =
+        runTest {
+            viewModel.onAction(DashboardAction.OnNextDay)
+            assertThat(viewModel.state.value.date).isEqualTo(date.plusDays(1))
+        }
+
+    @Test
+    fun `OnPreviousDay loads entries for previous day`() =
+        runTest {
+            val yesterday = date.minusDays(1)
+            diary.emitEntry(
+                DiaryEntry(
+                    id = DiaryEntryId("y1"),
+                    slot = MealSlot.BREAKFAST,
+                    date = yesterday,
+                    food = food("f1"),
+                    recipe = null,
+                    amountGrams = 100.0,
+                    portionCount = null,
+                ),
+            )
+
+            viewModel.onAction(DashboardAction.OnPreviousDay)
+
+            val state = viewModel.state.value
+            assertThat(state.date).isEqualTo(yesterday)
+            assertThat(state.dashboard?.consumedKcal).isEqualTo("100")
         }
 }

@@ -10,6 +10,8 @@ import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
+import com.example.ezmakro.core.presentation.date.CurrentDateProvider
+import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddFoodClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddRecipeClick
@@ -25,9 +27,11 @@ import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
 import com.example.ezmakro.feature.diary.presentation.model.formatMacro
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
 import com.example.ezmakro.feature.diary.presentation.model.toDiaryEntryUi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -35,31 +39,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DiaryDayViewModel(
     private val repository: DiaryRepository,
     private val copyYesterdayUseCase: CopyYesterdayUseCase,
     private val deleteEntryUseCase: DeleteDiaryEntryUseCase,
     private val updateEntryUseCase: UpdateDiaryEntryUseCase,
+    private val currentDateProvider: CurrentDateProvider,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    private val date: LocalDate =
-        savedStateHandle.get<String>(ARG_DATE)?.takeIf { it.isNotEmpty() }?.let { LocalDate.parse(it) }
-            ?: LocalDate.now()
-
-    private val _state = MutableStateFlow(DiaryDayState(date = date))
+    private val _state = MutableStateFlow(DiaryDayState(date = currentDateProvider.date.value))
     val state = _state.asStateFlow()
 
     private val _events = Channel<DiaryDayEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
     init {
-        repository
-            .observeByDate(date)
+        savedStateHandle.get<String>(ARG_DATE)?.takeIf { it.isNotEmpty() }?.let {
+            currentDateProvider.setDate(LocalDate.parse(it))
+        }
+
+        currentDateProvider.date
+            .flatMapLatest { d -> repository.observeByDate(d) }
             .onEach { entries ->
                 val ui = entries.map { it.toDiaryEntryUi() }
                 val total = ui.sumNutrition()
                 _state.update {
                     it.copy(
+                        date = currentDateProvider.date.value,
                         breakfast = ui.filter { e -> e.slot == MealSlot.BREAKFAST },
                         lunch = ui.filter { e -> e.slot == MealSlot.LUNCH },
                         dinner = ui.filter { e -> e.slot == MealSlot.DINNER },
@@ -84,8 +91,8 @@ class DiaryDayViewModel(
             OnCopyYesterdayClick -> copyYesterday()
             is OnDeleteEntry -> emit(DiaryDayEvent.ConfirmDelete(action.entryId, action.slot))
             is OnConfirmDelete -> delete(action.entryId)
-            OnAddFoodClick -> emit(DiaryDayEvent.NavigateToAddFood(date.toString()))
-            OnAddRecipeClick -> emit(DiaryDayEvent.NavigateToAddRecipe(date.toString()))
+            OnAddFoodClick -> emit(DiaryDayEvent.NavigateToAddFood(currentDateProvider.date.value.toString()))
+            OnAddRecipeClick -> emit(DiaryDayEvent.NavigateToAddRecipe(currentDateProvider.date.value.toString()))
             OnQuickAddClick -> emit(DiaryDayEvent.NavigateToQuickAdd)
             OnHistoryClick -> emit(DiaryDayEvent.NavigateToHistory)
             OnMessageShown -> _state.update { it.copy(copyYesterdayMessage = null) }
@@ -104,19 +111,38 @@ class DiaryDayViewModel(
             is OnSaveEdit -> {
                 updateEntry(action.entryId, action.amountGrams, action.portionCount)
             }
+            DiaryDayAction.OnPreviousDay -> changeDateBy(-1)
+            DiaryDayAction.OnNextDay -> changeDateBy(1)
+            DiaryDayAction.OnTodayClick -> updateDate(LocalDate.now())
+            is DiaryDayAction.OnGoToDate -> updateDate(action.date)
         }
+    }
+
+    private fun changeDateBy(days: Long) {
+        updateDate(currentDateProvider.date.value.plusDays(days))
+    }
+
+    private fun updateDate(newDate: LocalDate) {
+        currentDateProvider.setDate(newDate)
+        savedStateHandle[ARG_DATE] = newDate.toString()
+        _state.update { it.copy(date = newDate, expandedSlots = emptySet()) }
     }
 
     private fun copyYesterday() {
         _state.update { it.copy(isCopyingYesterday = true) }
         viewModelScope.launch {
-            when (val result = copyYesterdayUseCase(date)) {
+            when (val result = copyYesterdayUseCase(currentDateProvider.date.value)) {
                 is Result.Success -> {
-                    val msg =
-                        android.content.res.Resources
-                            .getSystem()
-                            .getString(R.string.diary_copy_yesterday_success, result.data)
-                    _state.update { it.copy(isCopyingYesterday = false, copyYesterdayMessage = msg) }
+                    _state.update {
+                        it.copy(
+                            isCopyingYesterday = false,
+                            copyYesterdayMessage =
+                                UiText.StringResource(
+                                    R.string.diary_copy_yesterday_success,
+                                    arrayOf(result.data),
+                                ),
+                        )
+                    }
                 }
                 is Result.Error -> {
                     _state.update { it.copy(isCopyingYesterday = false) }

@@ -18,6 +18,9 @@
     <string name="diary_delete_confirm">Eintrag wirklich löschen?</string>
     <string name="diary_slot_empty">—</string>
     <string name="diary_entry_delete">Löschen</string>
+    <string name="diary_previous_day">Vorheriger Tag</string>
+    <string name="diary_next_day">Nächster Tag</string>
+    <string name="diary_today">Heute</string>
 
     <string name="quick_add_title">Quick Add</string>
     <string name="quick_add_name">Name</string>

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
@@ -17,6 +18,7 @@ import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
+import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.feature.diary.presentation.fake.FakeDiaryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +36,7 @@ class DiaryDayViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val date = LocalDate.of(2026, 7, 19)
     private lateinit var repository: FakeDiaryRepository
+    private lateinit var currentDateProvider: CurrentDateProvider
     private lateinit var viewModel: DiaryDayViewModel
 
     private fun food(id: String): FoodItem =
@@ -65,15 +68,18 @@ class DiaryDayViewModelTest {
         )
 
     @BeforeEach
-    fun setUp() {
+    fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeDiaryRepository()
+        currentDateProvider = CurrentDateProvider()
+        currentDateProvider.setDate(date)
         viewModel =
             DiaryDayViewModel(
                 repository = repository,
                 copyYesterdayUseCase = CopyYesterdayUseCase(repository),
                 deleteEntryUseCase = DeleteDiaryEntryUseCase(repository),
                 updateEntryUseCase = UpdateDiaryEntryUseCase(repository),
+                currentDateProvider = currentDateProvider,
                 savedStateHandle = SavedStateHandle(mapOf(DiaryDayViewModel.ARG_DATE to date.toString())),
             )
     }
@@ -203,5 +209,46 @@ class DiaryDayViewModelTest {
             val data = (entry as com.example.ezmakro.core.domain.result.Result.Success).data
             assertThat(data).isNotNull()
             assertThat(data!!.portionCount).isEqualTo(2.0)
+        }
+
+    @Test
+    fun `OnPreviousDay changes date to yesterday`() =
+        runTest {
+            viewModel.onAction(DiaryDayAction.OnPreviousDay)
+            assertThat(viewModel.state.value.date).isEqualTo(date.minusDays(1))
+        }
+
+    @Test
+    fun `OnNextDay changes date to tomorrow`() =
+        runTest {
+            viewModel.onAction(DiaryDayAction.OnNextDay)
+            assertThat(viewModel.state.value.date).isEqualTo(date.plusDays(1))
+        }
+
+    @Test
+    fun `OnGoToDate changes to given date`() =
+        runTest {
+            val target = LocalDate.of(2026, 8, 1)
+            viewModel.onAction(DiaryDayAction.OnGoToDate(target))
+            assertThat(viewModel.state.value.date).isEqualTo(target)
+        }
+
+    @Test
+    fun `state date updates on previous day and reloads entries`() =
+        runTest {
+            val yesterday = date.minusDays(1)
+            repository.emitEntry(entry("y1", MealSlot.BREAKFAST, "f1", 100.0))
+            repository.emitEntry(
+                entry("t1", MealSlot.LUNCH, "f2", 200.0).copy(date = yesterday),
+            )
+
+            viewModel.onAction(DiaryDayAction.OnPreviousDay)
+
+            assertThat(viewModel.state.value.date).isEqualTo(yesterday)
+            assertThat(
+                viewModel.state.value.lunch
+                    .map { it.id },
+            ).containsExactly("t1")
+            assertThat(viewModel.state.value.breakfast).isEmpty()
         }
 }

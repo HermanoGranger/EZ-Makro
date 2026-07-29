@@ -1,6 +1,7 @@
 package com.example.ezmakro.feature.diary.presentation.day
 
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
 import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
 import java.time.LocalDate
@@ -13,7 +14,7 @@ data class DiaryDayState(
     val snacks: List<DiaryEntryUi> = emptyList(),
     val dayTotal: SlotSummaryUi? = null,
     val isCopyingYesterday: Boolean = false,
-    val copyYesterdayMessage: String? = null,
+    val copyYesterdayMessage: UiText? = null,
     val expandedSlots: Set<MealSlot> = emptySet(),
 )
 

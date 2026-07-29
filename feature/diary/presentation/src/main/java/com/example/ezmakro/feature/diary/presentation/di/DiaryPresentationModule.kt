@@ -25,6 +25,7 @@ val diaryPresentationModule =
                 copyYesterdayUseCase = get(),
                 deleteEntryUseCase = get(),
                 updateEntryUseCase = get(),
+                currentDateProvider = get(),
                 savedStateHandle = get(),
             )
         }

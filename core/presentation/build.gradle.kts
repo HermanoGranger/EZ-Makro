@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.ezmakro.android.library)
     alias(libs.plugins.ezmakro.compose)
+    alias(libs.plugins.ezmakro.koin)
 }
 
 android {

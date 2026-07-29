@@ -43,6 +43,7 @@ import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.goals
 import com.example.ezmakro.feature.dashboard.presentation.navigation.Dashboard
 import com.example.ezmakro.feature.dashboard.presentation.navigation.dashboardGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
+import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY_DAY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH
@@ -156,8 +157,8 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             dashboardGraph(
-                onNavigateToDiary = {
-                    navController.navigate(ROUTE_DIARY) {
+                onNavigateToDiary = { date ->
+                    navController.navigate("$ROUTE_DIARY_DAY?date=$date") {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }
