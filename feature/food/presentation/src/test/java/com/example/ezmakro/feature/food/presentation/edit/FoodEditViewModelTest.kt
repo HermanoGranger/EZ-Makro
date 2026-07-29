@@ -3,6 +3,9 @@ package com.example.ezmakro.feature.food.presentation.edit
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
+import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.feature.food.presentation.fake.FakeFoodRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -12,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -123,6 +127,66 @@ class FoodEditViewModelTest {
             assertEquals("Apple", viewModel.state.value.name)
             assertEquals("52.0", viewModel.state.value.kcal)
             assertEquals(true, viewModel.state.value.isEditingExisting)
+        }
+
+    @Test
+    fun editingUserCreatedFood_preservesIsUserCreated() =
+        runTest {
+            val userFood =
+                FoodItem(
+                    id = FoodId("1"),
+                    name = "Apple",
+                    barcode = null,
+                    nutritionPer100g = NutritionValues(52.0, 0.3, 0.2, 14.0, 2.4),
+                    servingUnit = null,
+                    isUserCreated = true,
+                    cachedStatus = CachedFoodItemStatus.Original,
+                    originalSnapshot = null,
+                )
+            repository.emitFoods(listOf(userFood))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(FoodEditAction.OnNameChange("Apple (Edited)"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            val saved = repository.savedEdits.single()
+            assertTrue(saved.isUserCreated)
+            assertEquals("Apple (Edited)", saved.name)
+        }
+
+    @Test
+    fun editingExistingOffFood_preservesOriginalSnapshot() =
+        runTest {
+            val snapshot =
+                FoodItem(
+                    id = FoodId("1"),
+                    name = "OFF Apple",
+                    barcode = null,
+                    nutritionPer100g = NutritionValues(52.0, 0.3, 0.2, 14.0, 2.4),
+                    servingUnit = null,
+                    isUserCreated = false,
+                    cachedStatus = CachedFoodItemStatus.Original,
+                    originalSnapshot = null,
+                )
+            val offFood =
+                snapshot.copy(
+                    originalSnapshot = snapshot,
+                )
+            repository.emitFoods(listOf(offFood))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(FoodEditAction.OnNameChange("My Apple"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            val saved = repository.savedEdits.single()
+            assertFalse(saved.isUserCreated)
+            assertEquals(CachedFoodItemStatus.Original, saved.cachedStatus)
+            assertTrue(saved.originalSnapshot != null)
+            assertEquals("OFF Apple", saved.originalSnapshot?.name)
         }
 
     @Test

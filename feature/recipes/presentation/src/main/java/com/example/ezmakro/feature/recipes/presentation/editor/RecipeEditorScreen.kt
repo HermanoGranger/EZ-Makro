@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,9 +53,11 @@ fun RecipeEditorRoot(
 
     if (showPicker) {
         IngredientPickerDialog(
-            items = state.availableFoods,
+            foods = state.availableFoods,
+            recipes = state.availableRecipes,
             onDismiss = { showPicker = false },
-            onPick = { viewModel.onAction(RecipeEditorAction.OnAddIngredientClick(it)) },
+            onPickFood = { viewModel.onAction(RecipeEditorAction.OnAddIngredientClick(it)) },
+            onPickRecipe = { viewModel.onAction(RecipeEditorAction.OnAddRecipeIngredientClick(it)) },
         )
     }
 

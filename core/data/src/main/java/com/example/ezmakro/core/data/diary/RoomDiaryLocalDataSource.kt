@@ -33,7 +33,23 @@ class RoomDiaryLocalDataSource(
         runCatchingLocal { dao.getById(id.value)?.toDiaryEntry() }
 
     override suspend fun upsert(entry: DiaryEntry): EmptyResult<DataError.Local> =
-        runCatchingLocal { dao.upsert(entry.toEntity()) }
+        runCatchingLocal {
+            val existing = dao.getById(entry.id.value)
+            val entity = entry.toEntity()
+            // Preserve existing FK values — if the referenced recipe or food was
+            // deleted the ON DELETE SET NULL trigger already nulled them out, and
+            // setting them back to the deleted ID would cause a FK violation.
+            dao.upsert(
+                if (existing != null) {
+                    entity.copy(
+                        foodItemId = existing.foodItemId,
+                        recipeId = existing.recipeId,
+                    )
+                } else {
+                    entity
+                },
+            )
+        }
 
     override suspend fun deleteById(id: DiaryEntryId): EmptyResult<DataError.Local> =
         runCatchingLocal { dao.deleteById(id.value) }

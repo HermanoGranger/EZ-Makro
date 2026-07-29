@@ -30,6 +30,14 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  *   `recipe_snapshot`) added as part of the v1 diary design.
  * - 4: Phase 9 Step 1 — makes the five per-100 g nutrition columns nullable
  *   in `food_items` so user-created foods can omit nutrition data.
+ * - 5: Phase 9 Step 6 — Recipe-as-Ingredient snapshot independence:
+ *   `recipes.last_modified_at`, `recipe_ingredients` rebuilt with
+ *   auto-generated PK, nullable `food_item_id`, and `recipe_snapshot_json`.
+ * - 6: Phase 9 Step 6 (follow-up) — Diary entry FK change:
+ *   `diary_entries` foreign keys `food_item_id` and `recipe_id` changed from
+ *   `ON DELETE CASCADE` to `ON DELETE SET NULL` so logged entries survive
+ *   deletion of the source recipe or food (the existing JSON snapshots
+ *   already provide all data for rendering and calculation).
  *
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
@@ -43,7 +51,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 4,
+    version = 6,
 )
 @TypeConverters(ScalarConverters::class, JsonConverters::class)
 abstract class EZDatabase : RoomDatabase() {

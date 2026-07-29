@@ -9,6 +9,7 @@ import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.repository.FoodRepository
+import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.presentation.uitext.UiText
@@ -109,17 +110,32 @@ class FoodEditViewModel(
             val trimmedBarcode = _state.value.barcode.trim()
             val barcode = trimmedBarcode.ifBlank { null }
             val servingUnit = parseServingUnit()
+            val existingFood =
+                if (foodId != null) {
+                    (repository.getById(FoodId(foodId)) as? Result.Success)?.data
+                } else {
+                    null
+                }
             val item =
-                FoodItem(
-                    id = FoodId(id),
-                    name = name,
-                    barcode = barcode,
-                    nutritionPer100g = nutrition,
-                    servingUnit = servingUnit,
-                    isUserCreated = foodId == null,
-                    cachedStatus = CachedFoodItemStatus.Original,
-                    originalSnapshot = null,
-                )
+                if (existingFood != null) {
+                    existingFood.copy(
+                        name = name,
+                        barcode = barcode,
+                        nutritionPer100g = nutrition,
+                        servingUnit = servingUnit,
+                    )
+                } else {
+                    FoodItem(
+                        id = FoodId(id),
+                        name = name,
+                        barcode = barcode,
+                        nutritionPer100g = nutrition,
+                        servingUnit = servingUnit,
+                        isUserCreated = true,
+                        cachedStatus = CachedFoodItemStatus.Original,
+                        originalSnapshot = null,
+                    )
+                }
             repository
                 .saveUserEdit(item)
                 .onSuccess {

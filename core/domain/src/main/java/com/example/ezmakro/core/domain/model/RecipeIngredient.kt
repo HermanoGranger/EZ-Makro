@@ -2,22 +2,20 @@ package com.example.ezmakro.core.domain.model
 
 import kotlinx.serialization.Serializable
 
-/**
- * A single ingredient line inside a [Recipe]. Always references its food in the
- * RAW state ([rawWeight]); cooking-related weight changes are captured only at
- * the recipe level via [Recipe.finalWeight] (ADR-003).
- *
- * If the referenced [food] defines a [ServingUnit], the ingredient can instead
- * be expressed by [servingCount]; [rawWeight] is then derived. Exactly one of
- * [rawWeight] / [servingCount] must be provided.
- */
 @Serializable
 data class RecipeIngredient(
-    val food: FoodItem,
+    val food: FoodItem?,
+    val recipeSnapshot: RecipeSnapshot? = null,
     val rawWeight: RawWeight?,
     val servingCount: Double?,
 ) {
     init {
+        require(food != null || recipeSnapshot != null) {
+            "RecipeIngredient needs either food or recipeSnapshot"
+        }
+        require(!(food != null && recipeSnapshot != null)) {
+            "RecipeIngredient must not reference both food and recipeSnapshot"
+        }
         require(rawWeight != null || servingCount != null) {
             "RecipeIngredient needs either rawWeight or servingCount"
         }
@@ -25,18 +23,20 @@ data class RecipeIngredient(
             "RecipeIngredient must not specify both rawWeight and servingCount"
         }
         if (servingCount != null) {
-            require(food.servingUnit != null) {
-                "servingCount requires the food to define a ServingUnit"
-            }
             require(servingCount >= 0.0) { "servingCount must be non-negative" }
+            if (food != null) {
+                require(food.servingUnit != null) {
+                    "servingCount requires the food to define a ServingUnit"
+                }
+            }
         }
     }
 
-    /**
-     * Effective raw weight of this ingredient, resolving [servingCount] through
-     * the food's [ServingUnit] when needed.
-     */
     fun effectiveRawWeight(): RawWeight =
         rawWeight
-            ?: RawWeight(checkNotNull(food.servingUnit).toGrams(checkNotNull(servingCount)))
+            ?: if (recipeSnapshot != null) {
+                RawWeight(recipeSnapshot.gramsPerPortion * checkNotNull(servingCount))
+            } else {
+                RawWeight(checkNotNull(food?.servingUnit).toGrams(checkNotNull(servingCount)))
+            }
 }

@@ -66,10 +66,18 @@ class OfflineFirstFoodRepository(
             (local.getById(foodItem.id) as? Result.Success)
                 ?.data
                 ?.originalSnapshot
+        // On first edit of a freshly cached OFF entry there is no snapshot yet
+        // (cacheWithoutOverwritingUserEdits stores the OFF response as-is with
+        // originalSnapshot = null). In that case snapshot the current state so
+        // "reset to original" restores what the user saw before their first edit.
+        val snapshot =
+            existingSnapshot
+                ?: foodItem.originalSnapshot
+                ?: foodItem.copy(cachedStatus = CachedFoodItemStatus.Original)
         val edited =
             foodItem.copy(
                 cachedStatus = CachedFoodItemStatus.UserModified,
-                originalSnapshot = existingSnapshot ?: foodItem.originalSnapshot,
+                originalSnapshot = snapshot,
             )
         return local.upsert(edited).map { }
     }
@@ -111,10 +119,21 @@ class OfflineFirstFoodRepository(
     /**
      * ADR-004: persist an OFF result only if there is no existing UserModified
      * entry for the same id. Existing user edits are left untouched.
+     *
+     * The entry is stored with an [originalSnapshot] of itself so that
+     * "reset to original" always restores the first cached OFF version.
      */
     private suspend fun cacheWithoutOverwritingUserEdits(item: FoodItem) {
         val existing = (local.getById(item.id) as? Result.Success)?.data
         if (existing?.cachedStatus == CachedFoodItemStatus.UserModified) return
-        local.upsert(item)
+        val withSnapshot =
+            item.copy(
+                originalSnapshot =
+                    item.copy(
+                        cachedStatus = CachedFoodItemStatus.Original,
+                        originalSnapshot = null,
+                    ),
+            )
+        local.upsert(withSnapshot)
     }
 }

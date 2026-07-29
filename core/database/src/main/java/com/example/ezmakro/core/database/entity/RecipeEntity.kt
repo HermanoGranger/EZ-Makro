@@ -6,13 +6,6 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Persistent form of [com.example.ezmakro.core.domain.model.Recipe].
- *
- * Per ADR-003, [finalWeightGrams] is OPTIONAL (null when the user has not
- * measured the cooked dish). "Per 100 g" is derived only from total raw
- * nutrition / finalWeight and must never be computed from summed raw weights.
- */
 @Entity(tableName = "recipes")
 data class RecipeEntity(
     @PrimaryKey
@@ -26,17 +19,12 @@ data class RecipeEntity(
     val category: String?,
     @ColumnInfo(name = "is_meal_prep", defaultValue = "0")
     val isMealPrep: Boolean,
+    @ColumnInfo(name = "last_modified_at", defaultValue = "0")
+    val lastModifiedAt: Long = 0L,
 )
 
-/**
- * One ingredient line of a [RecipeEntity]. Always expressed in the RAW state
- * ([rawWeightGrams]); per ADR-003 cooking-related weight changes live only at
- * the recipe level. When [servingCount] is set, [rawWeightGrams] is null and
- * resolved through the food's [ServingUnit] (see domain).
- */
 @Entity(
     tableName = "recipe_ingredients",
-    primaryKeys = ["recipe_id", "food_item_id"],
     foreignKeys = [
         ForeignKey(
             entity = RecipeEntity::class,
@@ -48,18 +36,23 @@ data class RecipeEntity(
             entity = FoodItemEntity::class,
             parentColumns = ["id"],
             childColumns = ["food_item_id"],
-            onDelete = ForeignKey.RESTRICT,
+            onDelete = ForeignKey.SET_NULL,
         ),
     ],
-    indices = [Index(value = ["food_item_id"])],
+    indices = [Index(value = ["food_item_id"]), Index(value = ["recipe_id"])],
 )
 data class RecipeIngredientEntity(
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "row_id")
+    val rowId: Long = 0,
     @ColumnInfo(name = "recipe_id")
     val recipeId: String,
     @ColumnInfo(name = "food_item_id")
-    val foodItemId: String,
+    val foodItemId: String?,
     @ColumnInfo(name = "raw_weight_grams")
     val rawWeightGrams: Double?,
     @ColumnInfo(name = "serving_count")
     val servingCount: Double?,
+    @ColumnInfo(name = "recipe_snapshot_json")
+    val recipeSnapshotJson: String? = null,
 )

@@ -3,6 +3,7 @@ package com.example.ezmakro.core.data.food
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import com.example.ezmakro.core.domain.datasource.FoodLocalDataSource
 import com.example.ezmakro.core.domain.datasource.FoodRemoteDataSource
@@ -25,6 +26,7 @@ private fun food(
     name: String = "Food",
     barcode: String? = null,
     status: CachedFoodItemStatus = CachedFoodItemStatus.Original,
+    hasSnapshot: Boolean = true,
 ): FoodItem {
     val base =
         FoodItem(
@@ -37,6 +39,7 @@ private fun food(
             cachedStatus = CachedFoodItemStatus.Original,
             originalSnapshot = null,
         )
+    if (!hasSnapshot) return base.copy(cachedStatus = status)
     val withSnapshot = base.copy(originalSnapshot = base)
     return withSnapshot.copy(cachedStatus = status)
 }
@@ -144,7 +147,10 @@ class OfflineFirstFoodRepositoryTest {
 
             repo.searchRemote("apf")
 
-            assertThat(local.store.value["1"]?.name).isEqualTo("Apfel")
+            val stored = local.store.value["1"]
+            assertThat(stored?.name).isEqualTo("Apfel")
+            // OFF results are stored with an originalSnapshot for "reset to original"
+            assertThat(stored?.originalSnapshot).isNotNull()
         }
 
     @Test
@@ -302,6 +308,60 @@ class OfflineFirstFoodRepositoryTest {
             val favorites = repo.observeFavorites().first()
 
             assertThat(favorites.map { it.id.value }).isEqualTo(listOf("2"))
+        }
+
+    @Test
+    fun `saveUserEdit on freshly cached off food creates snapshot from current state`() =
+        runTest {
+            val local = FakeLocal()
+            // Simulate a freshly cached OFF entry that has no originalSnapshot
+            // (e.g. pre-migration data or entry cached before the
+            // cacheWithoutOverwritingUserEdits snapshot fix).
+            val freshOffFood = food("1", "Original", hasSnapshot = false)
+            local.upsert(freshOffFood)
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.saveUserEdit(freshOffFood.copy(name = "Edited"))
+
+            val stored = local.store.value["1"]
+            assertThat(stored?.cachedStatus).isEqualTo(CachedFoodItemStatus.UserModified)
+            assertThat(stored?.name).isEqualTo("Edited")
+            // The fallback creates a snapshot from the current state
+            assertThat(stored?.originalSnapshot).isNotNull()
+            assertThat(stored?.originalSnapshot?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `cacheWithoutOverwritingUserEdits stores snapshot for reset to original`() =
+        runTest {
+            val local = FakeLocal()
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Apfel", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            repo.lookupByBarcode("999")
+
+            val stored = local.store.value["1"]
+            assertThat(stored?.originalSnapshot).isNotNull()
+            assertThat(stored?.originalSnapshot?.name).isEqualTo("OFF Apfel")
+            assertThat(stored?.originalSnapshot?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `resetToOriginal works on freshly cached off food`() =
+        runTest {
+            val local = FakeLocal()
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Apfel", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            repo.lookupByBarcode("999")
+            repo.saveUserEdit(
+                local.store.value["1"]!!.copy(name = "My Edit"),
+            )
+            repo.resetToOriginal(FoodId("1"))
+
+            val stored = local.store.value["1"]
+            assertThat(stored?.name).isEqualTo("OFF Apfel")
+            assertThat(stored?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
         }
 
     @Test

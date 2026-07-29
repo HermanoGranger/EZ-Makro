@@ -33,6 +33,10 @@ sealed interface RecipeEditorAction {
         val foodId: String,
     ) : RecipeEditorAction
 
+    data class OnAddRecipeIngredientClick(
+        val recipeId: String,
+    ) : RecipeEditorAction
+
     data class OnIngredientRawWeightChange(
         val index: Int,
         val value: String,

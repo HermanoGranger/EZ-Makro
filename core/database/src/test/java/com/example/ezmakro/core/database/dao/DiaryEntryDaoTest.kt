@@ -5,6 +5,8 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import com.example.ezmakro.core.database.DatabaseTest
 import com.example.ezmakro.core.database.entity.DiaryEntryEntity
 import com.example.ezmakro.core.database.testutil.FoodItemFixtures
@@ -69,6 +71,22 @@ class DiaryEntryDaoTest : DatabaseTest() {
 
             val range = dao.getByDateRange("2026-07-17", "2026-07-18")
             assertThat(range.map { it.id }).containsExactlyInAnyOrder("d2", "d3")
+        }
+    }
+
+    @Test
+    fun `diary entry survives food deletion with SET NULL foreign key`() {
+        seedFoods()
+        runBlocking {
+            dao.upsert(entry())
+            // Delete the referenced food
+            db.foodItemDao().deleteById("f1")
+            // The diary entry must survive with a null food_item_id
+            val survived = dao.getById("d1")
+            assertThat(survived).isNotNull()
+            assertThat(survived?.foodItemId).isNull()
+            // amount_grams etc. (the actual logged data) must be preserved
+            assertThat(survived?.amountGrams).isEqualTo(150.0)
         }
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import com.example.ezmakro.feature.recipes.presentation.R
 
 @Composable
@@ -28,9 +29,23 @@ fun IngredientRow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(text = ingredient.foodName, modifier = Modifier.fillMaxWidth())
+            if (ingredient.snapshotChanged) {
+                Text(
+                    text = stringResource(R.string.recipe_editor_recipe_snapshot_changed),
+                    fontStyle = FontStyle.Italic,
+                )
+            }
             IconButton(onClick = onRemove) { Text("✕") }
         }
-        if (ingredient.servingLabel != null) {
+        if (ingredient.recipeId != null) {
+            OutlinedTextField(
+                value = ingredient.servingCount,
+                onValueChange = onServingCountChange,
+                label = { Text(stringResource(R.string.recipe_editor_recipe_serving_count)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else if (ingredient.servingLabel != null) {
             OutlinedTextField(
                 value = ingredient.servingCount,
                 onValueChange = onServingCountChange,

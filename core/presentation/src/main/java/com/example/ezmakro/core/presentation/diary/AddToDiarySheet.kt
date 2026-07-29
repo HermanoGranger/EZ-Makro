@@ -39,7 +39,9 @@ fun AddToDiarySheet(
 ) {
     var selectedSlot by remember { mutableStateOf(initialSlot) }
     var amountText by remember { mutableStateOf(initialAmount) }
-    var amountMode by remember { mutableStateOf(RecipeAmountMode.PORTIONS) }
+    var amountMode by remember {
+        mutableStateOf(if (isRecipe || hasServingUnit) RecipeAmountMode.PORTIONS else RecipeAmountMode.GRAMS)
+    }
     val amountError = amountText.toDoubleOrNull()?.let { it <= 0.0 } ?: true
     val showModeSelector = isRecipe || hasServingUnit
 

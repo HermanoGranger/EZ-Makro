@@ -2,20 +2,6 @@ package com.example.ezmakro.core.domain.model
 
 import kotlinx.serialization.Serializable
 
-/**
- * Aggregate Root: a recipe composed of raw ingredients.
- *
- * Per ADR-003:
- * - Total nutrition = sum of the ingredients' RAW nutrition (never changes by cooking).
- * - [finalWeight] is the OPTIONAL measured post-cooking weight. "Per 100 g" is
- *   derived exclusively from totalNutrition / finalWeight and must never be
- *   computed from the sum of raw weights.
- * - [portions] is the number of equal servings the dish is divided into. It is
- *   used to derive per-portion nutrition; the user can later log either a number
- *   of [portions] or an amount in grams (see [DiaryEntry]).
- * - [scale] allows meal-prep scaling of the whole dish without altering the
- *   ingredient list.
- */
 @Serializable
 data class Recipe(
     val id: RecipeId,
@@ -24,10 +10,9 @@ data class Recipe(
     val finalWeight: FinalWeight?,
     val portions: Int,
     val scale: Double = 1.0,
-    /** Free-form category label for grouping in the recipe list (local, no enum). */
     val category: String? = null,
-    /** Marks the dish as prepared ahead for multiple days (meal prep). */
     val isMealPrep: Boolean = false,
+    val lastModifiedAt: Long = 0L,
 ) {
     init {
         require(name.isNotBlank()) { "Recipe name must not be blank" }

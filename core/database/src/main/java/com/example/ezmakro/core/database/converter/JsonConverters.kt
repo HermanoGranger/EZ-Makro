@@ -3,6 +3,7 @@ package com.example.ezmakro.core.database.converter
 import androidx.room.TypeConverter
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.Recipe
+import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import kotlinx.serialization.json.Json
 
 /**
@@ -45,4 +46,8 @@ object JsonConverters {
     fun encodeRecipe(value: Recipe): String = json.encodeToString(value)
 
     fun decodeRecipe(value: String): Recipe = json.decodeFromString(value)
+
+    fun encodeRecipeSnapshot(value: RecipeSnapshot): String = json.encodeToString(value)
+
+    fun decodeRecipeSnapshot(value: String): RecipeSnapshot = json.decodeFromString(value)
 }

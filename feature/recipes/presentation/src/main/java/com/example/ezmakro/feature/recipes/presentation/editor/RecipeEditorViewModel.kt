@@ -3,12 +3,16 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.calculation.nutritionPer100g
+import com.example.ezmakro.core.domain.calculation.totalNutrition
+import com.example.ezmakro.core.domain.calculation.totalRawWeight
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
+import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onFailure
@@ -25,16 +29,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-/**
- * Creates or edits a [Recipe]. Ingredients reference existing foods (chosen from
- * [FoodRepository]); each line carries either a raw weight or a serving count.
- * ADR-003 invariants (>=1 ingredient, positive portions/scale, non-negative raw
- * weights) are validated here before the domain model is constructed.
- *
- * @param recipeId null when creating a new recipe.
- * @param isQuickMeal when true, renders the reduced "Schnell-Kombo" UI (no
- *   meal-prep / scale fields), still persisted as a full [Recipe].
- */
 @Suppress("TooManyFunctions")
 class RecipeEditorViewModel(
     private val recipeId: String?,
@@ -71,6 +65,7 @@ class RecipeEditorViewModel(
     val events = _events.receiveAsFlow()
 
     private val foodsState = MutableStateFlow<List<FoodItem>>(emptyList())
+    private val recipesState = MutableStateFlow<List<Recipe>>(emptyList())
 
     init {
         foodRepository
@@ -90,6 +85,25 @@ class RecipeEditorViewModel(
                     )
                 }
             }.launchIn(viewModelScope)
+
+        recipeRepository
+            .observeAll()
+            .onEach { recipes ->
+                recipesState.value = recipes
+                _state.update {
+                    it.copy(
+                        availableRecipes =
+                            recipes.map { r ->
+                                RecipePickerItem(
+                                    id = r.id.value,
+                                    name = r.name,
+                                )
+                            },
+                    )
+                }
+                checkSnapshotChanges()
+            }.launchIn(viewModelScope)
+
         if (recipeId != null) loadExisting(recipeId)
     }
 
@@ -119,6 +133,8 @@ class RecipeEditorViewModel(
             is RecipeEditorAction.OnCalculationModeChange -> onCalculationModeChange(action.mode)
 
             is RecipeEditorAction.OnAddIngredientClick -> addIngredient(action.foodId)
+
+            is RecipeEditorAction.OnAddRecipeIngredientClick -> addRecipeIngredient(action.recipeId)
 
             is RecipeEditorAction.OnIngredientRawWeightChange ->
                 _state.update {
@@ -214,6 +230,24 @@ class RecipeEditorViewModel(
         viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
+    private fun addRecipeIngredient(recipeId: String) {
+        val recipe = recipesState.value.firstOrNull { it.id.value == recipeId } ?: return
+        _state.update {
+            it.copy(
+                ingredients =
+                    it.ingredients +
+                        IngredientDraft(
+                            foodId = recipeId,
+                            foodName = recipe.name,
+                            servingLabel = null,
+                            recipeId = recipeId,
+                        ),
+                ingredientError = null,
+            )
+        }
+        viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
+    }
+
     private fun loadExisting(id: String) {
         recipeRepository
             .observeById(RecipeId(id))
@@ -240,20 +274,42 @@ class RecipeEditorViewModel(
                         ingredients =
                             recipe.ingredients.map { ing ->
                                 IngredientDraft(
-                                    foodId = ing.food.id.value,
-                                    foodName = ing.food.name,
-                                    servingLabel = ing.food.servingUnit?.label,
+                                    foodId =
+                                        ing.food
+                                            ?.id
+                                            ?.value
+                                            .orEmpty(),
+                                    foodName = ing.food?.name ?: ing.recipeSnapshot?.recipeName.orEmpty(),
+                                    servingLabel = ing.food?.servingUnit?.label,
                                     rawWeight =
                                         ing.rawWeight
                                             ?.grams
                                             ?.toString()
                                             .orEmpty(),
                                     servingCount = ing.servingCount?.toString().orEmpty(),
+                                    recipeId = ing.recipeSnapshot?.recipeId?.value,
+                                    originalLastModifiedAt = ing.recipeSnapshot?.originalLastModifiedAt,
                                 )
                             },
                     )
                 }
+                checkSnapshotChanges()
             }.launchIn(viewModelScope)
+    }
+
+    private fun checkSnapshotChanges() {
+        val recipes = recipesState.value
+        _state.update { current ->
+            current.copy(
+                ingredients =
+                    current.ingredients.map { draft ->
+                        if (draft.recipeId == null || draft.originalLastModifiedAt == null) return@map draft
+                        val original = recipes.firstOrNull { it.id.value == draft.recipeId }
+                        val changed = original == null || original.lastModifiedAt != draft.originalLastModifiedAt
+                        draft.copy(snapshotChanged = changed)
+                    },
+            )
+        }
     }
 
     private fun save() {
@@ -343,6 +399,7 @@ class RecipeEditorViewModel(
             scale = parsed.scale,
             category = s.category.trim().ifBlank { null },
             isMealPrep = if (s.isQuickMeal) false else s.isMealPrep,
+            lastModifiedAt = System.currentTimeMillis(),
         )
     }
 
@@ -389,34 +446,75 @@ class RecipeEditorViewModel(
 
     private fun buildIngredients(drafts: List<IngredientDraft>): List<RecipeIngredient>? {
         val result = ArrayList<RecipeIngredient>(drafts.size)
-        var failed: UiText? = null
         val foods = foodsState.value
+        val recipes = recipesState.value
         for (draft in drafts) {
-            val food = foods.firstOrNull { it.id.value == draft.foodId }
-            val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
-            val servingCount = draft.servingCount.parseNonNegativeDouble()
-            val ingredientOk =
-                food != null &&
-                    (rawWeight != null || servingCount != null) &&
-                    (servingCount == null || food.servingUnit != null)
-            if (ingredientOk) {
-                result +=
-                    RecipeIngredient(
-                        food = food,
-                        rawWeight = rawWeight,
-                        servingCount = servingCount,
-                    )
-            } else {
-                failed = UiText.StringResource(R.string.recipe_editor_error_ingredient_weight)
-                break
+            val ingredient =
+                if (draft.recipeId != null) {
+                    resolveRecipeIngredient(draft, recipes)
+                } else {
+                    resolveFoodIngredient(draft, foods)
+                }
+            if (ingredient == null) {
+                _state.update {
+                    it.copy(ingredientError = UiText.StringResource(R.string.recipe_editor_error_ingredient_weight))
+                }
+                return null
             }
+            result += ingredient
         }
-        return if (failed == null) {
-            result
-        } else {
-            _state.update { it.copy(ingredientError = failed) }
-            null
-        }
+        return result
+    }
+
+    private fun resolveRecipeIngredient(
+        draft: IngredientDraft,
+        recipes: List<Recipe>,
+    ): RecipeIngredient? {
+        val recipe = recipes.firstOrNull { it.id.value == draft.recipeId } ?: return null
+        val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
+        val servingCount = draft.servingCount.parseNonNegativeDouble()
+        if (rawWeight == null && servingCount == null) return null
+        val snapshot = createSnapshot(recipe)
+        return RecipeIngredient(
+            food = null,
+            recipeSnapshot = snapshot,
+            rawWeight = rawWeight,
+            servingCount = servingCount,
+        )
+    }
+
+    private fun resolveFoodIngredient(
+        draft: IngredientDraft,
+        foods: List<FoodItem>,
+    ): RecipeIngredient? {
+        val food = foods.firstOrNull { it.id.value == draft.foodId }
+        val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
+        val servingCount = draft.servingCount.parseNonNegativeDouble()
+        val hasWeight = rawWeight != null || servingCount != null
+        val hasServingUnit = servingCount == null || food?.servingUnit != null
+        if (food == null || !hasWeight || !hasServingUnit) return null
+        return RecipeIngredient(
+            food = food,
+            recipeSnapshot = null,
+            rawWeight = rawWeight,
+            servingCount = servingCount,
+        )
+    }
+
+    private fun createSnapshot(recipe: Recipe): RecipeSnapshot {
+        val totalWeight = recipe.finalWeight?.grams ?: recipe.totalRawWeight().grams
+        val nutritionPer100g =
+            recipe.nutritionPer100g()
+                ?: (recipe.totalNutrition() * (100.0 / recipe.totalRawWeight().grams))
+        val gramsPerPortion = totalWeight / recipe.portions
+        return RecipeSnapshot(
+            recipeId = recipe.id,
+            recipeName = recipe.name,
+            nutritionPer100g = nutritionPer100g,
+            originalLastModifiedAt = recipe.lastModifiedAt,
+            portions = recipe.portions,
+            gramsPerPortion = gramsPerPortion,
+        )
     }
 
     private fun <T> List<T>.updateAt(

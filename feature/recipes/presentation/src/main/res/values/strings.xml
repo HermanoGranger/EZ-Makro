@@ -44,5 +44,11 @@
     <string name="recipe_editor_error_save_failed">Fehler beim Speichern</string>
 
     <string name="recipe_ingredient_picker_title">Zutat wählen</string>
-    <string name="recipe_ingredient_picker_empty">Keine Lebensmittel</string>
+    <string name="recipe_ingredient_picker_empty">Keine Lebensmittel oder Rezepte</string>
+    <string name="recipe_ingredient_picker_section_recipes">Rezepte</string>
+    <string name="recipe_ingredient_picker_section_foods">Lebensmittel</string>
+    <string name="recipe_ingredient_picker_recipe_badge">Rezept</string>
+    <string name="recipe_editor_recipe_snapshot_changed">Rezept geändert</string>
+    <string name="recipe_editor_update_snapshot">Snapshot aktualisieren</string>
+    <string name="recipe_editor_recipe_serving_count">Portionen</string>
 </resources>
