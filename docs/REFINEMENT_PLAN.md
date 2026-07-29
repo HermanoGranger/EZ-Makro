@@ -4,433 +4,418 @@
 
 This document outlines the incremental refinement implementation plan for Phase 9 of the EZ Makro project. The plan follows the AGENTS.md development workflow and executes the refinement requirements across multiple development sessions.
 
-The implementation is staged into 5 steps:
-1. **Food Creation Refactor** - Optional per-100g instead of dual calculation modes
-2. **Recipe Diary Entry Enhancement** - Support portions OR weight for recipes
-3. **Enhanced Diary UI** - Collapsible entries with macro details
-4. **Date Navigation Implementation** - Past/future date access
-5. **Unified Food Interface Analysis** - Planning for integrated food addition
+### Architektur-Update: Immer per 100g
+
+**Kernentscheidung:** Intern werden Nährwerte IMMER pro 100g gespeichert.
+- Beim Erstellen eines Lebensmittels gibt der User immer die Nährwerte pro 100g an (Pflichtfeld)
+- Optional kann zusätzlich eine Portionsgröße in Gramm angegeben werden
+- Beim Loggen im Tagebuch oder Rezept wird aus den per-100g-Werten + Portionsgröße gerechnet
+- Beispiel: Apfel mit 52 kcal pro 100g, Portionsgröße = 120g → eine Portion = 62,4 kcal
+- `ServingUnit`-Label wird auto-generiert (z. B. `"1 Portion (120g)"`)
+- ADR-003 (Rohgewicht vs. Endgewicht) gilt weiterhin unverändert
+
+### Workflow pro Step
+
+Jeder Step folgt dem AGENTS.md-Workflow:
+
+1. **Planning** — Analyse & Design
+2. **Implementation** — Code schreiben
+3. **Unit Tests** — Tests schreiben
+4. **Integration Tests** — End-to-End testen
+5. **Self Review** — Code-Qualität prüfen
+6. **Architecture Explanation** — Entscheidungen dokumentieren
+7. **Open Questions / Human in the Loop** — Unklarheiten klären
+8. **Refinement** — Plan verfeinern
+9. **Acceptance Check** — Prüfen ob alle Kriterien erfüllt
+10. **Commit** — Nur nach explizitem Befehl vom User
 
 ---
 
-## Development Workflow Integration
+## ✅ Step 1 (DONE) — Food Creation: Per-100g optional
 
-This plan follows the AGENTS.md workflow for each phase:
+**Commit:** `e1f0498`
 
-1. **Planning** - Analysis & design
-2. **Implementation** - Code changes
-3. **Unit Tests** - Test coverage
-4. **Integration Tests** - End-to-end verification
-5. **Self Review** - Quality assessment
-6. **Architecture Explanation** - Design documentation
-7. **Open Questions/Human in the Loop** - Risk discussion
-8. **Refinement** - Requirements analysis
-9. **Acceptance Check** - Final verification
-10. **Commit** - Only after explicit approval
+### Was gemacht wurde
+- `FoodItem.nutritionPer100g: NutritionValues` → `NutritionValues?` (optional/nullable)
+- FoodEditScreen erlaubt Speichern ohne Nährwerte
+- UI zeigt "–" wenn keine Nährwerte vorhanden
+- DB-Migration 3→4: `nutri_*`-Spalten nullable
+- `RecipeCalculation` fallback auf `NutritionValues.ZERO` bei null
+- Neue Tests: `saveWithoutPer100g`, `null nutritionPer100g` in Calculation
 
----
-
-## Step 1: Food Creation Refactor - Optional Per-100g
-
-### Problem Statement
-Current food creation uses dual calculation modes (Portion vs Weight), which creates unnecessary complexity for users.
-
-**Requirement:** Replace dual modes with a simple optional per-100g field, similar to how "pro 100g" works in the app.
-
-### Files to Modify
+### Files
 - `core/domain/model/FoodItem.kt`
-- `feature/food/presentation/*/FoodEditViewModel.kt`
-- `feature/food/presentation/*/FoodEditScreen.kt`
-- `core/data/*/FoodItemEntityMapper.kt`
-- `core/data/*/dto/*.kt`
-
-### Breaking Changes Analysis
-| Layer | Impact | Severity |
-|-------|--------|----------|
-| **Domain** | FoodItem model modified | 🔴 High |
-| **Presentation** | UI layer refactored | 🔴 High |
-| **Data** | Entity mappers updated | 🔴 High |
-| **Tests** | All tests affected | 🔴 High |
-
-### Implementation Flow
-
-#### Task 1: Planning (Session 1)
-**Deliverables:**
-- Architecture diagram showing food creation flow
-- Detailed API changes table
-- Migration matrix for breaking changes
-- Test impact assessment
-
-**Acceptance Criteria:**
-- ✅ All modifications documented
-- ✅ Breaking changes impact quantified
-- ✅ Test strategy defined
-
-#### Task 2: Implementation (Session 2)
-**Implementation Tasks:**
-- Add optional `per100g` field to FoodItem model
-- Remove `RecipeCalculationMode` enum usage
-- Simplify UI to single per-100g input field
-- Update entity ↔ DTO conversion in mappers
-
-**Code Quality Requirements:**
-- Maintain type safety for calculations
-- Preserve existing error handling
-- Follow existing naming conventions
-- Keep null safety intact
-
-#### Task 3: Unit Tests (Session 3)
-**Test Coverage Areas:**
-- Domain: FoodItem validation, nutrition calculation
-- Presentation: ViewModel state management
-- Data: Entity mappers roundtrip testing
-
-**Parallel Testing Strategy:**
-- Domain tests can run independently
-- Presentation tests require working domain
-- Data tests depend on both layers
-
-#### Task 4: Integration Tests (Session 4)
-**Test Scenarios:**
-- Complete food create/read/update flow
-- Per-100g nutrition calculation validation
-- Error handling for malformed input
-- Cross-layer contract validation
-
-#### Task 5: Self Review (Session 5)
-**Quality Gates:**
-- ✅ Code compiles without errors
-- ✅ Linting/formatting passes (`./gradlew detekt`, `./gradlew ktlintCheck`)
-- ✅ Architecture principles maintained
-- ✅ All tests passing
-- ✅ Breaking changes properly documented
-
-#### Task 6: Architecture Explanation (Session 6)
-**Documentation Requirements:**
-- ADR for food creation simplification
-- Decision rationale and alternatives
-- Architecture impact assessment
-- Migration considerations
-
-#### Task 7: Open Questions/Human in the Loop (Session 7)
-**Review Points:**
-- User experience implications and testing
-- Performance impact assessment
-- Long-term maintenance considerations
-- Regression risk evaluation
-
-#### Task 8: Refinement Review (Session 8)
-**Acceptance Criteria:**
-- ✅ Food creation logic simplified per spec
-- ✅ Per-100g optional functionality verified
-- ✅ UI improvements confirmed and tested
-- ✅ All requirements met
-
----
-
-## Step 2: Recipe Diary Entry Enhancement - Portions OR Weight
-
-### Problem Statement
-Recipe diary entries currently support only portions for logging, but when recipes have per-100g nutrition, users need flexibility to log by weight as well.
-
-**Requirement:** Support logging of recipes by portion count OR amount in grams.
-
-### Files to Modify
-- `core/domain/model/DiaryEntry.kt`
+- `feature/food/presentation/edit/FoodEditViewModel.kt`
+- `feature/food/presentation/model/FoodUi.kt`
+- `core/data/food/mapper/FoodItemEntityMapper.kt`
+- `core/data/food/RoomFoodLocalDataSource.kt`
+- `core/data/recipe/RoomRecipeLocalDataSource.kt`
 - `core/domain/calculation/RecipeCalculation.kt`
+- `core/database/entity/FoodItemEntity.kt`
+- `core/database/dao/FoodItemDao.kt`
+- `core/database/migration/Migrations.kt`
+
+---
+
+## ✅ Step 2 (DONE) — Recipe Diary Entry Enhancement
+
+### Was gemacht wurde
+- Diary unterstützt für Recipes sowohl `amountGrams` als auch `portionCount`
+- `DiaryEntry`: Recipes können per Gramm ODER Portion geloggt werden
+- Diary-UI: Auswahl zwischen Portionen und Gramm bei Rezept-Eintrag
+- AddToDiaryUseCases verarbeiten beide Modi
+
+### Files
+- `core/domain/model/DiaryEntry.kt`
 - `core/domain/usecase/diary/AddToDiaryUseCases.kt`
-- `core/data/*/diary/DiaryEntryEntityMapper.kt`
-- `feature/diary/presentation/*` (multiple files)
-
-### Breaking Changes Analysis
-| Layer | Impact | Severity |
-|-------|--------|----------|
-| **Domain** | DiaryEntry model expanded | 🔴 High |
-| **Presentation** | Recipe diary UI modified | 🔴 High |
-| **Data** | Entity contracts updated | 🔴 High |
-| **Tests** | Integration tests heavily affected | 🔴 High |
-
-### Implementation Flow
-
-#### Task 1: Planning (Session 9)
-**Deliverables:**
-- Domain model changes documented
-- UI flow diagrams for recipe diary
-- Calculation logic specification
-- Test impact analysis
-
-**Acceptance Criteria:**
-- ✅ Clear specification for modifications
-- ✅ Risk assessment completed
-- ✅ Migration plan defined
-
-#### Task 2: Implementation (Session 10)
-**Implementation Tasks:**
-- Update DiaryEntry to allow amountGrams for recipes
-- Modify RecipeCalculation to handle portion OR weight
-- Update use cases to process new diary entry types
-- Enhance UI with weight input option for recipes
-
-#### Task 3-8: Follow Standard Workflow
-*Execute Tasks 3-8 using the same pattern as Step 1 with appropriate acceptance criteria*
-
----
-
-## Step 3: Enhanced Diary UI - Collapsible Entries
-
-### Problem Statement
-The diary UI currently shows a flat list of entries without macro details, making it difficult for users to understand nutritional content at a glance.
-
-**Requirements:**
-- Summary view showing only macro totals per meal slot
-- Expand/collapse functionality to show individual food entries
-- Display macro breakdown for each entry when expanded
-- Edit/delete capabilities for individual entries
-- Maintain compact overview while providing detailed access
-
-### Files to Modify
-- `core/presentation/diary/CollapsibleDiaryEntry.kt` (new)
+- `core/data/diary/mapper/DiaryEntryEntityMapper.kt`
+- `feature/diary/presentation/day/DiaryDayViewModel.kt`
 - `feature/diary/presentation/day/DiaryDayScreen.kt`
-- `feature/diary/presentation/day/DiaryDayViewModel.kt`
 - `feature/diary/presentation/model/DiaryUi.kt`
-- `core/presentation/diary/DiaryDayActions.kt` (new)
-
-### Breaking Changes Analysis
-| Layer | Impact | Severity |
-|-------|--------|----------|
-| **Presentation** | UI layer significantly updated | 🔴 High |
-| **Core** | New design system components | 🟡 Medium |
-| **Tests** | All diary presentation tests updated | 🔴 High |
-
-### Implementation Flow
-
-#### Task 1: Planning (Session 17)
-**Deliverables:**
-- UI component architecture documented
-- Expand/collapse interaction design
-- Component API specification
-- Animation and performance considerations
-
-**Acceptance Criteria:**
-- ✅ UI architecture documented
-- ✅ Interaction patterns specified
-- ✅ Performance requirements defined
-
-#### Task 2: Implementation (Session 18)
-**New Components to Create:**
-- **CollapsibleDiaryEntry**: Main expandable entry component
-- **DiaryDayActions**: Action buttons (edit/delete)
-- **Enhanced DiaryDayScreen**: Updated layout and behavior
-
-**Implementation Tasks:**
-- Create new composable functions
-- Implement expand/collapse state management
-- Add edit/delete interaction handlers
-- Integrate with existing data flows
-
-#### Task 3-8: Follow Standard Workflow
-*Execute Tasks 3-8 using the same pattern as Step 1*
 
 ---
 
-## Step 4: Date Navigation Implementation
+## 🔲 Step 3 — Portionsgröße & Per-100g-Vereinheitlichung
 
-### Problem Statement
-Current diary navigation is limited to displaying only the current day's entries, preventing users from viewing or editing past or future dates.
+### Ziel
+Das UI für Lebensmittel-Erstellung auf die neue Architektur ("immer per 100g") umstellen. Foods UND Recipes im Tagebuch sollen per `portionCount` loggbar sein (wenn `servingUnit` gesetzt).
 
-**Requirements:**
-- Previous/next date navigation buttons
-- Date jumping from history/dashboard
-- Current date as default when opening
-- Support for creating entries in the future
-- Maintain day-specific state and navigation
+### Problem
+- `nutritionPer100g` ist aktuell nullable (Step 1) — soll aber im Normalfall immer eingegeben werden
+- Foods können NICHT per `portionCount` geloggt werden (nur Recipes)
+- `FoodEditScreen` hat kein Feld für Portionsgröße in Gramm
 
-### Files to Modify
-- `feature/diary/presentation/day/DiaryDayViewModel.kt`
-- `feature/diary/presentation/history/HistoryViewModel.kt`
-- `feature/diary/presentation/navigation/DiaryRoutes.kt`
-- `core/domain/datasource/DiaryLocalDataSource.kt`
+### Lösung
+1. **FoodEditScreen umbauen:**
+   - Nährwerte pro 100g sind das primäre/zentrale Eingabefeld
+   - Zusätzlich: optionales Feld "Portionsgröße in Gramm"
+   - `ServingUnit` wird aus Gramm-Zahl auto-generiert (`"1 Portion (120g)"`)
+   - Beim Bearbeiten: bestehende `servingUnit` in Gramm-Zahl umwandeln
 
-### Breaking Changes Analysis
-| Layer | Impact | Severity |
-|-------|--------|----------|
-| **Domain** | Data layer enhanced | 🔴 High |
-| **Presentation** | Navigation features added | 🔴 High |
-| **Tests** | New integration scenarios needed | 🟡 Medium |
+2. **DiaryEntry erweitern:**
+   - Foods dürfen `portionCount` setzen (wenn `servingUnit` != null)
+   - Foods müssen nicht zwingend `amountGrams` setzen (dürfen auch `portionCount`)
+   - Validierung: `food.servingUnit != null` für `portionCount` bei Food
 
-### Implementation Flow
+3. **Diary-UI anpassen:**
+   - Beim Hinzufügen eines Foods: Auswahl zwischen Gramm und Portionen
+   - Portionen-Auswahl nur wenn `servingUnit` gesetzt
 
-#### Task 1: Planning (Session 23)
-**Deliverables:**
-- Navigation architecture documented
-- Date picker implementation plan
-- Cross-feature coordination design
-- Performance optimization strategy
+### Betroffene Files
+- `feature/food/presentation/edit/FoodEditScreen.kt` — UI umbauen
+- `feature/food/presentation/edit/FoodEditViewModel.kt` — Portionsgröße-Logik
+- `feature/food/presentation/edit/FoodEditState.kt` — State erweitern
+- `core/domain/model/DiaryEntry.kt` — Food darf `portionCount` setzen
+- `core/domain/model/FoodItem.kt` — ggf. Revert nullable → required (oder als `require`-Nur-im-Normalfall belassen)
+- `core/domain/calculation/DayNutrition.kt` — Berechnung für Food-Portionen
+- `feature/diary/presentation/day/DiaryDayViewModel.kt` — Portion-Logik beim Hinzufügen
+- `feature/diary/presentation/day/DiaryDayScreen.kt` — Gramm/Portion-Auswahl
+- `core/presentation/diary/AddToDiarySheet.kt` — Portion-Auswahl
+- `core/data/diary/mapper/DiaryEntryEntityMapper.kt` — erweiterte Logik
 
-**Acceptance Criteria:**
-- ✅ Navigation architecture specified
-- ✅ Coordinate with existing routes
-- ✅ Performance requirements defined
+### Tests
+- Food-Portion-Berechnung (per-100g × gramsEquivalent / 100)
+- Diary-Eintrag mit `portionCount` für Food
+- Validierung: `servingUnit` muss gesetzt sein für Food-Portion
+- UI: Gramm/Portion-Auswahl sichtbar/nicht sichtbar
 
-#### Task 2: Implementation (Session 24)
-**Implementation Tasks:**
-- Update ViewModels to handle date parameter
-- Implement navigation controls (prev/next)
-- Add date jumping from history
-- Update repository data sources
-- Enhance navigation routing
-
-#### Task 3-8: Follow Standard Workflow
-*Execute Tasks 3-8 using the same pattern as previous steps*
-
----
-
-## Step 5: Unified Food Interface Analysis
-
-### Decision Point
-Analyze whether to implement a new feature module or refactor existing food addition interfaces.
-
-**Options:**
-1. **Option A**: Refactor existing interfaces (`AddToDiarySheet`, `FoodEditScreen`)
-2. **Option B**: New feature module (`feature.foodselection/`) following clean architecture
-3. **Option C**: Gradual migration strategy with interim solutions
-
-### Analysis Required
-
-#### Task 1: Analysis (Session 31)
-**Deliverables:**
-- Module comparison analysis
-- Architecture impact assessment
-- Risk/benefit evaluation
-- Recommendation report with detailed reasoning
-
-**Evaluation Criteria:**
-- Clean Architecture compliance
-- Development velocity
-- Maintainability
-- User experience improvement
-- Risk to existing features
-
-### Implementation Decision
-Based on analysis, choose and implement one of the options with detailed documentation of the architectural decisions.
+### Acceptance Criteria
+- ✅ FoodEditor zeigt per-100g-Felder als primäre Eingabe + optional "Portionsgröße (g)"
+- ✅ `ServingUnit` wird aus Gramm-Zahl auto-generiert
+- ✅ Foods können per `portionCount` im Tagebuch geloggt werden
+- ✅ Berechnung: Portion-Makros = `nutritionPer100g × gramsEquivalent / 100`
+- ✅ Diary-UI zeigt Auswahl Gramm/Portion beim Food-Hinzufügen
+- ✅ Bestehende Tests passen weiterhin
+- ✅ `./gradlew build` + `./gradlew detekt` + `./gradlew ktlintCheck` grün
 
 ---
 
-## Cross-Step Dependencies & Coordination
+## 🔲 Step 4 — Enhanced Diary UI (Collapsible Entries)
 
-### Implementation Order (Critical Path)
+### Ziel
+Die Tagebuch-Übersicht zeigt nur Makro-Zusammenfassungen pro Mahlzeit. Beim Antippen einer Mahlzeit werden die Details sichtbar (einzelne Lebensmittel mit Makros). Einträge sind editierbar (Menge ändern, löschen).
+
+### Problem
+- DiaryDayScreen zeigt alle Einträge als flache Liste
+- Keine Expand/Collapse-Funktionalität
+- Keine Makro-Details pro Lebensmittel in der Übersicht
+- Keine Edit-Funktion für Einträge
+
+### Lösung
+1. **Neue Composables:**
+   - `CollapsibleMealSlot`: Mahlzeit mit Makro-Zusammenfassung + Expand-Button
+   - `DiaryEntryDetail`: Zeigt Makros pro Lebensmittel/Rezept + Edit/Delete-Buttons
+   - `EditPortionDialog`: Dialog zum Ändern der Menge (Gramm/Portion)
+
+2. **State erweitern:**
+   - `DiaryDayState` um `expandedSlots: Set<MealSlot>`
+   - `DiaryDayViewModel` um Expand/Collapse-Actions
+
+3. **Edit/Delete:**
+   - Delete: bereits vorhanden (DeleteConfirmDialog)
+   - Edit: neuer Dialog/Sheet für Mengen-Änderung
+   - Nach Edit: `updateEntry` im Repository aufrufen
+
+### Betroffene Files
+- `feature/diary/presentation/day/DiaryDayScreen.kt` — Haupt-UI-Redesign
+- `feature/diary/presentation/day/DiaryDayState.kt` — `expandedSlots` + Edit-State
+- `feature/diary/presentation/day/DiaryDayAction.kt` — Expand/Collapse/Edit-Actions
+- `feature/diary/presentation/day/DiaryDayEvent.kt` — ggf. neue Events
+- `feature/diary/presentation/day/DiaryDayViewModel.kt` — neue Actions verarbeiten
+- `feature/diary/presentation/model/DiaryUi.kt` — ggf. neue UI-Modelle
+- `core/presentation/diary/` — neue Composables
+- `core/domain/repository/DiaryRepository.kt` — ggf. `updateEntry`
+- `core/domain/usecase/diary/` — ggf. neuer UseCase
+
+### Tests
+- DiaryDayViewModel: Expand/Collapse-State
+- DiaryDayViewModel: Edit-Menge-Update
+- UI: Collapsible verhalten sich korrekt
+- UI: Edit-Dialog öffnet/schließt
+
+### Acceptance Criteria
+- ✅ Makro-Zusammenfassung pro Mahlzeit (kcal, Protein, Fett, KH, Ballaststoffe)
+- ✅ Expand/Collapse pro Mahlzeit mit Animation
+- ✅ Detail-Ansicht mit jedem Lebensmittel + Makros + Menge
+- ✅ Editieren der Menge pro Eintrag (Gramm/Portion)
+- ✅ Löschen pro Eintrag (bereits vorhanden)
+- ✅ Alle Tests grün
+- ✅ `./gradlew build` + `./gradlew detekt` + `./gradlew ktlintCheck` grün
+
+---
+
+## 🔲 Step 5 — Date Navigation
+
+### Ziel
+Im Tagebuch können Tage vor und zurück gewechselt werden. Future-Entries und Vergangenheits-Änderungen sind möglich. Default beim Öffnen ist der aktuelle Tag. Navigation auch vom Dashboard aus.
+
+### Problem
+- Diary zeigt nur den aktuellen Tag (kein Wechsel möglich)
+- Keine Möglichkeit Future-Entries zu erfassen
+- Kein Datums-Sprung aus History/Dashboard
+- `DiaryDayViewModel` lädt festes Datum aus `SavedStateHandle`
+
+### Lösung
+1. **Navigation UI:**
+   - Prev/Next-Pfeile in der TopAppBar
+   - Datum-Anzeige zwischen den Pfeilen
+   - Antippen des Datums → DatePicker oder Kalender
+
+2. **ViewModel:**
+   - `date` wird über Action geändert (nicht nur init)
+   - `onAction(OnPreviousDay)`, `onAction(OnNextDay)`, `onAction(OnGoToDate(date))`
+   - Flow wird bei Datums-Wechsel neu gestartet
+
+3. **Routing:**
+   - History → Day: `navigate("diary/day/$date")`
+   - Dashboard → Day: `navigate("diary/day/$date")`
+   - Nav-Back kehrt zum vorherigen Datum zurück
+
+4. **Dashboard-Integration:**
+   - Dashboard zeigt aktuellen Tag + Makros
+   - Klick auf Tag → öffnet Diary an diesem Datum
+   - Dashboard hat auch Prev/Next
+
+### Betroffene Files
+- `feature/diary/presentation/day/DiaryDayViewModel.kt` — date-Änderungen verarbeiten
+- `feature/diary/presentation/day/DiaryDayScreen.kt` — Navigation UI (Pfeile, Datum)
+- `feature/diary/presentation/day/DiaryDayAction.kt` — neue Navigation-Actions
+- `feature/diary/presentation/day/DiaryDayState.kt` — aktuelles Datum
+- `feature/diary/presentation/navigation/DiaryRoutes.kt` — Routing
+- `feature/diary/presentation/history/HistoryViewModel.kt` — Jump-to-Date
+- `core/domain/datasource/DiaryLocalDataSource.kt` — datums-basierte Queries
+- `core/data/diary/RoomDiaryLocalDataSource.kt` — datums-basierte Queries
+- `feature/dashboard/presentation/DashboardScreen.kt` — Tag-Navigation
+- `feature/dashboard/presentation/DashboardViewModel.kt` — Tag-Wechsel
+
+### Tests
+- DiaryDayViewModel: date-Wechsel via Action
+- DiaryDayViewModel: Neuladen bei Datums-Wechsel
+- Navigation: prev/next ändert den State korrekt
+- Dashboard: Klick auf Tag öffnet Diary an dem Datum
+
+### Acceptance Criteria
+- ✅ Prev/Next-Pfeile im Diary ändern den Tag
+- ✅ Datum wird in der TopAppBar angezeigt
+- ✅ Klick auf Datum → DatePicker (optional)
+- ✅ Future-Entries sind möglich
+- ✅ Vergangenheits-Änderungen sind möglich
+- ✅ Default beim Öffnen: aktueller Tag
+- ✅ Dashboard hat Navigation zum Diary mit korrektem Datum
+- ✅ History → Day funktioniert
+- ✅ Alle Tests grün
+- ✅ `./gradlew build` + `./gradlew detekt` + `./gradlew ktlintCheck` grün
+
+---
+
+## 🔲 Step 6 — Recipe-as-Ingredient (Snapshot Independence)
+
+### Ziel
+Rezepte sollen als Zutat in anderen Rezepten verwendet werden können (z. B. Pizzateig in Pizza mit Toppings). Dabei sind sie unabhängig: Wenn das innere Rezept geändert oder gelöscht wird, bleibt das äußere Rezept unverändert.
+
+### Architektur
+**Referenz + Snapshot:** Die Nährwerte werden beim Hinzufügen eingefroren (Snapshot), zusätzlich bleibt eine Referenz auf das Original-Rezept. Die UI zeigt an, ob sich das Original geändert hat.
+
+### Lösung
+1. **Neues Domain-Modell: `RecipeSnapshot`:**
+   ```kotlin
+   data class RecipeSnapshot(
+       val recipeId: RecipeId,
+       val recipeName: String,
+       val nutritionPer100g: NutritionValues,
+       val originalLastModifiedAt: Long?,
+   )
+   ```
+
+2. **`RecipeIngredient` erweitern:**
+   ```kotlin
+   data class RecipeIngredient(
+       val food: FoodItem?,
+       val recipeSnapshot: RecipeSnapshot?,
+       val rawWeight: RawWeight?,
+       val servingCount: Double?,
+   )
+   ```
+   - `food` XOR `recipeSnapshot` (eines von beiden muss gesetzt sein)
+   - `rawWeight` oder `servingCount` für Mengenangabe
+
+3. **RecipeEditor anpassen:**
+   - Zutaten-Picker zeigt auch Rezepte an
+   - Beim Hinzufügen eines Rezepts: Snapshot erstellen (aktuelle Nährwerte + Name kopieren)
+   - Menge kann als Gramm oder Portionen eingegeben werden
+   - Portionen werden über per-100g + finalWeight/portions berechnet
+
+4. **Snapshot-Aktualisierung (optional, später):**
+   - UI-Badge "Original geändert" wenn `originalLastModifiedAt` vom aktuellen Recipe abweicht
+   - Button "Snapshot aktualisieren"
+
+### Betroffene Files
+- `core/domain/model/RecipeSnapshot.kt` — NEU
+- `core/domain/model/RecipeIngredient.kt` — erweitern
+- `core/domain/model/Recipe.kt` — ggf. Anpassung
+- `core/domain/model/DiaryEntry.kt` — recipe-Snapshot in Diary (optional)
+- `core/domain/calculation/RecipeCalculation.kt` — Snapshot-Berechnung
+- `core/data/recipe/mapper/RecipeEntityMapper.kt` — Snapshot persistieren
+- `core/database/entity/RecipeEntity.kt` — Snapshot-Felder
+- `core/database/dao/RecipeDao.kt` — ggf. Queries
+- `feature/recipes/presentation/editor/RecipeEditorViewModel.kt` — Snapshot-Logik
+- `feature/recipes/presentation/editor/RecipeEditorState.kt` — Snapshot-State
+- `feature/recipes/presentation/editor/RecipeEditorScreen.kt` — Recipe-Picker
+- `core/presentation/diary/AddToDiarySheet.kt` — ggf. Recipe-Snapshot
+
+### Tests
+- RecipeSnapshot: Erstellung + Aktualisierung
+- RecipeIngredient: `food` XOR `recipeSnapshot`
+- Berechnung: Snapshot-Nährwerte werden korrekt verwendet
+- Independence: Änderung am Original ändert Snapshot NICHT
+- UI: Recipe-Picker zeigt Recipes an
+
+### Acceptance Criteria
+- ✅ Recipe-Picker zeigt Recipes als Zutaten-Auswahl
+- ✅ Beim Hinzufügen wird Snapshot erstellt (Nährwerte + Name)
+- ✅ Änderungen am inneren Rezept beeinflussen äußeres NICHT
+- ✅ Löschen des inneren Rezepts beeinflusst äußeres NICHT
+- ✅ Menge kann als Gramm oder Rezept-Portionen eingegeben werden
+- ✅ DB-Schema unterstützt Snapshot-Persistierung
+- ✅ Migration für bestehende Recipes (Snapshot = null)
+- ✅ Alle Tests grün
+- ✅ `./gradlew build` + `./gradlew detekt` + `./gradlew ktlintCheck` grün
+
+---
+
+## 🔲 Step 7 — Unified Food Interface Analysis
+
+### Ziel
+Analysieren, ob und wie ein einheitliches Lebensmittel-Hinzufügen-Interface (ähnlich Foodvisor) implementiert werden soll. Ein Bottom-Sheet-Dialog über den ganzen Screen mit drei Tabs: Barcode, Suche, Meine Lebensmittel.
+
+### Analyse
+1. **Aktuelle Situation:**
+   - Food hinzufügen: `FoodEditScreen`, `BarcodeScanScreen`, `FoodSearchScreen`
+   - Recipe hinzufügen: `RecipeEditorScreen`
+   - Diary hinzufügen: `AddToDiarySheet`, `QuickAddScreen`
+   - Alle haben eigene Einstiegspunkte und UIs
+
+2. **Option A: Refactor bestehender Interfaces**
+   - `AddToDiarySheet` zum zentralen Bottom-Sheet ausbauen
+   - Tabs: Barcode, Suche, Meine Lebensmittel
+   - Vorteil: kein neues Modul nötig
+   - Nachteil: Komplexität in `:core-presentation` steigt
+
+3. **Option B: Neues Feature-Modul `:feature-foodpicker`**
+   - Eigenes Modul nach Clean Architecture
+   - Klare Trennung, wiederverwendbar
+   - Vorteil: saubere Architektur
+   - Nachteil: neues Modul, Aufwand
+
+4. **Option C: Graduelle Migration**
+   - Erst `AddToDiarySheet` ausbauen
+   - Später in eigenes Modul auslagern
+   - Vorteil: schneller erste Ergebnisse
+   - Nachteil: temporäre Unschärfe
+
+### Deliverables
+- Vergleichsanalyse der Optionen
+- Architecture Impact Assessment
+- Risiko/Nutzen-Bewertung
+- Detaillierte Empfehlung mit Begründung
+- Aufwandsschätzung
+
+### Acceptance Criteria
+- ✅ Analyse dokumentiert
+- ✅ Empfehlung mit Begründung
+- ✅ Aufwandsschätzung
+- ✅ Entscheidung getroffen (vom User)
+
+---
+
+## Cross-Step Dependencies
+
 ```mermaid
 graph TD
-    A[Step 1: Food Creation] --> B[Step 2: Recipe Diary Enhancement]
-    B --> C[Step 3: Enhanced Diary UI]
-    C --> D[Step 4: Date Navigation]
-    D --> E[Step 5: Food Interface Analysis]
+    A[Step 1 ✅ DONE] --> B[Step 2 ✅ DONE]
+    B --> C[Step 3 🔲]
+    C --> D[Step 4 🔲]
+    D --> E[Step 5 🔲]
+    E --> F[Step 6 🔲]
+    F --> G[Step 7 🔲]
 ```
 
 **Key Dependencies:**
-- **Step 1** must complete before **Step 2**
-  - Food creation changes not needed for recipe diary
-- **Step 2** must complete before **Step 3**
-  - Collapsible entries need diary entry model
-- **Step 3** and **Step 4** can be parallelized
-  - UI enhancements and navigation are independent
-- **Step 5** analysis can run concurrently with **Steps 1-4**
-
-### Shared Requirements
-
-#### Architecture Adherence
-- ✅ All changes follow Clean Architecture principles
-- ✅ Dependency direction: `app → feature → core → domain`
-- ✅ Feature modules remain independent
-- ✅ No circular dependencies introduced
-
-#### Testing Strategy
-- ✅ Unit tests for all domain logic
-- ✅ Integration tests for end-to-end flows
-- ✅ Presentation tests for UI behavior
-- ✅ Cross-layer contract validation
-
-#### Code Quality
-- ✅ Linting and formatting (`./gradlew detekt`, `./gradlew ktlintCheck`)
-- ✅ Type safety maintained throughout
-- ✅ Null safety preserved
-- ✅ Naming conventions followed
-
-#### Documentation
-- ✅ All modifications documented
-- ✅ ADR updates where needed
-- ✅ Breaking changes clearly documented
-- ✅ Migration paths specified
-
-### Risk Mitigation
-
-#### Breaking Change Management
-- **Documentation:** Clear breaking change matrices
-- **Migration:** Step-by-step migration guides
-- **Support:** User communication plan
-
-#### Testing Coverage
-- **Regression Testing:** Comprehensive test coverage
-- **Cross-validation:** Layer contract testing
-- **Integration Testing:** End-to-end scenario validation
-
-#### Performance Considerations
-- **Animation Optimization:** Smooth expand/collapse
-- **Data Loading:** Efficient date-based queries
-- **Memory Usage:** Component lifecycle management
+- **Step 3** (portionsgröße) benötigt **Step 1+2** als Basis
+- **Step 4** (collapsible UI) benötigt **Step 3** (Portion-Logik in Diary)
+- **Step 5** (date nav) benötigt **Step 4** (aktuelle Diary-UI)
+- **Step 6** (recipe-as-ingredient) kann parallel zu **Step 4+5** laufen
+- **Step 7** (food interface) ist letzter Schritt, baut auf allen auf
 
 ---
 
-## Acceptance Criteria Summary
+## Shared Requirements
 
-### Before All Steps (Session 31)
-- ✅ Complete all implementation phases
-- ✅ All tests passing
-- ✅ Architecture maintained and documented
-- ✅ Documentation updated
-- ✅ Breaking changes documented and approved
+### Architecture Adherence
+- Alle Änderungen folgen Clean Architecture
+- Dependency Direction: `app → feature → core → domain`
+- Feature-Module bleiben unabhängig voneinander
+- Domain hat KEINE Android-Abhängigkeiten
 
-### After Each Step
-- ✅ Specified features implemented per requirements
-- ✅ Acceptance criteria met and verified
-- ✅ All tests passing
-- ✅ Code quality standards met
-- ✅ Architecture principles maintained
+### Code Quality
+- `./gradlew detekt` muss grün sein
+- `./gradlew ktlintCheck` muss grün sein
+- `./gradlew build` muss grün sein
+- Keine TODOs im Code (nur im Plan)
+- Type Safety und Null Safety erhalten
 
----
+### Testing
+- Unit Tests für alle Domain-Logik
+- Integrationstests für End-to-End-Flows
+- ViewModel-Tests mit Turbine + UnconfinedTestDispatcher
+- Bestehende Tests müssen weiterhin passen
 
-## Project Management Recommendations
-
-### Task Tracking
-Use a tool like Todowrite to manage:
-- Session planning and tracking
-- Dependency management
-- Acceptance criteria verification
-- Cross-step coordination
-
-### Quality Gates
-Each session must pass:
-1. Code compilation without errors
-2. Linting/formatting compliance
-3. All relevant tests passing
-4. Architecture principles maintained
-5. Acceptance criteria met
+### Commit-Regel
+Niemals automatisch committen. Erst nach explizitem Befehl vom User (`Commit Phase X`).
 
 ---
 
-## Next Steps
-
-1. Review complete Refinement Plan
-2. Approve implementation sequence and session allocation
-3. Begin with Step 1 (Food Creation Refactor)
-4. Execute subsequent steps systematically
-5. Document decisions and outcomes throughout
-
----
-
-**Document Version:** 1.0
-**Created:** [Current Date]
+**Document Version:** 2.0
+**Created:** 2026-07-29
 **Project:** EZ Makro Phase 9 Refinement
-**Status:** Planning Phase
-
----
+**Status:** Aktualisiert (Steps 1+2 DONE)
