@@ -45,6 +45,9 @@ class DiaryDayScreenTest {
             slot = slot,
             isRecipe = false,
             detail = "150 g",
+            amountGrams = 150.0,
+            portionCount = null,
+            hasServingUnit = false,
             kcal = kcal,
             protein = "15",
             fat = "3",
@@ -81,6 +84,7 @@ class DiaryDayScreenTest {
                     DiaryDayCallbacks(
                         onAction = {},
                         onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
                         onNavigateToAddFood = {},
                         onNavigateToAddRecipe = {},
                         onNavigateToQuickAdd = {},
@@ -105,6 +109,7 @@ class DiaryDayScreenTest {
                     DiaryDayCallbacks(
                         onAction = {},
                         onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
                         onNavigateToAddFood = {},
                         onNavigateToAddRecipe = {},
                         onNavigateToQuickAdd = {},
@@ -128,6 +133,7 @@ class DiaryDayScreenTest {
                     DiaryDayCallbacks(
                         onAction = { if (it is DiaryDayAction.OnCopyYesterdayClick) clicked = true },
                         onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
                         onNavigateToAddFood = {},
                         onNavigateToAddRecipe = {},
                         onNavigateToQuickAdd = {},

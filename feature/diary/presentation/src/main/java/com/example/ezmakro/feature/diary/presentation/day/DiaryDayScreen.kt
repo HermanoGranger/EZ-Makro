@@ -1,7 +1,6 @@
 package com.example.ezmakro.feature.diary.presentation.day
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,13 +27,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.presentation.diary.CollapsibleMealSlot
+import com.example.ezmakro.core.presentation.diary.DiaryEntryDetailData
+import com.example.ezmakro.core.presentation.diary.EditPortionDialog
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
 import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
+import com.example.ezmakro.feature.diary.presentation.model.formatMacro
+import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -48,6 +51,7 @@ fun DiaryDayRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var pendingDelete by remember { mutableStateOf<Pair<String, MealSlot>?>(null) }
+    var editEntryId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state.copyYesterdayMessage) {
         state.copyYesterdayMessage?.let {
@@ -63,6 +67,7 @@ fun DiaryDayRoot(
             DiaryDayCallbacks(
                 onAction = viewModel::onAction,
                 onRequestDelete = { id, slot -> pendingDelete = id to slot },
+                onRequestEdit = { id -> editEntryId = id },
                 onNavigateToAddFood = onNavigateToAddFood,
                 onNavigateToAddRecipe = onNavigateToAddRecipe,
                 onNavigateToQuickAdd = onNavigateToQuickAdd,
@@ -79,6 +84,30 @@ fun DiaryDayRoot(
             onDismiss = { pendingDelete = null },
         )
     }
+
+    val editingEntry = findEntryById(state, editEntryId)
+    if (editingEntry != null) {
+        EditPortionDialog(
+            name = editingEntry.name,
+            isRecipe = editingEntry.isRecipe,
+            hasServingUnit = editingEntry.hasServingUnit,
+            initialAmountGrams = editingEntry.amountGrams,
+            initialPortionCount = editingEntry.portionCount,
+            onDismiss = { editEntryId = null },
+            onConfirm = { amountGrams, portionCount ->
+                viewModel.onAction(DiaryDayAction.OnSaveEdit(editingEntry.id, amountGrams, portionCount))
+                editEntryId = null
+            },
+        )
+    }
+}
+
+private fun findEntryById(
+    state: DiaryDayState,
+    entryId: String?,
+): DiaryEntryUi? {
+    if (entryId == null) return null
+    return (state.breakfast + state.lunch + state.dinner + state.snacks).firstOrNull { it.id == entryId }
 }
 
 private fun DiaryDayState.isEmptyDay(): Boolean =
@@ -87,6 +116,7 @@ private fun DiaryDayState.isEmptyDay(): Boolean =
 data class DiaryDayCallbacks(
     val onAction: (DiaryDayAction) -> Unit,
     val onRequestDelete: (String, MealSlot) -> Unit,
+    val onRequestEdit: (String) -> Unit,
     val onNavigateToAddFood: (String) -> Unit,
     val onNavigateToAddRecipe: (String) -> Unit,
     val onNavigateToQuickAdd: () -> Unit,
@@ -94,6 +124,7 @@ data class DiaryDayCallbacks(
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun DiaryDayScreen(
     state: DiaryDayState,
@@ -104,6 +135,7 @@ fun DiaryDayScreen(
     val lunchTitle = stringResource(R.string.diary_slot_lunch)
     val dinnerTitle = stringResource(R.string.diary_slot_dinner)
     val snacksTitle = stringResource(R.string.diary_slot_snacks)
+
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.diary_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -124,10 +156,51 @@ fun DiaryDayScreen(
                     )
                 }
             }
-            item { slotSection(MealSlot.BREAKFAST, breakfastTitle, state.breakfast, callbacks.onRequestDelete) }
-            item { slotSection(MealSlot.LUNCH, lunchTitle, state.lunch, callbacks.onRequestDelete) }
-            item { slotSection(MealSlot.DINNER, dinnerTitle, state.dinner, callbacks.onRequestDelete) }
-            item { slotSection(MealSlot.SNACKS, snacksTitle, state.snacks, callbacks.onRequestDelete) }
+
+            item {
+                mealSlotSection(
+                    slot = MealSlot.BREAKFAST,
+                    title = breakfastTitle,
+                    entries = state.breakfast,
+                    isExpanded = state.expandedSlots.contains(MealSlot.BREAKFAST),
+                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST)) },
+                    onEditEntry = callbacks.onRequestEdit,
+                    onRequestDelete = callbacks.onRequestDelete,
+                )
+            }
+            item {
+                mealSlotSection(
+                    slot = MealSlot.LUNCH,
+                    title = lunchTitle,
+                    entries = state.lunch,
+                    isExpanded = state.expandedSlots.contains(MealSlot.LUNCH),
+                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.LUNCH)) },
+                    onEditEntry = callbacks.onRequestEdit,
+                    onRequestDelete = callbacks.onRequestDelete,
+                )
+            }
+            item {
+                mealSlotSection(
+                    slot = MealSlot.DINNER,
+                    title = dinnerTitle,
+                    entries = state.dinner,
+                    isExpanded = state.expandedSlots.contains(MealSlot.DINNER),
+                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.DINNER)) },
+                    onEditEntry = callbacks.onRequestEdit,
+                    onRequestDelete = callbacks.onRequestDelete,
+                )
+            }
+            item {
+                mealSlotSection(
+                    slot = MealSlot.SNACKS,
+                    title = snacksTitle,
+                    entries = state.snacks,
+                    isExpanded = state.expandedSlots.contains(MealSlot.SNACKS),
+                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.SNACKS)) },
+                    onEditEntry = callbacks.onRequestEdit,
+                    onRequestDelete = callbacks.onRequestDelete,
+                )
+            }
 
             if (state.isEmptyDay()) {
                 item { Text(stringResource(R.string.diary_empty), modifier = Modifier.padding(16.dp)) }
@@ -191,38 +264,42 @@ private fun DiaryDayActions(
 }
 
 @Composable
-private fun slotSection(
+private fun mealSlotSection(
     slot: MealSlot,
     title: String,
     entries: List<DiaryEntryUi>,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    onEditEntry: (String) -> Unit,
     onRequestDelete: (String, MealSlot) -> Unit,
 ) {
-    Text(title, modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 16.dp, bottom = 8.dp))
-    if (entries.isEmpty()) {
-        Text(stringResource(R.string.diary_slot_empty), modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
-    }
-    entries.forEach { entry ->
-        EntryRow(entry = entry, onDelete = { onRequestDelete(entry.id, slot) })
-    }
+    val summary = entries.sumNutrition()
+    CollapsibleMealSlot(
+        title = title,
+        entries = entries.map { it.toDetailData() },
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+        onEditEntry = onEditEntry,
+        onRequestDelete = { entryId -> onRequestDelete(entryId, slot) },
+        summaryKcal = summary.kcal.formatMacro(),
+        summaryProtein = summary.proteinG.formatMacro(),
+        summaryFat = summary.fatG.formatMacro(),
+        summaryCarbs = summary.carbsG.formatMacro(),
+        summaryFiber = summary.fiberG.formatMacro(),
+    )
 }
 
-@Composable
-private fun EntryRow(
-    entry: DiaryEntryUi,
-    onDelete: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(entry.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("${entry.detail} · ${entry.kcal} kcal")
-        }
-        TextButton(onClick = onDelete) { Text(stringResource(R.string.diary_entry_delete)) }
-    }
-    HorizontalDivider()
-}
+private fun DiaryEntryUi.toDetailData(): DiaryEntryDetailData =
+    DiaryEntryDetailData(
+        id = id,
+        name = name,
+        detail = detail,
+        kcal = kcal,
+        protein = protein,
+        fat = fat,
+        carbs = carbs,
+        fiber = fiber,
+    )
 
 @Composable
 private fun SummaryRow(

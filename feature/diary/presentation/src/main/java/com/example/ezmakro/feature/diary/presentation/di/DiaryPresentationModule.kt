@@ -6,6 +6,7 @@ import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
+import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayViewModel
 import com.example.ezmakro.feature.diary.presentation.history.HistoryViewModel
 import com.example.ezmakro.feature.diary.presentation.quickadd.QuickAddViewModel
@@ -23,6 +24,7 @@ val diaryPresentationModule =
                 repository = get(),
                 copyYesterdayUseCase = get(),
                 deleteEntryUseCase = get(),
+                updateEntryUseCase = get(),
                 savedStateHandle = get(),
             )
         }
@@ -35,4 +37,5 @@ val diaryPresentationModule =
         factory { DeleteDiaryEntryUseCase(get()) }
         factory { GetHistoryUseCase(get()) }
         factory { QuickAddUseCase(get(), get()) }
+        factory { UpdateDiaryEntryUseCase(get()) }
     }

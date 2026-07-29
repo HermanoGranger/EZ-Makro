@@ -22,6 +22,7 @@
     <string name="diary_add_mode_label">Menge erfassen als</string>
     <string name="diary_add_mode_portions">Portionen</string>
     <string name="diary_add_mode_grams">Gramm</string>
+    <string name="diary_edit_title">Menge bearbeiten</string>
     <string name="diary_slot_breakfast">Frühstück</string>
     <string name="diary_slot_lunch">Mittag</string>
     <string name="diary_slot_dinner">Abend</string>

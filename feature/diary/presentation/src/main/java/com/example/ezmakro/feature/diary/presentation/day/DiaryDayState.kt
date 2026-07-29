@@ -14,6 +14,7 @@ data class DiaryDayState(
     val dayTotal: SlotSummaryUi? = null,
     val isCopyingYesterday: Boolean = false,
     val copyYesterdayMessage: String? = null,
+    val expandedSlots: Set<MealSlot> = emptySet(),
 )
 
 fun DiaryDayState.entriesForSlot(slot: MealSlot): List<DiaryEntryUi> =

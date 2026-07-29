@@ -9,6 +9,7 @@ import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
+import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddFoodClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddRecipeClick
@@ -18,6 +19,8 @@ import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnDelet
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnHistoryClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnMessageShown
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnQuickAddClick
+import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnSaveEdit
+import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnToggleSlot
 import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
 import com.example.ezmakro.feature.diary.presentation.model.formatMacro
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
@@ -36,6 +39,7 @@ class DiaryDayViewModel(
     private val repository: DiaryRepository,
     private val copyYesterdayUseCase: CopyYesterdayUseCase,
     private val deleteEntryUseCase: DeleteDiaryEntryUseCase,
+    private val updateEntryUseCase: UpdateDiaryEntryUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val date: LocalDate =
@@ -85,6 +89,21 @@ class DiaryDayViewModel(
             OnQuickAddClick -> emit(DiaryDayEvent.NavigateToQuickAdd)
             OnHistoryClick -> emit(DiaryDayEvent.NavigateToHistory)
             OnMessageShown -> _state.update { it.copy(copyYesterdayMessage = null) }
+            is OnToggleSlot -> {
+                _state.update {
+                    it.copy(
+                        expandedSlots =
+                            if (it.expandedSlots.contains(action.slot)) {
+                                it.expandedSlots - action.slot
+                            } else {
+                                it.expandedSlots + action.slot
+                            },
+                    )
+                }
+            }
+            is OnSaveEdit -> {
+                updateEntry(action.entryId, action.amountGrams, action.portionCount)
+            }
         }
     }
 
@@ -108,6 +127,14 @@ class DiaryDayViewModel(
 
     private fun delete(entryId: String) {
         viewModelScope.launch { deleteEntryUseCase(DiaryEntryId(entryId)) }
+    }
+
+    private fun updateEntry(
+        entryId: String,
+        amountGrams: Double?,
+        portionCount: Double?,
+    ) {
+        viewModelScope.launch { updateEntryUseCase(DiaryEntryId(entryId), amountGrams, portionCount) }
     }
 
     private fun emit(event: DiaryDayEvent) {

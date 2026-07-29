@@ -24,6 +24,16 @@ sealed interface DiaryDayAction {
     data object OnHistoryClick : DiaryDayAction
 
     data object OnMessageShown : DiaryDayAction
+
+    data class OnToggleSlot(
+        val slot: MealSlot,
+    ) : DiaryDayAction
+
+    data class OnSaveEdit(
+        val entryId: String,
+        val amountGrams: Double?,
+        val portionCount: Double?,
+    ) : DiaryDayAction
 }
 
 sealed interface DiaryDayEvent {
