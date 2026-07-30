@@ -14,6 +14,7 @@
     <string name="foodpicker_section_recent_recipes">Zuletzt verwendete Rezepte</string>
     <string name="foodpicker_section_recipes">Rezepte</string>
     <string name="foodpicker_empty">Keine Einträge</string>
+    <string name="foodpicker_favorites_empty">Keine Favoriten</string>
     <string name="foodpicker_empty_search">Keine Treffer</string>
     <string name="foodpicker_barcode_permission">Kamera-Berechtigung erforderlich</string>
     <string name="foodpicker_scanning">Scanne…</string>

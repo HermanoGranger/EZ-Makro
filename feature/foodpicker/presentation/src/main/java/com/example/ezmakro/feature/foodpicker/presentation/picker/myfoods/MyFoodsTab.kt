@@ -51,9 +51,9 @@ fun MyFoodsTab(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (state.showFoods) {
-            FoodList(foods = state.userFoods, onAction = onAction)
+            FoodList(foods = state.favoriteFoods, onAction = onAction)
         } else {
-            RecipeList(recipes = state.userRecipes, onAction = onAction)
+            RecipeList(recipes = state.favoriteRecipes, onAction = onAction)
         }
     }
 }
@@ -65,7 +65,7 @@ private fun FoodList(
 ) {
     if (foods.isEmpty()) {
         Text(
-            text = stringResource(R.string.foodpicker_empty),
+            text = stringResource(R.string.foodpicker_favorites_empty),
             modifier = Modifier.padding(16.dp),
         )
         return
@@ -102,7 +102,7 @@ private fun RecipeList(
 ) {
     if (recipes.isEmpty()) {
         Text(
-            text = stringResource(R.string.foodpicker_empty),
+            text = stringResource(R.string.foodpicker_favorites_empty),
             modifier = Modifier.padding(16.dp),
         )
         return
