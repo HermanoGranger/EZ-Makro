@@ -32,7 +32,6 @@ import java.util.UUID
 @Suppress("TooManyFunctions")
 class RecipeEditorViewModel(
     private val recipeId: String?,
-    private val isQuickMeal: Boolean,
     private val recipeRepository: RecipeRepository,
     private val foodRepository: FoodRepository,
     private val savedStateHandle: SavedStateHandle,
@@ -41,22 +40,11 @@ class RecipeEditorViewModel(
         MutableStateFlow(
             RecipeEditorState(
                 isEditingExisting = recipeId != null,
-                isQuickMeal = isQuickMeal,
                 recipeId = recipeId,
                 name = (savedStateHandle[KEY_NAME] as String?).orEmpty(),
                 category = (savedStateHandle[KEY_CATEGORY] as String?).orEmpty(),
                 portions = (savedStateHandle[KEY_PORTIONS] as String?) ?: "1",
                 finalWeight = (savedStateHandle[KEY_FINAL_WEIGHT] as String?).orEmpty(),
-                scale = (savedStateHandle[KEY_SCALE] as String?) ?: "1",
-                isMealPrep = (savedStateHandle[KEY_MEAL_PREP] as Boolean?) ?: false,
-                calculationMode =
-                    (savedStateHandle[KEY_CALCULATION_MODE] as? String)
-                        ?.let { runCatching { RecipeCalculationMode.valueOf(it) }.getOrNull() }
-                        ?: if ((savedStateHandle[KEY_FINAL_WEIGHT] as String?).isNullOrBlank()) {
-                            RecipeCalculationMode.Portion
-                        } else {
-                            RecipeCalculationMode.Weight
-                        },
             ),
         )
     val state = _state.asStateFlow()
@@ -119,18 +107,10 @@ class RecipeEditorViewModel(
                 handleField(KEY_PORTIONS, action.value) {
                     it.copy(portions = action.value, numberError = null)
                 }
-            is RecipeEditorAction.OnScaleChange ->
-                handleField(KEY_SCALE, action.value) {
-                    it.copy(scale = action.value, numberError = null)
+            is RecipeEditorAction.OnFinalWeightChange ->
+                handleField(KEY_FINAL_WEIGHT, action.value) {
+                    it.copy(finalWeight = action.value, numberError = null)
                 }
-            is RecipeEditorAction.OnMealPrepToggle ->
-                handleField(KEY_MEAL_PREP, action.value.toString()) {
-                    it.copy(isMealPrep = action.value)
-                }
-
-            is RecipeEditorAction.OnFinalWeightChange -> onFinalWeightChange(action.value)
-
-            is RecipeEditorAction.OnCalculationModeChange -> onCalculationModeChange(action.mode)
 
             is RecipeEditorAction.OnAddIngredientClick -> addIngredient(action.foodId)
 
@@ -141,7 +121,7 @@ class RecipeEditorViewModel(
                     it.copy(
                         ingredients =
                             it.ingredients.updateAt(action.index) { d ->
-                                d.copy(rawWeight = action.value, servingCount = "")
+                                d.copy(rawWeight = action.value)
                             },
                         ingredientError = null,
                     )
@@ -152,52 +132,33 @@ class RecipeEditorViewModel(
                     it.copy(
                         ingredients =
                             it.ingredients.updateAt(action.index) { d ->
-                                d.copy(servingCount = action.value, rawWeight = "")
+                                d.copy(servingCount = action.value)
                             },
                         ingredientError = null,
                     )
                 }
 
             is RecipeEditorAction.OnRemoveIngredientClick ->
-                _state.update { it.copy(ingredients = it.ingredients.filterIndexed { i, _ -> i != action.index }) }
+                _state.update {
+                    it.copy(
+                        ingredients = it.ingredients.filterIndexed { i, _ -> i != action.index },
+                        expandedIngredientIndex = null,
+                    )
+                }
+
+            is RecipeEditorAction.OnIngredientClick ->
+                _state.update {
+                    it.copy(
+                        expandedIngredientIndex =
+                            if (it.expandedIngredientIndex == action.index) null else action.index,
+                    )
+                }
 
             RecipeEditorAction.OnSaveClick ->
                 viewModelScope.launch { save() }
 
             RecipeEditorAction.OnBackClick ->
                 viewModelScope.launch { _events.send(RecipeEditorEvent.NavigateBack) }
-        }
-    }
-
-    private fun onFinalWeightChange(value: String) {
-        savedStateHandle[KEY_FINAL_WEIGHT] = value
-        _state.update {
-            it.copy(
-                finalWeight = value,
-                numberError = null,
-                calculationMode =
-                    if (value.isBlank()) {
-                        RecipeCalculationMode.Portion
-                    } else {
-                        RecipeCalculationMode.Weight
-                    },
-            )
-        }
-    }
-
-    private fun onCalculationModeChange(mode: RecipeCalculationMode) {
-        savedStateHandle[KEY_CALCULATION_MODE] = mode.name
-        if (mode == RecipeCalculationMode.Portion) {
-            savedStateHandle[KEY_FINAL_WEIGHT] = ""
-            _state.update {
-                it.copy(
-                    calculationMode = RecipeCalculationMode.Portion,
-                    finalWeight = "",
-                    numberError = null,
-                )
-            }
-        } else {
-            _state.update { it.copy(calculationMode = RecipeCalculationMode.Weight) }
         }
     }
 
@@ -263,14 +224,6 @@ class RecipeEditorViewModel(
                                 ?.grams
                                 ?.toString()
                                 .orEmpty(),
-                        scale = recipe.scale.toString(),
-                        isMealPrep = recipe.isMealPrep,
-                        calculationMode =
-                            if (recipe.finalWeight != null) {
-                                RecipeCalculationMode.Weight
-                            } else {
-                                RecipeCalculationMode.Portion
-                            },
                         ingredients =
                             recipe.ingredients.map { ing ->
                                 IngredientDraft(
@@ -353,20 +306,13 @@ class RecipeEditorViewModel(
     }
 
     private data class ParsedSaveInput(
-        val scale: Double,
         val portions: Int,
         val finalWeight: FinalWeight?,
     )
 
     private fun parseSaveInput(s: RecipeEditorState): ParsedSaveInput? {
-        val scale = s.scale.parsePositiveDouble()
-        val portions =
-            if (s.calculationMode == RecipeCalculationMode.Weight) {
-                s.portions.parsePositiveInt() ?: 1
-            } else {
-                s.portions.parsePositiveInt()
-            }
-        if (scale == null || portions == null) {
+        val portions = s.portions.parsePositiveInt()
+        if (portions == null) {
             _state.update {
                 it.copy(
                     isSaving = false,
@@ -375,13 +321,8 @@ class RecipeEditorViewModel(
             }
             return null
         }
-        val fwRaw =
-            if (s.calculationMode == RecipeCalculationMode.Weight) {
-                s.finalWeight.parseNonNegativeDouble()
-            } else {
-                null
-            }
-        return ParsedSaveInput(scale, portions, fwRaw?.let { FinalWeight(it) })
+        val fwRaw = s.finalWeight.parseNonNegativeDouble()
+        return ParsedSaveInput(portions, fwRaw?.let { FinalWeight(it) })
     }
 
     private fun buildRecipe(
@@ -396,9 +337,7 @@ class RecipeEditorViewModel(
             ingredients = ingredients,
             finalWeight = parsed.finalWeight,
             portions = parsed.portions,
-            scale = parsed.scale,
             category = s.category.trim().ifBlank { null },
-            isMealPrep = if (s.isQuickMeal) false else s.isMealPrep,
             lastModifiedAt = System.currentTimeMillis(),
         )
     }
@@ -417,19 +356,10 @@ class RecipeEditorViewModel(
                 null
             }
         val numberError =
-            when {
-                s.calculationMode == RecipeCalculationMode.Weight ->
-                    if (s.finalWeight.parseNonNegativeDouble() == null || s.scale.parsePositiveDouble() == null) {
-                        UiText.StringResource(R.string.recipe_editor_error_invalid_number)
-                    } else {
-                        null
-                    }
-                else ->
-                    if (s.portions.parsePositiveInt() == null || s.scale.parsePositiveDouble() == null) {
-                        UiText.StringResource(R.string.recipe_editor_error_invalid_number)
-                    } else {
-                        null
-                    }
+            if (s.portions.parsePositiveInt() == null) {
+                UiText.StringResource(R.string.recipe_editor_error_invalid_number)
+            } else {
+                null
             }
         val hasError = nameError != null || ingredientError != null || numberError != null
         if (hasError) {
@@ -491,7 +421,8 @@ class RecipeEditorViewModel(
         val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
         val servingCount = draft.servingCount.parseNonNegativeDouble()
         val hasWeight = rawWeight != null || servingCount != null
-        val hasServingUnit = servingCount == null || food?.servingUnit != null
+        val needsServingUnit = servingCount != null && rawWeight == null
+        val hasServingUnit = !needsServingUnit || food?.servingUnit != null
         if (food == null || !hasWeight || !hasServingUnit) return null
         return RecipeIngredient(
             food = food,
@@ -527,8 +458,5 @@ class RecipeEditorViewModel(
         const val KEY_CATEGORY = "recipe_edit_category"
         const val KEY_PORTIONS = "recipe_edit_portions"
         const val KEY_FINAL_WEIGHT = "recipe_edit_final_weight"
-        const val KEY_SCALE = "recipe_edit_scale"
-        const val KEY_MEAL_PREP = "recipe_edit_meal_prep"
-        const val KEY_CALCULATION_MODE = "recipe_edit_calculation_mode"
     }
 }

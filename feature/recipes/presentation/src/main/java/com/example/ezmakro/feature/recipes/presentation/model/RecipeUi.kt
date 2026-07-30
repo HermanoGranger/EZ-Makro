@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.model
 
+import com.example.ezmakro.core.domain.calculation.estimatedPer100g
 import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.calculation.nutritionPerPortion
 import com.example.ezmakro.core.domain.calculation.totalNutrition
@@ -16,12 +17,12 @@ data class RecipeUi(
     val id: String,
     val name: String,
     val category: String?,
-    val isMealPrep: Boolean,
     val portions: Int,
     val ingredientCount: Int,
     val totalKcal: String,
     val perPortionKcal: String,
     val per100gKcal: String?,
+    val isEstimated: Boolean = false,
 )
 
 private const val MACRO_DECIMAL_PLACES = 10.0
@@ -35,16 +36,24 @@ fun Recipe.toRecipeUi(): RecipeUi {
     val total = totalNutrition()
     val perPortion = nutritionPerPortion()
     val per100g = nutritionPer100g()
+    val per100gKcal =
+        if (per100g != null) {
+            per100g.kcal.formatMacro()
+        } else if (finalWeight == null) {
+            estimatedPer100g().kcal.formatMacro()
+        } else {
+            null
+        }
     return RecipeUi(
         id = id.value,
         name = name,
         category = category,
-        isMealPrep = isMealPrep,
         portions = portions,
         ingredientCount = ingredients.size,
         totalKcal = total.kcal.formatMacro(),
         perPortionKcal = perPortion.kcal.formatMacro(),
-        per100gKcal = per100g?.kcal?.formatMacro(),
+        per100gKcal = per100gKcal,
+        isEstimated = finalWeight == null,
     )
 }
 

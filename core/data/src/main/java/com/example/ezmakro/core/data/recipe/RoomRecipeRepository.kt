@@ -42,9 +42,7 @@ class RoomRecipeRepository(
                 ingredients = source.ingredients,
                 finalWeight = source.finalWeight,
                 portions = source.portions,
-                scale = source.scale,
                 category = source.category,
-                isMealPrep = source.isMealPrep,
             )
         return when (val saved = local.upsertRecipeWithIngredients(copy)) {
             is Result.Error -> saved

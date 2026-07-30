@@ -31,7 +31,6 @@ data class RecipeDetail(
 @Serializable
 data class RecipeEditor(
     val recipeId: String? = null,
-    val isQuickMeal: Boolean = false,
 )
 
 const val ROUTE_RECIPES = "recipes"
@@ -40,14 +39,13 @@ const val ROUTE_LIST = "recipe_list"
 
 // Route patterns for composable registration (include {param} placeholders)
 const val ROUTE_DETAIL_PATTERN = "recipe_detail/{recipeId}"
-const val ROUTE_EDITOR_PATTERN = "recipe_editor/{recipeId}?isQuickMeal={isQuickMeal}"
+const val ROUTE_EDITOR_PATTERN = "recipe_editor/{recipeId}"
 
 // Route prefixes for navigation (no {param} placeholders; append values directly)
 const val ROUTE_DETAIL = "recipe_detail"
 const val ROUTE_EDITOR = "recipe_editor"
 const val ROUTE_DETAIL_PARAM_ID = "recipeId"
 const val ROUTE_EDITOR_PARAM_ID = "recipeId"
-const val ROUTE_EDITOR_PARAM_QUICK = "isQuickMeal"
 
 fun NavGraphBuilder.recipeGraph(
     navController: NavHostController,
@@ -87,7 +85,6 @@ private fun NavGraphBuilder.listComposable(
             onNavigateToEditor = { recipeId ->
                 navController.navigate("$ROUTE_EDITOR/${recipeId ?: "_none_"}")
             },
-            onNavigateToQuickMeal = { navController.navigate("$ROUTE_EDITOR/_none_?$ROUTE_EDITOR_PARAM_QUICK=true") },
             onAddToDiary = onAddToDiary,
         )
     }
@@ -123,19 +120,12 @@ private fun NavGraphBuilder.editorComposable(
                     type = NavType.StringType
                     defaultValue = "_none_"
                 },
-                navArgument(ROUTE_EDITOR_PARAM_QUICK) {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
             ),
     ) {
         val recipeId =
             it.arguments?.getString(ROUTE_EDITOR_PARAM_ID)?.takeIf { it != "_none_" }
-        val isQuickMeal =
-            it.arguments?.getBoolean(ROUTE_EDITOR_PARAM_QUICK) ?: false
         RecipeEditorRoot(
             recipeId = recipeId,
-            isQuickMeal = isQuickMeal,
             onNavigateBack = onNavigateBack,
             onSaved = { navController.popBackStack() },
             onNavigateToFoodCreate = onNavigateToFoodCreate,

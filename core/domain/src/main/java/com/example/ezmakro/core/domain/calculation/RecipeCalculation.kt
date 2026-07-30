@@ -16,15 +16,15 @@ fun RecipeIngredient.nutrition(): NutritionValues {
     }
 }
 
-fun Recipe.totalNutrition(): NutritionValues {
-    val sum = ingredients.fold(NutritionValues.ZERO) { acc, ing -> acc + ing.nutrition() }
-    return sum * scale
-}
+fun Recipe.totalNutrition(): NutritionValues =
+    ingredients.fold(NutritionValues.ZERO) { acc, ing -> acc + ing.nutrition() }
 
 fun Recipe.nutritionPer100g(): NutritionValues? {
     val finalWeight = finalWeight ?: return null
     return totalNutrition() * (100.0 / finalWeight.grams)
 }
+
+fun Recipe.estimatedPer100g(): NutritionValues = totalNutrition() * (100.0 / totalRawWeight().grams)
 
 fun Recipe.nutritionPerPortion(): NutritionValues = totalNutrition() * (1.0 / portions)
 

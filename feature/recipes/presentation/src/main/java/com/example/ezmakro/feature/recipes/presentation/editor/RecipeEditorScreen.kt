@@ -1,7 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,7 +10,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -19,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -35,14 +32,13 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun RecipeEditorRoot(
     recipeId: String?,
-    isQuickMeal: Boolean,
     onNavigateBack: () -> Unit,
     onSaved: () -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     viewModel: RecipeEditorViewModel =
         koinViewModel {
             org.koin.core.parameter
-                .parametersOf(recipeId, isQuickMeal)
+                .parametersOf(recipeId)
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -100,7 +96,6 @@ fun RecipeEditorScreen(
                         stringResource(
                             when {
                                 state.isEditingExisting -> R.string.recipe_editor_title_edit
-                                state.isQuickMeal -> R.string.recipe_editor_title_quick
                                 else -> R.string.recipe_editor_title_new
                             },
                         ),
@@ -125,26 +120,31 @@ private fun EditorForm(
     onOpenPicker: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val finalWeightGrams = state.finalWeight.parseNonNegativeDouble()
+    val portionsValue = state.portions.parsePositiveInt()
+    val gramsPerPortion =
+        if (finalWeightGrams != null && portionsValue != null) {
+            finalWeightGrams / portionsValue
+        } else {
+            null
+        }
+
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { NameField(state = state, onAction = onAction) }
         item { CategoryField(state = state, onAction = onAction) }
-        item {
-            CalculationModeSelector(
-                mode = state.calculationMode,
-                onModeChange = { onAction(RecipeEditorAction.OnCalculationModeChange(it)) },
-            )
-        }
         item { PortionsField(state = state, onAction = onAction) }
-        if (state.calculationMode == RecipeCalculationMode.Weight) {
-            item { FinalWeightField(state = state, onAction = onAction) }
-        }
-
-        if (!state.isQuickMeal) {
-            item { ScaleField(state = state, onAction = onAction) }
-            item { MealPrepRow(state = state, onAction = onAction) }
+        item { FinalWeightField(state = state, onAction = onAction) }
+        if (gramsPerPortion != null) {
+            item {
+                val label = stringResource(R.string.recipe_editor_grams_per_portion)
+                Text(
+                    text = "~ ${gramsPerPortion.toInt()} g / $label",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                )
+            }
         }
 
         item {
@@ -157,9 +157,11 @@ private fun EditorForm(
         itemsIndexed(state.ingredients, key = { index, _ -> index }) { index, ingredient ->
             IngredientRow(
                 ingredient = ingredient,
+                isExpanded = state.expandedIngredientIndex == index,
                 onRawWeightChange = { onAction(RecipeEditorAction.OnIngredientRawWeightChange(index, it)) },
                 onServingCountChange = { onAction(RecipeEditorAction.OnIngredientServingCountChange(index, it)) },
                 onRemove = { onAction(RecipeEditorAction.OnRemoveIngredientClick(index)) },
+                onClick = { onAction(RecipeEditorAction.OnIngredientClick(index)) },
             )
         }
 
@@ -228,41 +230,9 @@ private fun FinalWeightField(
         value = state.finalWeight,
         onValueChange = { onAction(RecipeEditorAction.OnFinalWeightChange(it)) },
         label = { Text(stringResource(R.string.recipe_editor_final_weight)) },
+        supportingText = { Text(stringResource(R.string.recipe_editor_final_weight_hint)) },
         isError = state.numberError != null,
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
-}
-
-@Composable
-private fun ScaleField(
-    state: RecipeEditorState,
-    onAction: (RecipeEditorAction) -> Unit,
-) {
-    OutlinedTextField(
-        value = state.scale,
-        onValueChange = { onAction(RecipeEditorAction.OnScaleChange(it)) },
-        label = { Text(stringResource(R.string.recipe_editor_scale)) },
-        isError = state.numberError != null,
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun MealPrepRow(
-    state: RecipeEditorState,
-    onAction: (RecipeEditorAction) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(stringResource(R.string.recipe_editor_meal_prep))
-        Switch(
-            checked = state.isMealPrep,
-            onCheckedChange = { onAction(RecipeEditorAction.OnMealPrepToggle(it)) },
-        )
-    }
 }

@@ -17,14 +17,11 @@ class RecipeEditorScreenTest {
     private fun state(
         name: String = "",
         ingredients: List<IngredientDraft> = emptyList(),
-        calculationMode: RecipeCalculationMode = RecipeCalculationMode.Portion,
         finalWeight: String = "",
     ) = RecipeEditorState(
         isEditingExisting = false,
-        isQuickMeal = false,
         name = name,
         ingredients = ingredients,
-        calculationMode = calculationMode,
         finalWeight = finalWeight,
     )
 
@@ -59,18 +56,6 @@ class RecipeEditorScreenTest {
     }
 
     @Test
-    fun quickMealHidesMealPrepSwitch() {
-        composeTestRule.setContent {
-            RecipeEditorScreen(
-                state = state().copy(isQuickMeal = true),
-                onAction = {},
-                onOpenPicker = {},
-            )
-        }
-        composeTestRule.onNodeWithText("Meal Prep").assertDoesNotExist()
-    }
-
-    @Test
     fun ingredientRowShowsFoodName() {
         composeTestRule.setContent {
             RecipeEditorScreen(
@@ -94,44 +79,14 @@ class RecipeEditorScreenTest {
     }
 
     @Test
-    fun portionMode_hidesFinalWeightField() {
+    fun finalWeightFieldIsAlwaysVisible() {
         composeTestRule.setContent {
             RecipeEditorScreen(
-                state = state(calculationMode = RecipeCalculationMode.Portion),
-                onAction = {},
-                onOpenPicker = {},
-            )
-        }
-        composeTestRule.onNodeWithText("Endgewicht (g)").assertDoesNotExist()
-    }
-
-    @Test
-    fun weightMode_showsFinalWeightField() {
-        composeTestRule.setContent {
-            RecipeEditorScreen(
-                state =
-                    state(
-                        calculationMode = RecipeCalculationMode.Weight,
-                        finalWeight = "1800",
-                    ),
+                state = state(),
                 onAction = {},
                 onOpenPicker = {},
             )
         }
         composeTestRule.onNodeWithText("Endgewicht (g)").assertIsDisplayed()
-    }
-
-    @Test
-    fun switchingToWeightMode_emitsCalculationModeChange() {
-        var mode: RecipeCalculationMode? = null
-        composeTestRule.setContent {
-            RecipeEditorScreen(
-                state = state(calculationMode = RecipeCalculationMode.Portion),
-                onAction = { if (it is RecipeEditorAction.OnCalculationModeChange) mode = it.mode },
-                onOpenPicker = {},
-            )
-        }
-        composeTestRule.onNodeWithText("Gewicht").assertIsDisplayed().performClick()
-        assertEquals(RecipeCalculationMode.Weight, mode)
     }
 }

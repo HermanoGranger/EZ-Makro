@@ -188,4 +188,38 @@ val MIGRATION_4_5 =
         }
     }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+/**
+ * Phase 9 Refinement — Removes `scale` and `is_meal_prep` columns from `recipes`.
+ *
+ * These features (Scaling, Meal Prep, Quick Meal) were removed because they
+ * added no user-facing value and only caused confusion. Existing recipes with
+ * scale != 1.0 will have their total nutrition change (the multiplier is
+ * removed). This is acceptable because scale was never exposed through the UI
+ * in an effective way and is practically always 1.0.
+ */
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `recipes_new` (" +
+                    "`id` TEXT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`final_weight_grams` REAL, " +
+                    "`portions` INTEGER NOT NULL, " +
+                    "`category` TEXT, " +
+                    "`last_modified_at` INTEGER NOT NULL DEFAULT 0, " +
+                    "PRIMARY KEY(`id`)" +
+                    ")",
+            )
+            db.execSQL(
+                "INSERT INTO `recipes_new` " +
+                    "(`id`, `name`, `final_weight_grams`, `portions`, `category`, `last_modified_at`) " +
+                    "SELECT `id`, `name`, `final_weight_grams`, `portions`, `category`, `last_modified_at` " +
+                    "FROM `recipes`",
+            )
+            db.execSQL("DROP TABLE `recipes`")
+            db.execSQL("ALTER TABLE `recipes_new` RENAME TO `recipes`")
+        }
+    }
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)

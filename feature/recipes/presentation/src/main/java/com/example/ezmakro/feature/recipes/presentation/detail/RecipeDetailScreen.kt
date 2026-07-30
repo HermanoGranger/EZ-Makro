@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.detail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
@@ -74,6 +76,7 @@ fun RecipeDetailRoot(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("LongMethod")
 fun RecipeDetailScreen(
     state: RecipeDetailState,
     onAction: (RecipeDetailAction) -> Unit,
@@ -92,25 +95,41 @@ fun RecipeDetailScreen(
         }
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(text = recipe.name)
             recipe.category?.let { Text(stringResource(R.string.recipe_detail_category, it)) }
             Text(stringResource(R.string.recipe_detail_portions, recipe.portions))
-            if (recipe.isMealPrep) Text(stringResource(R.string.recipe_list_meal_prep))
 
             NutritionRow(label = stringResource(R.string.recipe_detail_total), value = "${recipe.totalKcal} kcal")
             NutritionRow(
                 label = stringResource(R.string.recipe_detail_per_portion),
                 value = "${recipe.perPortionKcal} kcal",
             )
+            val per100gDisplay =
+                if (recipe.isEstimated && recipe.per100gKcal != null) {
+                    "~ ${recipe.per100gKcal} kcal"
+                } else if (recipe.per100gKcal != null) {
+                    "${recipe.per100gKcal} kcal"
+                } else {
+                    stringResource(R.string.recipe_detail_no_final_weight)
+                }
             NutritionRow(
                 label = stringResource(R.string.recipe_detail_per_100g),
-                value =
-                    recipe.per100gKcal?.let { "$it kcal" } ?: stringResource(
-                        R.string.recipe_detail_no_final_weight,
-                    ),
+                value = per100gDisplay,
             )
+
+            Text(
+                text = stringResource(R.string.recipe_detail_ingredients),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            state.ingredients.forEachIndexed { index, ingredient ->
+                IngredientDetailRow(
+                    ingredient = ingredient,
+                    isExpanded = state.expandedIngredientIndex == index,
+                    onClick = { onAction(RecipeDetailAction.OnIngredientClick(index)) },
+                )
+            }
 
             state.deleteError?.let { Text(text = it.asString()) }
 
@@ -125,6 +144,41 @@ fun RecipeDetailScreen(
             }
         }
     }
+}
+
+@Composable
+private fun IngredientDetailRow(
+    ingredient: IngredientDetailUi,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(text = ingredient.name, modifier = Modifier.weight(1f))
+            Text(text = "${ingredient.kcal} kcal")
+        }
+        if (isExpanded) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, bottom = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.recipe_detail_ingredient_amount, ingredient.amountDisplay),
+                    fontStyle = FontStyle.Italic,
+                )
+                Text(text = "${stringResource(R.string.recipe_detail_ingredient_protein)} ${ingredient.proteinG}g")
+                Text(text = "${stringResource(R.string.recipe_detail_ingredient_fat)} ${ingredient.fatG}g")
+                Text(text = "${stringResource(R.string.recipe_detail_ingredient_carbs)} ${ingredient.carbsG}g")
+                Text(text = "${stringResource(R.string.recipe_detail_ingredient_fiber)} ${ingredient.fiberG}g")
+            }
+        }
+    }
+    HorizontalDivider()
 }
 
 @Composable

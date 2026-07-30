@@ -13,16 +13,15 @@ import org.koin.dsl.module
  * Wires the Phase 6 recipe presentation layer. View models receive the
  * [RecipeRepository] (core-data) and, for the editor's ingredient picker, the
  * [FoodRepository] (core-data). The editor/detail view models take runtime
- * arguments ([recipeId], [isQuickMeal]) via Koin parameters.
+ * argument [recipeId] via Koin parameters.
  */
 val recipePresentationModule =
     module {
         viewModelOf(::RecipeListViewModel)
 
-        viewModel { (recipeId: String?, isQuickMeal: Boolean) ->
+        viewModel { (recipeId: String?) ->
             RecipeEditorViewModel(
                 recipeId = recipeId,
-                isQuickMeal = isQuickMeal,
                 recipeRepository = get(),
                 foodRepository = get(),
                 savedStateHandle = get(),

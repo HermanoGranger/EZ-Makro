@@ -17,18 +17,6 @@ sealed interface RecipeEditorAction {
         val value: String,
     ) : RecipeEditorAction
 
-    data class OnCalculationModeChange(
-        val mode: RecipeCalculationMode,
-    ) : RecipeEditorAction
-
-    data class OnScaleChange(
-        val value: String,
-    ) : RecipeEditorAction
-
-    data class OnMealPrepToggle(
-        val value: Boolean,
-    ) : RecipeEditorAction
-
     data class OnAddIngredientClick(
         val foodId: String,
     ) : RecipeEditorAction
@@ -48,6 +36,10 @@ sealed interface RecipeEditorAction {
     ) : RecipeEditorAction
 
     data class OnRemoveIngredientClick(
+        val index: Int,
+    ) : RecipeEditorAction
+
+    data class OnIngredientClick(
         val index: Int,
     ) : RecipeEditorAction
 

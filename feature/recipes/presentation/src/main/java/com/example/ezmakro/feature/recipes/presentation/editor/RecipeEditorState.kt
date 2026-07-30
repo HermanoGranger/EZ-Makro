@@ -2,11 +2,6 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 
 import com.example.ezmakro.core.presentation.uitext.UiText
 
-enum class RecipeCalculationMode {
-    Portion,
-    Weight,
-}
-
 data class IngredientDraft(
     val foodId: String,
     val foodName: String,
@@ -20,18 +15,15 @@ data class IngredientDraft(
 
 data class RecipeEditorState(
     val isEditingExisting: Boolean,
-    val isQuickMeal: Boolean,
     val recipeId: String? = null,
     val name: String = "",
     val category: String = "",
     val portions: String = "1",
     val finalWeight: String = "",
-    val scale: String = "1",
-    val isMealPrep: Boolean = false,
     val ingredients: List<IngredientDraft> = emptyList(),
     val availableFoods: List<FoodPickerItem> = emptyList(),
     val availableRecipes: List<RecipePickerItem> = emptyList(),
-    val calculationMode: RecipeCalculationMode = RecipeCalculationMode.Portion,
+    val expandedIngredientIndex: Int? = null,
     val nameError: UiText? = null,
     val numberError: UiText? = null,
     val ingredientError: UiText? = null,

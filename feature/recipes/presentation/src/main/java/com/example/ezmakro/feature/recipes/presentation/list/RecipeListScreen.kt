@@ -1,7 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.list
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -33,7 +31,6 @@ import org.koin.androidx.compose.koinViewModel
 fun RecipeListRoot(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToEditor: (String?) -> Unit,
-    onNavigateToQuickMeal: () -> Unit,
     onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
     viewModel: RecipeListViewModel = koinViewModel(),
 ) {
@@ -51,7 +48,6 @@ fun RecipeListRoot(
     RecipeListScreen(
         state = state,
         onAction = viewModel::onAction,
-        onNavigateToQuickMeal = onNavigateToQuickMeal,
     )
 
     if (state.pendingAddRecipeId != null) {
@@ -74,25 +70,15 @@ fun RecipeListRoot(
 fun RecipeListScreen(
     state: RecipeListState,
     onAction: (RecipeListAction) -> Unit,
-    onNavigateToQuickMeal: () -> Unit,
 ) {
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.recipe_list_title)) }) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Row(
+            Button(
+                onClick = { onAction(RecipeListAction.OnCreateClick) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = { onAction(RecipeListAction.OnCreateClick) },
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.recipe_list_create)) }
-                OutlinedButton(
-                    onClick = onNavigateToQuickMeal,
-                    modifier = Modifier.weight(1f),
-                ) { Text(stringResource(R.string.recipe_list_quick_meal)) }
-            }
+            ) { Text(stringResource(R.string.recipe_list_create)) }
 
             if (state.recipes.isEmpty()) {
                 Text(
@@ -125,12 +111,9 @@ private fun RecipeRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = recipe.name, maxLines = 1)
+            val label = stringResource(R.string.recipe_list_per_portion)
             Text(
-                text =
-                    buildString {
-                        append("${recipe.totalKcal} kcal · ${recipe.perPortionKcal} / Portion")
-                        if (recipe.isMealPrep) append(" · ${stringResource(R.string.recipe_list_meal_prep)}")
-                    },
+                text = "${recipe.totalKcal} kcal · ${recipe.perPortionKcal} / $label",
             )
         }
     }

@@ -55,9 +55,7 @@ class RoomRecipeLocalDataSource(
                         name = "",
                         finalWeightGrams = null,
                         portions = 1,
-                        scale = 1.0,
                         category = null,
-                        isMealPrep = false,
                     )
             dao.deleteRecipe(entity)
         }

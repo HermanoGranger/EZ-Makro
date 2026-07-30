@@ -149,7 +149,6 @@ class RoomRecipeRepositoryTest {
             finalWeight = FinalWeight(500.0),
             portions = 2,
             category = "Frühstück",
-            isMealPrep = true,
         )
 
     @Test
@@ -163,7 +162,6 @@ class RoomRecipeRepositoryTest {
 
             assertThat(dao.recipes.value["r1"]?.name).isEqualTo("Pfannkuchen")
             assertThat(dao.recipes.value["r1"]?.category).isEqualTo("Frühstück")
-            assertThat(dao.recipes.value["r1"]?.isMealPrep).isEqualTo(true)
             assertThat(dao.ingredients.value["r1"]?.size).isEqualTo(2)
         }
 

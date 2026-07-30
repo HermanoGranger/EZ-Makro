@@ -15,8 +15,6 @@ sealed interface RecipeListAction {
 
     data object OnCreateClick : RecipeListAction
 
-    data object OnCreateQuickMealClick : RecipeListAction
-
     data object OnDismissAddToDiary : RecipeListAction
 
     data class OnConfirmAddToDiary(

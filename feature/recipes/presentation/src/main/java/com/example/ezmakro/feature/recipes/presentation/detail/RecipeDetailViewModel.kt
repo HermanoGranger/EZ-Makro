@@ -2,6 +2,8 @@ package com.example.ezmakro.feature.recipes.presentation.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.calculation.nutrition
+import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onFailure
@@ -17,11 +19,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * Shows a single recipe's computed nutrition (total / per-portion / per-100 g,
- * the latter only when a final weight was measured per ADR-003) and offers
- * edit, duplicate and delete actions.
- */
 class RecipeDetailViewModel(
     private val recipeId: String,
     private val repository: RecipeRepository,
@@ -32,11 +29,47 @@ class RecipeDetailViewModel(
     private val _events = Channel<RecipeDetailEvent>()
     val events = _events.receiveAsFlow()
 
+    private var latestRecipe: Recipe? = null
+
     init {
         repository
             .observeById(RecipeId(recipeId))
             .onEach { recipe ->
-                _state.update { it.copy(recipe = recipe?.toRecipeUi(), isLoading = false) }
+                latestRecipe = recipe
+                _state.update {
+                    it.copy(
+                        recipe = recipe?.toRecipeUi(),
+                        ingredients =
+                            recipe
+                                ?.ingredients
+                                ?.mapIndexed { index, ing ->
+                                    val nutrition = ing.nutrition()
+                                    val rawWeight = ing.rawWeight
+                                    val food = ing.food
+                                    val servingCount = ing.servingCount
+                                    val servingLabel = food?.servingUnit?.label
+                                    val amountDisplay =
+                                        when {
+                                            rawWeight != null -> "${rawWeight.grams.toInt()} g"
+                                            servingCount != null && servingLabel != null ->
+                                                "$servingCount × $servingLabel"
+                                            servingCount != null && ing.recipeSnapshot != null ->
+                                                "$servingCount Portionen"
+                                            else -> ""
+                                        }
+                                    IngredientDetailUi(
+                                        name = ing.food?.name ?: ing.recipeSnapshot?.recipeName.orEmpty(),
+                                        amountDisplay = amountDisplay,
+                                        kcal = nutrition.kcal,
+                                        proteinG = nutrition.proteinG,
+                                        fatG = nutrition.fatG,
+                                        carbsG = nutrition.carbsG,
+                                        fiberG = nutrition.fiberG,
+                                    )
+                                }.orEmpty(),
+                        isLoading = false,
+                    )
+                }
             }.launchIn(viewModelScope)
     }
 
@@ -62,6 +95,14 @@ class RecipeDetailViewModel(
 
             RecipeDetailAction.OnBackClick ->
                 viewModelScope.launch { _events.send(RecipeDetailEvent.NavigateBack) }
+
+            is RecipeDetailAction.OnIngredientClick ->
+                _state.update {
+                    it.copy(
+                        expandedIngredientIndex =
+                            if (it.expandedIngredientIndex == action.index) null else action.index,
+                    )
+                }
         }
     }
 }

@@ -58,9 +58,7 @@ class RoomDiaryRepositoryTest {
                 ),
             finalWeight = FinalWeight(500.0),
             portions = 2,
-            scale = 1.0,
             category = null,
-            isMealPrep = false,
         )
 
     private fun foodEntry(

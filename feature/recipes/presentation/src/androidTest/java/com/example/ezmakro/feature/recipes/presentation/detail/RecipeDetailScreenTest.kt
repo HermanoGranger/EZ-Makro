@@ -21,7 +21,6 @@ class RecipeDetailScreenTest {
         id = "r1",
         name = name,
         category = "Backen",
-        isMealPrep = true,
         portions = 2,
         ingredientCount = 1,
         totalKcal = "200",

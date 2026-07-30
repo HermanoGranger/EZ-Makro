@@ -17,26 +17,24 @@ data class RecipeIngredient(
             "RecipeIngredient must not reference both food and recipeSnapshot"
         }
         require(rawWeight != null || servingCount != null) {
-            "RecipeIngredient needs either rawWeight or servingCount"
-        }
-        require(!(rawWeight != null && servingCount != null)) {
-            "RecipeIngredient must not specify both rawWeight and servingCount"
+            "RecipeIngredient needs at least one of rawWeight or servingCount"
         }
         if (servingCount != null) {
             require(servingCount >= 0.0) { "servingCount must be non-negative" }
-            if (food != null) {
+            if (food != null && rawWeight == null) {
                 require(food.servingUnit != null) {
-                    "servingCount requires the food to define a ServingUnit"
+                    "servingCount requires the food to define a ServingUnit when rawWeight is not set"
                 }
             }
         }
     }
 
     fun effectiveRawWeight(): RawWeight =
-        rawWeight
-            ?: if (recipeSnapshot != null) {
-                RawWeight(recipeSnapshot.gramsPerPortion * checkNotNull(servingCount))
-            } else {
-                RawWeight(checkNotNull(food?.servingUnit).toGrams(checkNotNull(servingCount)))
-            }
+        if (rawWeight != null) {
+            rawWeight
+        } else if (recipeSnapshot != null) {
+            RawWeight(recipeSnapshot.gramsPerPortion * checkNotNull(servingCount))
+        } else {
+            RawWeight(checkNotNull(food?.servingUnit).toGrams(checkNotNull(servingCount)))
+        }
 }

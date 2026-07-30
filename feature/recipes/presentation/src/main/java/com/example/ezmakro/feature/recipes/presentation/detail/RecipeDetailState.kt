@@ -2,8 +2,20 @@ package com.example.ezmakro.feature.recipes.presentation.detail
 
 import com.example.ezmakro.core.presentation.uitext.UiText
 
+data class IngredientDetailUi(
+    val name: String,
+    val amountDisplay: String,
+    val kcal: Double,
+    val proteinG: Double,
+    val fatG: Double,
+    val carbsG: Double,
+    val fiberG: Double,
+)
+
 data class RecipeDetailState(
     val recipe: com.example.ezmakro.feature.recipes.presentation.model.RecipeUi? = null,
+    val ingredients: List<IngredientDetailUi> = emptyList(),
+    val expandedIngredientIndex: Int? = null,
     val isLoading: Boolean = true,
     val deleteError: UiText? = null,
 )
@@ -16,6 +28,10 @@ sealed interface RecipeDetailAction {
     data object OnDeleteClick : RecipeDetailAction
 
     data object OnBackClick : RecipeDetailAction
+
+    data class OnIngredientClick(
+        val index: Int,
+    ) : RecipeDetailAction
 }
 
 sealed interface RecipeDetailEvent {

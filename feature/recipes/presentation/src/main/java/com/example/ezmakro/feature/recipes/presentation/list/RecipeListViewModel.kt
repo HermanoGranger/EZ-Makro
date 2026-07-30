@@ -55,9 +55,6 @@ class RecipeListViewModel(
             is RecipeListAction.OnCreateClick ->
                 viewModelScope.launch { _events.send(RecipeListEvent.NavigateToEditor(recipeId = null)) }
 
-            is RecipeListAction.OnCreateQuickMealClick ->
-                viewModelScope.launch { _events.send(RecipeListEvent.NavigateToEditor(recipeId = null)) }
-
             RecipeListAction.OnDismissAddToDiary ->
                 _state.update { it.copy(pendingAddRecipeId = null) }
 

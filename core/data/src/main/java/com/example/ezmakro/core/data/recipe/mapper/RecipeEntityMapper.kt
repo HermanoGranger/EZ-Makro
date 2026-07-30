@@ -28,9 +28,7 @@ suspend fun RecipeEntity.toRecipe(
         ingredients = ingredients,
         finalWeight = finalWeightGrams?.let { FinalWeight(it) },
         portions = portions,
-        scale = scale,
         category = category,
-        isMealPrep = isMealPrep,
         lastModifiedAt = lastModifiedAt,
     )
 }
@@ -76,9 +74,7 @@ fun Recipe.toEntities(): Pair<RecipeEntity, List<RecipeIngredientEntity>> {
             name = name,
             finalWeightGrams = finalWeight?.grams,
             portions = portions,
-            scale = scale,
             category = category,
-            isMealPrep = isMealPrep,
             lastModifiedAt = lastModifiedAt,
         )
     val ingredientEntities =

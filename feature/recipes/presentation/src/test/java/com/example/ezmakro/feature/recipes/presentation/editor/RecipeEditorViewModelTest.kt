@@ -2,6 +2,7 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.RawWeight
@@ -36,13 +37,11 @@ class RecipeEditorViewModelTest {
 
     private fun viewModel(
         recipeId: String? = null,
-        isQuickMeal: Boolean = false,
         foodRepo: FakeFoodRepository = FakeFoodRepository(),
         recipeRepo: FakeRecipeRepository = FakeRecipeRepository(),
     ): RecipeEditorViewModel =
         RecipeEditorViewModel(
             recipeId = recipeId,
-            isQuickMeal = isQuickMeal,
             recipeRepository = recipeRepo,
             foodRepository = foodRepo,
             savedStateHandle = androidx.lifecycle.SavedStateHandle(),
@@ -98,26 +97,6 @@ class RecipeEditorViewModelTest {
         }
 
     @Test
-    fun `quick meal hides meal prep and scale in persisted recipe`() =
-        runTest {
-            val foodRepo = FakeFoodRepository()
-            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
-            val recipeRepo = FakeRecipeRepository()
-            val vm = viewModel(isQuickMeal = true, foodRepo = foodRepo, recipeRepo = recipeRepo)
-
-            vm.onAction(RecipeEditorAction.OnNameChange("Schnell"))
-            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
-            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "50"))
-            vm.onAction(RecipeEditorAction.OnSaveClick)
-
-            assertThat(recipeRepo.saved.size).isEqualTo(1)
-            assertThat(recipeRepo.saved.first().isMealPrep)
-                .isEqualTo(false)
-            assertThat(recipeRepo.saved.first().scale)
-                .isEqualTo(1.0)
-        }
-
-    @Test
     fun `existing recipe is preloaded into state`() =
         runTest {
             val foodRepo = FakeFoodRepository()
@@ -153,14 +132,13 @@ class RecipeEditorViewModelTest {
         }
 
     @Test
-    fun `portion mode persists recipe without final weight`() =
+    fun `portions are persisted in recipe`() =
         runTest {
             val foodRepo = FakeFoodRepository()
             foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
             val recipeRepo = FakeRecipeRepository()
             val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
             vm.onAction(RecipeEditorAction.OnNameChange("Chili"))
-            vm.onAction(RecipeEditorAction.OnCalculationModeChange(RecipeCalculationMode.Portion))
             vm.onAction(RecipeEditorAction.OnPortionsChange("4"))
             vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
             vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
@@ -172,14 +150,13 @@ class RecipeEditorViewModelTest {
         }
 
     @Test
-    fun `weight mode persists recipe with final weight`() =
+    fun `final weight is persisted when provided`() =
         runTest {
             val foodRepo = FakeFoodRepository()
             foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
             val recipeRepo = FakeRecipeRepository()
             val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
             vm.onAction(RecipeEditorAction.OnNameChange("Chili"))
-            vm.onAction(RecipeEditorAction.OnCalculationModeChange(RecipeCalculationMode.Weight))
             vm.onAction(RecipeEditorAction.OnFinalWeightChange("1800"))
             vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
             vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
@@ -190,37 +167,58 @@ class RecipeEditorViewModelTest {
         }
 
     @Test
-    fun `switching to portion mode clears final weight`() =
+    fun `ingredient toggle expands and collapses`() =
         runTest {
-            val vm = viewModel()
-            vm.onAction(RecipeEditorAction.OnCalculationModeChange(RecipeCalculationMode.Weight))
-            vm.onAction(RecipeEditorAction.OnFinalWeightChange("500"))
-            assertThat(vm.state.value.finalWeight).isEqualTo("500")
-            assertThat(vm.state.value.calculationMode).isEqualTo(RecipeCalculationMode.Weight)
-
-            vm.onAction(RecipeEditorAction.OnCalculationModeChange(RecipeCalculationMode.Portion))
-            assertThat(vm.state.value.finalWeight).isEqualTo("")
-            assertThat(vm.state.value.calculationMode).isEqualTo(RecipeCalculationMode.Portion)
-        }
-
-    @Test
-    fun `typing a final weight switches to weight mode`() =
-        runTest {
-            val vm = viewModel()
-            assertThat(vm.state.value.calculationMode).isEqualTo(RecipeCalculationMode.Portion)
-            vm.onAction(RecipeEditorAction.OnFinalWeightChange("1800"))
-            assertThat(vm.state.value.calculationMode).isEqualTo(RecipeCalculationMode.Weight)
-        }
-
-    @Test
-    fun `weight mode without final weight is rejected`() =
-        runTest {
-            val vm = viewModel()
-            vm.onAction(RecipeEditorAction.OnNameChange("Chili"))
-            vm.onAction(RecipeEditorAction.OnCalculationModeChange(RecipeCalculationMode.Weight))
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple"), FakeFoodRepository.food("f2", "Banane")))
+            val vm = viewModel(foodRepo = foodRepo)
             vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+
+            assertThat(vm.state.value.expandedIngredientIndex).isNull()
+
+            vm.onAction(RecipeEditorAction.OnIngredientClick(0))
+            assertThat(vm.state.value.expandedIngredientIndex).isEqualTo(0)
+
+            vm.onAction(RecipeEditorAction.OnIngredientClick(0))
+            assertThat(vm.state.value.expandedIngredientIndex).isNull()
+        }
+
+    @Test
+    fun `removing ingredient clears expanded index`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple"), FakeFoodRepository.food("f2", "Banane")))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+            vm.onAction(RecipeEditorAction.OnIngredientClick(0))
+            assertThat(vm.state.value.expandedIngredientIndex).isEqualTo(0)
+
+            vm.onAction(RecipeEditorAction.OnRemoveIngredientClick(0))
+            assertThat(vm.state.value.expandedIngredientIndex).isNull()
+        }
+
+    @Test
+    fun `both rawWeight and servingCount can be set on ingredient`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val recipeRepo = FakeRecipeRepository()
+            val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
+            assertThat(vm.state.value.availableFoods.size).isEqualTo(1)
+            vm.onAction(RecipeEditorAction.OnNameChange("Müsli"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
             vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+            vm.onAction(RecipeEditorAction.OnIngredientServingCountChange(0, "2"))
             vm.onAction(RecipeEditorAction.OnSaveClick)
-            assertThat(vm.state.value.numberError != null).isTrue()
+
+            assertThat(recipeRepo.saved.size).isEqualTo(1)
+            val savedRecipe = recipeRepo.saved[0]
+            val savedIng = savedRecipe.ingredients[0]
+            assertThat(savedIng.rawWeight).isEqualTo(RawWeight(100.0))
+            assertThat(savedIng.servingCount).isEqualTo(2.0)
+            assertThat(savedIng.effectiveRawWeight()).isEqualTo(RawWeight(100.0))
         }
 }

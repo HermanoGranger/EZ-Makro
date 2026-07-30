@@ -38,6 +38,9 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  *   `ON DELETE CASCADE` to `ON DELETE SET NULL` so logged entries survive
  *   deletion of the source recipe or food (the existing JSON snapshots
  *   already provide all data for rendering and calculation).
+ * - 7: Phase 9 Refinement — Drops `scale` and `is_meal_prep` columns from
+ *   `recipes`. These features (Scaling, Meal Prep, Quick Meal) were removed
+ *   as they provided no value and added confusion.
  *
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
@@ -51,7 +54,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 6,
+    version = 7,
 )
 @TypeConverters(ScalarConverters::class, JsonConverters::class)
 abstract class EZDatabase : RoomDatabase() {

@@ -56,22 +56,6 @@ class RecipeCalculationTest {
     }
 
     @Test
-    fun `totalNutrition applies recipe scale`() {
-        val f = food()
-        val recipe =
-            Recipe(
-                id = RecipeId("r1"),
-                name = "Test",
-                ingredients = listOf(ingredient(f, 100.0)),
-                finalWeight = null,
-                portions = 1,
-                scale = 2.0,
-            )
-        val total = recipe.totalNutrition()
-        assertEquals(NutritionValues(200.0, 20.0, 10.0, 4.0, 2.0), total)
-    }
-
-    @Test
     fun `nutritionPer100g uses finalWeight not raw weight`() {
         val f = food(per100g = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0))
         val recipe =
@@ -188,14 +172,19 @@ class RecipeCalculationTest {
     }
 
     @Test
-    fun `ingredient requires exactly one of rawWeight or servingCount`() {
+    fun `ingredient requires at least one of rawWeight or servingCount`() {
         val f = food(servingUnit = ServingUnit("1 Ei", 50.0))
         assertFailsWith<IllegalArgumentException> {
             RecipeIngredient(food = f, rawWeight = null, servingCount = null)
         }
-        assertFailsWith<IllegalArgumentException> {
-            RecipeIngredient(food = f, rawWeight = RawWeight(50.0), servingCount = 1.0)
-        }
+    }
+
+    @Test
+    fun `ingredient allows both rawWeight and servingCount simultaneously`() {
+        val f = food(servingUnit = ServingUnit("1 Ei", 50.0))
+        val ing = RecipeIngredient(food = f, rawWeight = RawWeight(60.0), servingCount = 2.0)
+        // effectiveRawWeight should prefer rawWeight
+        assertEquals(RawWeight(60.0), ing.effectiveRawWeight())
     }
 
     @Test
@@ -346,24 +335,7 @@ class RecipeCalculationTest {
     }
 
     @Test
-    fun `scale changes total but not per100g basis`() {
-        val f = food(per100g = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0))
-        val recipe =
-            Recipe(
-                id = RecipeId("r1"),
-                name = "Test",
-                ingredients = listOf(ingredient(f, 100.0)),
-                finalWeight = FinalWeight(100.0),
-                portions = 1,
-                scale = 3.0,
-            )
-        // total = 300 kcal, per100g = 300/100 = 300 (final weight is fixed dish weight)
-        assertEquals(300.0, recipe.totalNutrition().kcal, 1e-9)
-        assertEquals(300.0, recipe.nutritionPer100g()!!.kcal, 1e-9)
-    }
-
-    @Test
-    fun `recipe carries category and meal prep flag`() {
+    fun `recipe carries category`() {
         val f = food()
         val recipe =
             Recipe(
@@ -373,10 +345,41 @@ class RecipeCalculationTest {
                 finalWeight = null,
                 portions = 1,
                 category = "Frühstück",
-                isMealPrep = true,
             )
         assertEquals("Frühstück", recipe.category)
-        assertEquals(true, recipe.isMealPrep)
+    }
+
+    @Test
+    fun `estimatedPer100g falls back to raw weight when no finalWeight`() {
+        val f = food(per100g = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0))
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Test",
+                ingredients = listOf(ingredient(f, 200.0), ingredient(f, 100.0)),
+                finalWeight = null,
+                portions = 1,
+            )
+        // total = 300 kcal, totalRawWeight = 300 g => 100 kcal / 100 g
+        val estimated = recipe.estimatedPer100g()
+        assertEquals(100.0, estimated.kcal, 1e-9)
+    }
+
+    @Test
+    fun `estimatedPer100g differs from nutritionPer100g when cooking changes weight`() {
+        val f = food(per100g = NutritionValues(100.0, 10.0, 5.0, 2.0, 1.0))
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Test",
+                ingredients = listOf(ingredient(f, 200.0)),
+                finalWeight = FinalWeight(150.0),
+                portions = 1,
+            )
+        // total = 200 kcal, totalRawWeight = 200 g => estimated = 100 kcal/100g
+        // finalWeight = 150 g => actual per100g = 133.33 kcal/100g
+        assertEquals(100.0, recipe.estimatedPer100g().kcal, 1e-9)
+        assertEquals(133.333333333, recipe.nutritionPer100g()!!.kcal, 1e-6)
     }
 
     @Test

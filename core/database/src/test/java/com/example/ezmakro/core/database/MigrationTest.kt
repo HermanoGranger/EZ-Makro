@@ -10,6 +10,7 @@ import assertk.assertions.isTrue
 import com.example.ezmakro.core.database.migration.MIGRATION_1_2
 import com.example.ezmakro.core.database.migration.MIGRATION_2_3
 import com.example.ezmakro.core.database.migration.MIGRATION_5_6
+import com.example.ezmakro.core.database.migration.MIGRATION_6_7
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -147,6 +148,43 @@ class MigrationTest {
             assertThat(c.isNull(0)).isTrue()
             assertThat(c.getInt(1)).isEqualTo(0)
         }
+        migrated.close()
+    }
+
+    @Test
+    fun `migrate 6 to 7 drops scale and is_meal_prep from recipes`() {
+        helper.createDatabase(dbName, 6).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO recipes (id, name, final_weight_grams, portions, scale, category, is_meal_prep, last_modified_at)
+                VALUES ('r1', 'Pfannkuchen', 500.0, 2, 1.0, 'Backen', 0, 0)
+                """.trimIndent(),
+            )
+        }
+
+        val migrated = helper.runMigrationsAndValidate(dbName, 7, true, MIGRATION_6_7)
+
+        migrated.query("PRAGMA table_info(recipes)").use { c ->
+            val columns = mutableListOf<String>()
+            while (c.moveToNext()) {
+                columns.add(c.getString(1))
+            }
+            assertThat("scale" in columns).isEqualTo(false)
+            assertThat("is_meal_prep" in columns).isEqualTo(false)
+        }
+
+        val query =
+            "SELECT id, name, final_weight_grams, portions, category, last_modified_at FROM recipes WHERE id = 'r1'"
+        migrated.query(query).use { c ->
+            check(c.moveToFirst()) { "expected recipe to survive" }
+            assertThat(c.getString(0)).isEqualTo("r1")
+            assertThat(c.getString(1)).isEqualTo("Pfannkuchen")
+            assertThat(c.getDouble(2)).isEqualTo(500.0)
+            assertThat(c.getInt(3)).isEqualTo(2)
+            assertThat(c.getString(4)).isEqualTo("Backen")
+            assertThat(c.getLong(5)).isEqualTo(0L)
+        }
+
         migrated.close()
     }
 }
