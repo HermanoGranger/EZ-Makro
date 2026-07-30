@@ -323,35 +323,35 @@ Rezepte sollen als Zutat in anderen Rezepten verwendet werden können (z. B. Piz
 
 ---
 
-## 🔲 Step 7 — Unified Food Interface Analysis
+## ✅ Step 7 — Unified Food Interface Analysis (DONE)
 
 ### Ziel
 Analysieren, ob und wie ein einheitliches Lebensmittel-Hinzufügen-Interface (ähnlich Foodvisor) implementiert werden soll. Ein Bottom-Sheet-Dialog über den ganzen Screen mit drei Tabs: Barcode, Suche, Meine Lebensmittel.
 
 ### Analyse
 1. **Aktuelle Situation:**
-   - Food hinzufügen: `FoodEditScreen`, `BarcodeScanScreen`, `FoodSearchScreen`
-   - Recipe hinzufügen: `RecipeEditorScreen`
-   - Diary hinzufügen: `AddToDiarySheet`, `QuickAddScreen`
-   - Alle haben eigene Einstiegspunkte und UIs
+    - Food hinzufügen: `FoodEditScreen`, `BarcodeScanScreen`, `FoodSearchScreen`
+    - Recipe hinzufügen: `RecipeEditorScreen`
+    - Diary hinzufügen: `AddToDiarySheet`, `QuickAddScreen`
+    - Alle haben eigene Einstiegspunkte und UIs
 
 2. **Option A: Refactor bestehender Interfaces**
-   - `AddToDiarySheet` zum zentralen Bottom-Sheet ausbauen
-   - Tabs: Barcode, Suche, Meine Lebensmittel
-   - Vorteil: kein neues Modul nötig
-   - Nachteil: Komplexität in `:core-presentation` steigt
+    - `AddToDiarySheet` zum zentralen Bottom-Sheet ausbauen
+    - Tabs: Barcode, Suche, Meine Lebensmittel
+    - Vorteil: kein neues Modul nötig
+    - Nachteil: Komplexität in `:core-presentation` steigt
 
-3. **Option B: Neues Feature-Modul `:feature-foodpicker`**
-   - Eigenes Modul nach Clean Architecture
-   - Klare Trennung, wiederverwendbar
-   - Vorteil: saubere Architektur
-   - Nachteil: neues Modul, Aufwand
+3. **Option B: Neues Feature-Modul `:feature:foodpicker:presentation`**
+    - Eigenes Modul nach Clean Architecture
+    - Klare Trennung, wiederverwendbar
+    - Vorteil: saubere Architektur
+    - Nachteil: neues Modul, Aufwand
 
 4. **Option C: Graduelle Migration**
-   - Erst `AddToDiarySheet` ausbauen
-   - Später in eigenes Modul auslagern
-   - Vorteil: schneller erste Ergebnisse
-   - Nachteil: temporäre Unschärfe
+    - Erst `AddToDiarySheet` ausbauen
+    - Später in eigenes Modul auslagern
+    - Vorteil: schneller erste Ergebnisse
+    - Nachteil: temporäre Unschärfe
 
 ### Deliverables
 - Vergleichsanalyse der Optionen
@@ -360,24 +360,275 @@ Analysieren, ob und wie ein einheitliches Lebensmittel-Hinzufügen-Interface (ä
 - Detaillierte Empfehlung mit Begründung
 - Aufwandsschätzung
 
+### Ergebnis
+- **Entscheidung: Option B** (Neues Modul `:feature:foodpicker:presentation`)
+- Begründung: Architektur-Integrität, Wiederverwendbarkeit (auch für Recipe-Ingredient-Picker Step 6), saubere Barcode-Integration, vergleichbarer Aufwand zu Alternativen
+- Aufwandsschätzung: 8.5–12.5 Tage
+
 ### Acceptance Criteria
 - ✅ Analyse dokumentiert
 - ✅ Empfehlung mit Begründung
 - ✅ Aufwandsschätzung
-- ✅ Entscheidung getroffen (vom User)
+- ✅ Entscheidung getroffen (Option B)
 
 ---
+
+## 🔲 Step 8 — Unified Food Interface Implementation
+
+### Ziel
+Das neue Feature-Modul `:feature:foodpicker:presentation` implementieren: ein modal-bottom-sheet mit 3 Tabs (Barcode, Suche, Meine Lebensmittel) zum Hinzufügen von Lebensmitteln zum Tagebuch ODER als Rezept-Zutat.
+
+### Übernahme aus Step 7 Analyse
+- **Entscheidung:** Option B — Neues Clean-Architecture-Modul
+- **Modulname:** `:feature:foodpicker:presentation` (analog zu bestehenden Features)
+- **Ordner:** `feature/foodpicker/presentation/`
+- **Wiederverwendbarkeit:** Sheet muss von DiaryDayScreen UND RecipeEditorScreen geöffnet werden können
+
+### Architektur
+
+```
+:feature:foodpicker:presentation          ← NEU
+  ├── picker/                             ← Hauptpaket
+  │   ├── FoodPickerSheet.kt              ← ModalBottomSheet + TabRow (Root Composable)
+  │   ├── FoodPickerViewModel.kt          ← Tab-State, Auswahl, Bestätigung
+  │   ├── FoodPickerState.kt              ← Zustand
+  │   ├── FoodPickerAction.kt             ← Actions
+  │   ├── FoodPickerEvent.kt              ← Events
+  │   ├── barcode/
+  │   │   └── BarcodeTab.kt               ← Kamera-Preview + Scan-Overlay
+  │   ├── search/
+  │   │   └── SearchTab.kt                ← Recent/Local/Online-Suche
+  │   └── myfoods/
+  │       └── MyFoodsTab.kt               ← Food/Recipe-Toggle + Liste
+  ├── di/
+  │   └── FoodPickerModule.kt             ← Koin-Modul
+```
+
+### Abhängigkeiten
+`:feature:foodpicker:presentation` benötigt:
+- `:core:domain` — FoodItem, Recipe, DiaryEntry, MealSlot, UseCases, Repository-Interfaces
+- `:core:presentation` — UiText, ObserveAsEvents, AddToDiarySheet (wird weiter genutzt ODER ersetzt)
+- `:core:design-system` — Theme, LoadingIndicator, etc.
+- `:core:barcode` — BarcodeScanner-Interface + MlKitBarcodeScanner
+- CameraX (via libs.versions.toml Bundle)
+
+### Detaillierte Aufgaben
+
+#### 1. Modul-Setup
+- `settings.gradle.kts`: `include(":feature:foodpicker:presentation")` hinzufügen
+- `feature/foodpicker/presentation/build.gradle.kts` erstellen (analog `feature/food/presentation/build.gradle.kts`)
+  - Plugins: `ezmakro.android.library`, `ezmakro.compose`, `ezmakro.koin`, `ezmakro.kotlinx.serialization`
+  - Dependencies: `:core:domain`, `:core:presentation`, `:core:design-system`, `:core:barcode`, CameraX-Bundle
+  - Namespace: `com.example.ezmakro.feature.foodpicker.presentation`
+- Leeres `feature/foodpicker/presentation/src/main/java/com/example/ezmakro/feature/foodpicker/` Verzeichnis anlegen
+
+#### 2. Domain-Grundlagen
+
+Keine neuen Domain-Modelle nötig (wiederverwendet bestehende):
+- `FoodItem`, `Recipe`, `MealSlot`, `DiaryEntry`
+- `FoodRepository.observeAll()`, `FoodRepository.searchLocal()`, `FoodRepository.searchRemote()`
+- `RecipeRepository.observeAll()`
+- `AddFoodToDiaryUseCase`, `AddRecipeToDiaryUseCase`
+
+#### 3. State (FoodPickerState.kt)
+```kotlin
+data class FoodPickerState(
+    val activeTab: FoodPickerTab = FoodPickerTab.SEARCH,
+    val searchQuery: String = "",
+    val recentFoods: List<FoodUi> = emptyList(),
+    val localSearchResults: List<FoodUi> = emptyList(),
+    val onlineSearchResults: List<FoodUi> = emptyList(),
+    val isSearchingOnline: Boolean = false,
+    val onlineError: UiText? = null,
+    val userFoods: List<FoodUi> = emptyList(),
+    val userRecipes: List<RecipeUi> = emptyList(),
+    val showFoods: Boolean = true,        // Toggle in "Meine Lebensmittel"
+    val barcodeResult: String? = null,
+    val isCameraPermissionGranted: Boolean = false,
+    val isLookingUpBarcode: Boolean = false,
+    val barcodeError: UiText? = null,
+    val selectedItemReady: Boolean = false, // Food/Recipe selected → show AddToDiarySheet
+    val selectedItemId: String? = null,
+    val selectedItemIsRecipe: Boolean = false,
+    val selectedItemHasServingUnit: Boolean = false,
+    val targetContext: FoodPickerTarget = FoodPickerTarget.DIARY,
+    val targetDate: String? = null,
+    val isSheetVisible: Boolean = false,
+)
+
+enum class FoodPickerTab { BARCODE, SEARCH, MY_FOODS }
+
+enum class FoodPickerTarget { DIARY, RECIPE_INGREDIENT }
+```
+
+#### 4. Actions (FoodPickerAction.kt)
+```kotlin
+sealed interface FoodPickerAction {
+    data class OnTabSelected(val tab: FoodPickerTab) : FoodPickerAction
+    data class OnSearchQueryChange(val query: String) : FoodPickerAction
+    data object OnSearchOnlineClick : FoodPickerAction
+    data class OnFoodClick(val foodId: String) : FoodPickerAction
+    data class OnRecipeClick(val recipeId: String) : FoodPickerAction
+    data object OnDismissSelection : FoodPickerAction
+    data class OnConfirmAddToDiary(
+        val slot: MealSlot, val amount: Double, val isGrams: Boolean,
+    ) : FoodPickerAction
+    data object OnMyFoodsToggle : FoodPickerAction  // switch foods/recipes
+    data class OnBarcodeDetected(val barcode: String) : FoodPickerAction
+    data class OnPermissionResult(val granted: Boolean) : FoodPickerAction
+    data object OnDismiss : FoodPickerAction
+}
+```
+
+#### 5. Events (FoodPickerEvent.kt)
+```kotlin
+sealed interface FoodPickerEvent {
+    data class NavigateToFoodDetail(val foodId: String) : FoodPickerEvent
+    data class NavigateToFoodCreate(val barcode: String?) : FoodPickerEvent
+    data class AddToDiary(
+        val itemId: String, val isRecipe: Boolean, val date: String,
+        val slot: MealSlot, val amount: Double, val isGrams: Boolean,
+    ) : FoodPickerEvent
+    data class AddAsIngredient(
+        val itemId: String, val isRecipe: Boolean,
+    ) : FoodPickerEvent
+    data object Dismissed : FoodPickerEvent
+}
+```
+
+#### 6. ViewModel (FoodPickerViewModel.kt)
+- Nutzt `FoodRepository` und `RecipeRepository` via Koin
+- `observeAll()` für recent + userFoods + userRecipes
+- `searchLocal(query)` und `searchRemote(query)` für Suche
+- Barcode-Logik analog zu `BarcodeScanViewModel`
+- Bei `OnConfirmAddToDiary`: Event feuern → Caller kümmert sich um persistieren
+- State überlebt Config-Change via `SavedStateHandle` für Such-Query und Tab
+
+#### 7. UI — FoodPickerSheet.kt (Root Composable)
+```kotlin
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FoodPickerSheet(
+    isVisible: Boolean,
+    target: FoodPickerTarget,
+    targetDate: LocalDate?,
+    onAddToDiary: (foodId: String, date: String, slot: MealSlot, amount: Double, isGrams: Boolean) -> Unit,
+    onAddAsIngredient: (IngredientDraft) -> Unit,
+    onDismiss: () -> Unit,
+    viewModel: FoodPickerViewModel = koinViewModel(),
+)
+```
+
+Implementierung:
+- `ModalBottomSheet(onDismissRequest = onDismiss)` als Container
+- `TabRow` mit 3 Tabs (Barcode, Suche, Meine Lebensmittel) + Icons
+- Tab-Content via `when(state.activeTab)` dispatching
+- Wenn `selectedItemReady == true`: `AddToDiarySheet` (aus `:core:presentation`) als Dialog overlay einblenden
+- `ObserveAsEvents` für Navigation/AddToDiary-Events
+
+#### 8. UI — BarcodeTab.kt
+- Analog zu `BarcodeScanScreen` aber INLINE im Bottom-Sheet
+- CameraPermission-Handling (PermissionLauncher)
+- `BarcodeScanner` via Koin injecten (analog `BarcodeScanRoot`)
+- Camera-Preview via `AndroidView` + `PreviewView`
+- **ACHTUNG:** Camera-Preview in Bottom-Sheet ist technisch anspruchsvoll (Surface-Teardown bei Sheet-Resize). Lösung: `remember { PreviewView(context) }` außen halten, `Modifier.fillMaxWidth().height(300.dp)` feste Höhe für Preview-Bereich.
+- Bei Barcode-Erkennung: ViewModel-Action aufrufen → lookup → bei Erfolg Food/Recipe auswählen
+
+#### 9. UI — SearchTab.kt
+- Analog zu `FoodSearchScreen` aber ohne TopAppBar (Tabs sind drin)
+- `OutlinedTextField` für Query
+- Online-Suche-Button (nur bei nicht-leerer Query)
+- Ergebnisse: Recent (wenn Query leer) → Local Results → Online Results
+- Klick auf Food → ViewModel.Action.OnFoodClick
+- "Scan Barcode"-Button und "Create Own"-Button (analog FoodSearchScreen)
+- Favoriten-Stern via `OnToggleFavorite`
+
+#### 10. UI — MyFoodsTab.kt
+- Switch/Toggle zwischen "Lebensmittel" und "Rezepte"
+- `showFoods ? userFoods : userRecipes` in einer LazyColumn
+- Klick → `OnFoodClick` oder `OnRecipeClick`
+- Recipe-Klick: nur wenn `target == DIARY` (Recipe als Ingredient braucht ggf. eigene Logik — siehe Step 6 RecipeSnapshot)
+
+#### 11. Integration in DiaryDayScreen
+- `DiaryDayRoot` erhält neuen Parameter: `onOpenFoodPicker: () -> Unit`
+- "Lebensmittel hinzufügen"-Button öffnet statt Navigation zu FoodSearch den FoodPicker-Sheet
+- `FoodPickerSheet(isVisible, target=DIARY, targetDate, onAddToDiary, ...)` direkt im DiaryDayScreen-Composable
+- `onAddToDiary`-Callback: bestehende `makeAddFoodToDiary`/`makeAddRecipeToDiary`-Logik aus `MainActivity` in ViewModel oder UseCase verschieben
+- **Alternative (einfacher):** `onAddToDiary`-Event feuert → `MainActivity` macht wie bisher Repository + UseCase + popBackStack — aber statt `popBackStack` wird nur Sheet geschlossen
+
+#### 12. Integration in RecipeEditorScreen
+- `RecipeEditorRoot` erhält `onOpenFoodPicker: (IngredientDraft) -> Unit`-Callback
+- "+ Zutat"-Button öffnet FoodPickerSheet mit `target = RECIPE_INGREDIENT`
+- `onAddAsIngredient`-Callback: erzeugt `IngredientDraft` (mit FoodItem + Menge 100g default) und fügt zum RecipeEditor-State hinzu
+
+#### 13. Navigation & DI in :app
+- `AppModule.kt`: `foodPickerPresentationModule` einbinden
+- `MainActivity.kt`: FoodPickerSheet wird NICHT über Navigation gesteuert — es ist ein Composable-Overlay in DiaryDayRoot/RecipeEditorRoot
+- Keine neuen Navigationsrouten nötig (Sheet = Overlay, kein Screen)
+
+#### 14. Entfernen alter Flows (optional, nach Integration)
+- `food_search?addToDiaryDate=...` Route kann bestehen bleiben für Food-Tab-Navigation (normale Food-Suche ohne Add-to-Diary)
+- `AddToDiarySheet` in `:core:presentation` bleibt erhalten (wird vom FoodPickerSheet weiter genutzt)
+- `BarcodeScanScreen` in `feature:food` bleibt für Food-Tab erhalten
+- **Nicht löschen** — nur der Diary-Einstieg wird auf FoodPickerSheet umgestellt
+
+### Betroffene Dateien (Änderungen)
+
+| Datei | Änderung |
+|---|---|
+| `settings.gradle.kts` | `include(":feature:foodpicker:presentation")` hinzufügen |
+| `feature/foodpicker/presentation/build.gradle.kts` | **NEU** |
+| `feature/foodpicker/presentation/.../*.kt` | **NEU** — 10+ Dateien (s.o.) |
+| `app/src/main/java/.../di/AppModule.kt` | `foodPickerPresentationModule` einbinden |
+| `app/src/main/java/.../MainActivity.kt` | FoodPicker-Result-Handling (Analog zu addFoodToDiary/addRecipeToDiary) |
+| `feature/diary/presentation/.../DiaryDayAction.kt` | `OnOpenFoodPicker` Action hinzufügen |
+| `feature/diary/presentation/.../DiaryDayEvent.kt` | ggf. Event anpassen |
+| `feature/diary/presentation/.../DiaryDayViewModel.kt` | `onOpenFoodPicker`-Callback bereitstellen |
+| `feature/diary/presentation/.../DiaryDayScreen.kt` | FoodPickerSheet einbetten, `onOpenFoodPicker`-Parameter |
+| `feature/recipes/presentation/.../RecipeEditorAction.kt` | `OnOpenFoodPickerForIngredient` Action |
+| `feature/recipes/presentation/.../RecipeEditorState.kt` | ggf. IngredientDraft-Handling |
+| `feature/recipes/presentation/.../RecipeEditorViewModel.kt` | Ingredient-Auswahl-Handling |
+| `feature/recipes/presentation/.../RecipeEditorScreen.kt` | FoodPickerSheet einbetten |
+
+### Tests
+
+| Test | Beschreibung |
+|---|---|
+| `FoodPickerViewModelTest` | Tab-Wechsel, Such-Query, Barcode-Detektion, Food/Recipe-Auswahl, ConfirmAddToDiary |
+| `FoodPickerViewModelTest` | State-Überleben bei Config-Change (SavedStateHandle) |
+| `DiaryDayViewModelTest` | FoodPicker öffnen → Item auswählen → Diary-Eintrag erstellt |
+| `RecipeEditorViewModelTest` | FoodPicker öffnen → Ingredient auswählen → Ingredient im State |
+| UI-Test (optional) | Tabs sichtbar/klickbar, Barcode-Permission-Dialog, Search-Ergebnisse |
+
+### Acceptance Criteria
+- ✅ `ModalBottomSheet` mit 3 Tabs: Barcode, Suche, Meine Lebensmittel
+- ✅ Tab "Barcode": Kamera-Preview + Scan + Lookup
+- ✅ Tab "Suche": Recent → lokal → online (OpenFoodFacts) + Favoriten
+- ✅ Tab "Meine Lebensmittel": Switch Food/Recipe-Liste
+- ✅ In allen 3 Tabs: Auswahl → AddToDiarySheet (Slot + Menge) → Diary-Eintrag
+- ✅ Auswahl als Rezept-Zutat im RecipeEditor (Menge default 100g)
+- ✅ Integration in DiaryDayScreen: "Hinzufügen"-Button öffnet Sheet statt Navigation
+- ✅ Integration in RecipeEditorScreen: "+ Zutat"-Button öffnet Sheet
+- ✅ Bestehende FoodSearchScreen/BarcodeScanScreen bleiben im Food-Tab erhalten
+- ✅ State überlebt Config-Change (SavedStateHandle)
+- ✅ `./gradlew build` + `./gradlew detekt` + `./gradlew ktlintCheck` grün
+- ✅ Alle bestehenden Tests grün
+
+---
+
+
 
 ## Cross-Step Dependencies
 
 ```mermaid
 graph TD
     A[Step 1 ✅ DONE] --> B[Step 2 ✅ DONE]
-    B --> C[Step 3 🔲]
-    C --> D[Step 4 🔲]
-    D --> E[Step 5 🔲]
-    E --> F[Step 6 🔲]
-    F --> G[Step 7 🔲]
+    B --> C[Step 3 ✅ DONE]
+    C --> D[Step 4 ✅ DONE]
+    D --> E[Step 5 ✅ DONE]
+    E --> F[Step 6 ✅ DONE]
+    F --> G[Step 7 ✅ DONE]
+    G --> H[Step 8 🔲]
 ```
 
 **Key Dependencies:**
@@ -385,7 +636,8 @@ graph TD
 - **Step 4** (collapsible UI) benötigt **Step 3** (Portion-Logik in Diary)
 - **Step 5** (date nav) benötigt **Step 4** (aktuelle Diary-UI)
 - **Step 6** (recipe-as-ingredient) kann parallel zu **Step 4+5** laufen
-- **Step 7** (food interface) ist letzter Schritt, baut auf allen auf
+- **Step 7** (food interface analysis) abgeschlossen — Entscheidung: Option B
+- **Step 8** (food interface implementation) baut auf Step 7 Analyse auf
 
 ---
 
@@ -415,7 +667,7 @@ Niemals automatisch committen. Erst nach explizitem Befehl vom User (`Commit Pha
 
 ---
 
-**Document Version:** 2.0
+**Document Version:** 2.1
 **Created:** 2026-07-29
 **Project:** EZ Makro Phase 9 Refinement
-**Status:** Aktualisiert (Steps 1+2 DONE)
+**Status:** Steps 1-7 DONE, Step 8 bereit zur Implementierung durch Coding-Agent
