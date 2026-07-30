@@ -71,6 +71,9 @@ interface FoodRepository {
      */
     suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local>
 
+    /** Explicitly cache a remote [FoodItem] locally (deferred caching). */
+    suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local>
+
     companion object {
         const val DEFAULT_RECENT_LIMIT = 20
     }

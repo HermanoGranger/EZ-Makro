@@ -10,7 +10,6 @@ import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.map
-import com.example.ezmakro.core.domain.result.onSuccess
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -37,9 +36,7 @@ class OfflineFirstFoodRepository(
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = local.getById(id)
 
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
-        remote.searchByName(query).onSuccess { items ->
-            items.forEach { cacheWithoutOverwritingUserEdits(it) }
-        }
+        remote.searchByName(query)
 
     override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> {
         when (val localHit = local.getByBarcode(barcode)) {
@@ -115,6 +112,23 @@ class OfflineFirstFoodRepository(
     }
 
     override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = local.markUsed(id, now())
+
+    override suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local> {
+        val existing = local.getById(item.id)
+        if (existing is Result.Success && existing.data?.cachedStatus == CachedFoodItemStatus.UserModified) {
+            return Result.Success(Unit)
+        }
+        val toSave =
+            item.copy(
+                cachedStatus = CachedFoodItemStatus.Original,
+                originalSnapshot = item,
+            )
+        val result = local.upsert(toSave)
+        if (result is Result.Success) {
+            local.markUsed(item.id, System.currentTimeMillis())
+        }
+        return result
+    }
 
     /**
      * ADR-004: persist an OFF result only if there is no existing UserModified

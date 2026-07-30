@@ -139,7 +139,7 @@ private class FakeRemote(
 
 class OfflineFirstFoodRepositoryTest {
     @Test
-    fun `searchRemote persists results into the local cache`() =
+    fun `searchRemote does not cache anymore`() =
         runTest {
             val local = FakeLocal()
             val remote = FakeRemote(searchResult = Result.Success(listOf(food("1", "Apfel"))))
@@ -147,10 +147,7 @@ class OfflineFirstFoodRepositoryTest {
 
             repo.searchRemote("apf")
 
-            val stored = local.store.value["1"]
-            assertThat(stored?.name).isEqualTo("Apfel")
-            // OFF results are stored with an originalSnapshot for "reset to original"
-            assertThat(stored?.originalSnapshot).isNotNull()
+            assertThat(local.store.value["1"]).isNull()
         }
 
     @Test
@@ -162,6 +159,35 @@ class OfflineFirstFoodRepositoryTest {
             val repo = OfflineFirstFoodRepository(local, remote)
 
             repo.searchRemote("x")
+
+            assertThat(local.store.value["1"]?.name).isEqualTo("My Edit")
+            assertThat(local.store.value["1"]?.cachedStatus)
+                .isEqualTo(CachedFoodItemStatus.UserModified)
+        }
+
+    @Test
+    fun `cacheRemoteItem saves and marks used`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.cacheRemoteItem(food("1", "Apfel"))
+
+            val stored = local.store.value["1"]
+            assertThat(stored?.name).isEqualTo("Apfel")
+            assertThat(stored?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+            assertThat(stored?.originalSnapshot).isNotNull()
+            assertThat(stored?.lastUsedAt).isNotNull()
+        }
+
+    @Test
+    fun `cacheRemoteItem does NOT overwrite UserModified`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Edit", status = CachedFoodItemStatus.UserModified))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.cacheRemoteItem(food("1", "OFF Name"))
 
             assertThat(local.store.value["1"]?.name).isEqualTo("My Edit")
             assertThat(local.store.value["1"]?.cachedStatus)
