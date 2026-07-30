@@ -6,6 +6,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import com.example.ezmakro.core.database.dao.RecipeDao
 import com.example.ezmakro.core.database.entity.RecipeEntity
@@ -213,6 +214,70 @@ class RoomRecipeRepositoryTest {
         }
 
     @Test
+    fun `observeFavorites returns only favorited recipes`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+
+            repo.save(recipe("r1").copy(isFavorite = false))
+            repo.save(recipe("r2").copy(isFavorite = true))
+
+            val favorites = repo.observeFavorites().first()
+            assertThat(favorites).hasSize(1)
+            assertThat(favorites.first().id.value).isEqualTo("r2")
+        }
+
+    @Test
+    fun `observeRecent returns recipes ordered by lastUsedAt descending`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+
+            repo.save(recipe("r1").copy(lastUsedAt = 100))
+            repo.save(recipe("r2").copy(lastUsedAt = 200))
+            repo.save(recipe("r3").copy(lastUsedAt = 300))
+
+            val recent = repo.observeRecent(2).first()
+            assertThat(recent).hasSize(2)
+            assertThat(recent[0].id.value).isEqualTo("r3")
+            assertThat(recent[1].id.value).isEqualTo("r2")
+        }
+
+    @Test
+    fun `toggleFavorite toggles the isFavorite flag`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+
+            repo.save(recipe("r1"))
+
+            assertThat(dao.recipes.value["r1"]?.isFavorite).isEqualTo(0)
+
+            repo.toggleFavorite(RecipeId("r1"))
+            assertThat(dao.recipes.value["r1"]?.isFavorite).isEqualTo(1)
+
+            repo.toggleFavorite(RecipeId("r1"))
+            assertThat(dao.recipes.value["r1"]?.isFavorite).isEqualTo(0)
+        }
+
+    @Test
+    fun `markUsed sets the lastUsedAt timestamp`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+
+            repo.save(recipe("r1"))
+            assertThat(dao.recipes.value["r1"]?.lastUsedAt).isNull()
+
+            repo.markUsed(RecipeId("r1"))
+            assertThat(dao.recipes.value["r1"]?.lastUsedAt).isNotNull()
+        }
+
+    @Test
     fun `duplicate creates a copy with Kopie suffix and fresh id`() =
         runTest {
             val dao = FakeRecipeDao()
@@ -274,7 +339,6 @@ class RoomRecipeRepositoryTest {
             )
 
             val resolved = repo.observeAll().first()
-            // The recipe is dropped entirely because it would have <1 resolvable ingredient.
             assertThat(resolved).containsExactly()
         }
 }

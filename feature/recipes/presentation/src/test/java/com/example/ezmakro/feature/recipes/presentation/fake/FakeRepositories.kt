@@ -75,8 +75,18 @@ class FakeRecipeRepository : RecipeRepository {
 
     val deleted = mutableListOf<RecipeId>()
 
+    var lastToggledFavorite: RecipeId? = null
+
+    var lastMarkedUsed: RecipeId? = null
+
     fun emitRecipe(recipe: Recipe) {
         store.value = store.value + (recipe.id.value to recipe)
+    }
+
+    fun emitFavorites(recipes: List<Recipe>) {
+        for (r in recipes) {
+            store.value = store.value + (r.id.value to r.copy(isFavorite = true))
+        }
     }
 
     override fun observeAll(): Flow<List<Recipe>> = store.map { it.values.toList() }
@@ -108,6 +118,7 @@ class FakeRecipeRepository : RecipeRepository {
         }
 
     override suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local> {
+        lastToggledFavorite = id
         val map = store.value.toMutableMap()
         val recipe = map[id.value] ?: return Result.Error(DataError.Local.NOT_FOUND)
         map[id.value] = recipe.copy(isFavorite = !recipe.isFavorite)
@@ -116,6 +127,7 @@ class FakeRecipeRepository : RecipeRepository {
     }
 
     override suspend fun markUsed(id: RecipeId): EmptyResult<DataError.Local> {
+        lastMarkedUsed = id
         val map = store.value.toMutableMap()
         val recipe = map[id.value] ?: return Result.Error(DataError.Local.NOT_FOUND)
         map[id.value] = recipe.copy(lastUsedAt = System.currentTimeMillis())
