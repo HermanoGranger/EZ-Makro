@@ -122,7 +122,7 @@ private fun FoodPickerSheetContent(
                         modifier = Modifier.fillMaxSize(),
                     )
                 FoodPickerTab.SEARCH -> SearchTab(state = state, onAction = onAction)
-                FoodPickerTab.MY_FOODS -> MyFoodsTab(state = state, onAction = onAction)
+                FoodPickerTab.FAVORITES -> MyFoodsTab(state = state, onAction = onAction)
             }
         }
     }
@@ -133,7 +133,7 @@ private val FoodPickerTab.icon: ImageVector
         when (this) {
             FoodPickerTab.BARCODE -> Icons.Filled.CameraAlt
             FoodPickerTab.SEARCH -> Icons.Filled.Search
-            FoodPickerTab.MY_FOODS -> Icons.Filled.Favorite
+            FoodPickerTab.FAVORITES -> Icons.Filled.Favorite
         }
 
 private val FoodPickerTab.labelRes: Int
@@ -141,5 +141,5 @@ private val FoodPickerTab.labelRes: Int
         when (this) {
             FoodPickerTab.BARCODE -> R.string.foodpicker_tab_barcode
             FoodPickerTab.SEARCH -> R.string.foodpicker_tab_search
-            FoodPickerTab.MY_FOODS -> R.string.foodpicker_tab_my_foods
+            FoodPickerTab.FAVORITES -> R.string.foodpicker_tab_favorites
         }

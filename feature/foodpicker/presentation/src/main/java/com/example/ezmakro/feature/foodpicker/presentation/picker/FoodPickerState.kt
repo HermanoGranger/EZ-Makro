@@ -15,6 +15,10 @@ data class FoodPickerState(
     val onlineError: UiText? = null,
     val userFoods: List<PickerFoodUi> = emptyList(),
     val userRecipes: List<PickerRecipeUi> = emptyList(),
+    val recentRecipes: List<PickerRecipeUi> = emptyList(),
+    val localRecipeResults: List<PickerRecipeUi> = emptyList(),
+    val favoriteFoods: List<PickerFoodUi> = emptyList(),
+    val favoriteRecipes: List<PickerRecipeUi> = emptyList(),
     val showFoods: Boolean = true,
     val isCameraPermissionGranted: Boolean = false,
     val isLookingUpBarcode: Boolean = false,
@@ -27,7 +31,7 @@ data class FoodPickerState(
     val targetDate: String? = null,
 )
 
-enum class FoodPickerTab { BARCODE, SEARCH, MY_FOODS }
+enum class FoodPickerTab { BARCODE, SEARCH, FAVORITES }
 
 enum class FoodPickerTarget { DIARY, RECIPE_INGREDIENT }
 
@@ -43,6 +47,7 @@ data class PickerRecipeUi(
     val id: String,
     val name: String,
     val kcalPer100g: Double,
+    val isFavorite: Boolean,
 )
 
 fun FoodItem.toPickerFoodUi() =
@@ -59,4 +64,5 @@ fun Recipe.toPickerRecipeUi() =
         id = id.value,
         name = name,
         kcalPer100g = nutritionPer100g()?.kcal ?: 0.0,
+        isFavorite = isFavorite,
     )

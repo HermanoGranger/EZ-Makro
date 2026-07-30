@@ -32,7 +32,13 @@ class FoodPickerViewModel(
     private val savedTab =
         savedStateHandle
             .get<String>(KEY_TAB)
-            ?.let { runCatching { FoodPickerTab.valueOf(it) }.getOrNull() }
+            ?.let { raw ->
+                if (raw == "MY_FOODS") {
+                    FoodPickerTab.FAVORITES
+                } else {
+                    runCatching { FoodPickerTab.valueOf(raw) }.getOrNull()
+                }
+            }
 
     private val _state =
         MutableStateFlow(
