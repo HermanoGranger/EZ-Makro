@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.Recipe
+import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.Result
@@ -15,7 +17,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -58,9 +62,13 @@ class FoodPickerViewModel(
 
     init {
         observeRecent()
+        observeRecentRecipes()
         observeAllFoods()
         observeAllRecipes()
         observeLocalResults()
+        observeLocalRecipeResults()
+        observeFavoriteFoods()
+        observeFavoriteRecipes()
     }
 
     fun onAction(action: FoodPickerAction) {
@@ -111,12 +119,36 @@ class FoodPickerViewModel(
             FoodPickerAction.OnCreateOwnClick ->
                 viewModelScope.launch { _events.send(FoodPickerEvent.NavigateToFoodCreate(null)) }
 
-            is FoodPickerAction.OnToggleFavorite ->
-                viewModelScope.launch { foodRepository.toggleFavorite(FoodId(action.foodId)) }
+            is FoodPickerAction.OnToggleFavorite -> {
+                viewModelScope.launch {
+                    val inUserRecipes = _state.value.userRecipes.any { it.id == action.foodId }
+                    val inFavoriteRecipes = _state.value.favoriteRecipes.any { it.id == action.foodId }
+                    if (inUserRecipes || inFavoriteRecipes) {
+                        recipeRepository.toggleFavorite(RecipeId(action.foodId))
+                    } else {
+                        foodRepository.toggleFavorite(FoodId(action.foodId))
+                    }
+                }
+            }
         }
     }
 
     private fun onFoodClick(foodId: String) {
+        viewModelScope.launch {
+            val onlineItem = _state.value.onlineSearchResults.firstOrNull { it.id == foodId }
+
+            if (onlineItem != null) {
+                val query = _state.value.searchQuery
+                foodRepository.searchRemote(query).onSuccess { items ->
+                    items.firstOrNull { it.id.value == foodId }?.let { item ->
+                        foodRepository.cacheRemoteItem(item)
+                    }
+                }
+            } else {
+                foodRepository.markUsed(FoodId(foodId))
+            }
+        }
+
         if (_state.value.targetContext == FoodPickerTarget.RECIPE_INGREDIENT) {
             val food = findFood(foodId) ?: return
             viewModelScope.launch {
@@ -143,6 +175,10 @@ class FoodPickerViewModel(
     }
 
     private fun onRecipeClick(recipeId: String) {
+        viewModelScope.launch {
+            recipeRepository.markUsed(RecipeId(recipeId))
+        }
+
         if (_state.value.targetContext == FoodPickerTarget.RECIPE_INGREDIENT) {
             val recipe = findRecipe(recipeId) ?: return
             viewModelScope.launch {
@@ -263,6 +299,47 @@ class FoodPickerViewModel(
             .flatMapLatest { query -> foodRepository.searchLocal(query) }
             .onEach { foods ->
                 _state.update { it.copy(localSearchResults = foods.map { f -> f.toPickerFoodUi() }) }
+            }.launchIn(viewModelScope)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observeLocalRecipeResults() {
+        queryFlow
+            .flatMapLatest { query ->
+                if (query.isBlank()) {
+                    flowOf<List<PickerRecipeUi>>(emptyList())
+                } else {
+                    recipeRepository.observeAll().map { recipes: List<Recipe> ->
+                        recipes
+                            .filter { it.name.contains(query, ignoreCase = true) }
+                            .map { it.toPickerRecipeUi() }
+                    }
+                }
+            }.onEach { recipes -> _state.update { it.copy(localRecipeResults = recipes) } }
+            .launchIn(viewModelScope)
+    }
+
+    private fun observeFavoriteFoods() {
+        foodRepository
+            .observeFavorites()
+            .onEach { foods ->
+                _state.update { it.copy(favoriteFoods = foods.map { f -> f.toPickerFoodUi() }) }
+            }.launchIn(viewModelScope)
+    }
+
+    private fun observeFavoriteRecipes() {
+        recipeRepository
+            .observeFavorites()
+            .onEach { recipes ->
+                _state.update { it.copy(favoriteRecipes = recipes.map { r -> r.toPickerRecipeUi() }) }
+            }.launchIn(viewModelScope)
+    }
+
+    private fun observeRecentRecipes() {
+        recipeRepository
+            .observeRecent()
+            .onEach { recipes ->
+                _state.update { it.copy(recentRecipes = recipes.map { r -> r.toPickerRecipeUi() }) }
             }.launchIn(viewModelScope)
     }
 
