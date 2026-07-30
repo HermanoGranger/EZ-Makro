@@ -39,6 +39,29 @@ private fun ingredient(
     grams: Double,
 ): RecipeIngredient = RecipeIngredient(food = food, rawWeight = RawWeight(grams), servingCount = null)
 
+private fun recipe(
+    id: RecipeId = RecipeId("r1"),
+    name: String = "Test Recipe",
+    ingredients: List<RecipeIngredient> = listOf(ingredient(food(), 100.0)),
+    finalWeight: FinalWeight? = null,
+    portions: Int = 1,
+    category: String? = null,
+    lastModifiedAt: Long = 0L,
+    isFavorite: Boolean = false,
+    lastUsedAt: Long? = null,
+): Recipe =
+    Recipe(
+        id = id,
+        name = name,
+        ingredients = ingredients,
+        finalWeight = finalWeight,
+        portions = portions,
+        category = category,
+        lastModifiedAt = lastModifiedAt,
+        isFavorite = isFavorite,
+        lastUsedAt = lastUsedAt,
+    )
+
 class RecipeCalculationTest {
     @Test
     fun `totalNutrition sums raw ingredient nutrition`() {
@@ -393,5 +416,31 @@ class RecipeCalculationTest {
     fun `nutritionForGrams with null nutritionPer100g returns ZERO`() {
         val f = food(per100g = null)
         assertEquals(NutritionValues.ZERO, f.nutritionForGrams(150.0))
+    }
+
+    @Test
+    fun `new recipe has isFavorite false by default`() {
+        val recipe = recipe()
+        assertEquals(false, recipe.isFavorite)
+    }
+
+    @Test
+    fun `new recipe has lastUsedAt null by default`() {
+        val recipe = recipe()
+        assertNull(recipe.lastUsedAt)
+    }
+
+    @Test
+    fun `lastUsedAt must be non-negative`() {
+        assertFailsWith<IllegalArgumentException> {
+            Recipe(
+                id = RecipeId("r"),
+                name = "T",
+                ingredients = listOf(ingredient(food(), 100.0)),
+                finalWeight = null,
+                portions = 1,
+                lastUsedAt = -1L,
+            )
+        }
     }
 }

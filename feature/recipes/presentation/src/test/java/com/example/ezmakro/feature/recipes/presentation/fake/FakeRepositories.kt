@@ -13,6 +13,7 @@ import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 
 class FakeFoodRepository : FoodRepository {
@@ -93,6 +94,32 @@ class FakeRecipeRepository : RecipeRepository {
     override suspend fun delete(id: RecipeId): EmptyResult<DataError.Local> {
         deleted += id
         store.value = store.value - id.value
+        return Result.Success(Unit)
+    }
+
+    override fun observeFavorites(): Flow<List<Recipe>> = store.map { it.values.filter(Recipe::isFavorite) }
+
+    override fun observeRecent(limit: Int): Flow<List<Recipe>> =
+        store.map { recipes ->
+            recipes.values
+                .filter { it.lastUsedAt != null }
+                .sortedByDescending { it.lastUsedAt }
+                .take(limit)
+        }
+
+    override suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local> {
+        val map = store.value.toMutableMap()
+        val recipe = map[id.value] ?: return Result.Error(DataError.Local.NOT_FOUND)
+        map[id.value] = recipe.copy(isFavorite = !recipe.isFavorite)
+        store.value = map
+        return Result.Success(Unit)
+    }
+
+    override suspend fun markUsed(id: RecipeId): EmptyResult<DataError.Local> {
+        val map = store.value.toMutableMap()
+        val recipe = map[id.value] ?: return Result.Error(DataError.Local.NOT_FOUND)
+        map[id.value] = recipe.copy(lastUsedAt = System.currentTimeMillis())
+        store.value = map
         return Result.Success(Unit)
     }
 

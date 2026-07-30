@@ -22,6 +22,15 @@ interface RecipeRepository {
     /** Observe a single recipe by id, or null when it does not exist. */
     fun observeById(id: RecipeId): Flow<Recipe?>
 
+    /** Observe favorited recipes for the favorites section of the recipe picker. */
+    fun observeFavorites(): Flow<List<Recipe>>
+
+    /**
+     * Observe the [limit] most recently used recipes, newest first. Used-tracking
+     * is wired with the meal log in Phase 7; until then this is empty.
+     */
+    fun observeRecent(limit: Int = DEFAULT_RECENT_LIMIT): Flow<List<Recipe>>
+
     /** Fetch a single recipe by id, or null when it does not exist. */
     suspend fun getById(id: RecipeId): Result<Recipe?, DataError.Local>
 
@@ -33,4 +42,17 @@ interface RecipeRepository {
 
     /** Duplicate an existing recipe under a new id with a "(Kopie)" suffix. */
     suspend fun duplicate(id: RecipeId): Result<RecipeId, DataError.Local>
+
+    /** Toggle the favorite flag for a recipe. */
+    suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local>
+
+    /**
+     * Stamp a recipe as just used (recent ordering). Wired with the meal log in
+     * Phase 7; defined now so the data contract is complete.
+     */
+    suspend fun markUsed(id: RecipeId): EmptyResult<DataError.Local>
+
+    companion object {
+        const val DEFAULT_RECENT_LIMIT = 20
+    }
 }
