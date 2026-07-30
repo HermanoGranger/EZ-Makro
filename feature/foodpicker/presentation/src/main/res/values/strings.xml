@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="foodpicker_tab_barcode">Barcode</string>
+    <string name="foodpicker_tab_search">Suche</string>
+    <string name="foodpicker_tab_my_foods">Meine</string>
+    <string name="foodpicker_search_hint">Lebensmittel suchen</string>
+    <string name="foodpicker_search_online">Online suchen</string>
+    <string name="foodpicker_search_scan">Barcode scannen</string>
+    <string name="foodpicker_search_create">Eigenes anlegen</string>
+    <string name="foodpicker_section_recent">Zuletzt verwendet</string>
+    <string name="foodpicker_section_local">Lokale Treffer</string>
+    <string name="foodpicker_section_online">OpenFoodFacts</string>
+    <string name="foodpicker_section_foods">Lebensmittel</string>
+    <string name="foodpicker_section_recipes">Rezepte</string>
+    <string name="foodpicker_empty">Keine Einträge</string>
+    <string name="foodpicker_empty_search">Keine Treffer</string>
+    <string name="foodpicker_barcode_permission">Kamera-Berechtigung erforderlich</string>
+    <string name="foodpicker_scanning">Scanne…</string>
+    <string name="foodpicker_toggle_foods">Lebensmittel</string>
+    <string name="foodpicker_toggle_recipes">Rezepte</string>
+</resources>

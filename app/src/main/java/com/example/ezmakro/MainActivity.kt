@@ -46,12 +46,8 @@ import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY_DAY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
-import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH
-import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_SEARCH_PARAM_DATE
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
-import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_LIST
 import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES
-import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES_PARAM_DATE
 import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
@@ -76,6 +72,8 @@ class MainActivity : ComponentActivity() {
                     makeAddFoodToDiary(navController)
                 val addRecipeToDiary: (String, String, MealSlot, Double, Boolean) -> Unit =
                     makeAddRecipeToDiary(navController)
+                val addToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit =
+                    makeAddToDiaryFromPicker()
 
                 Scaffold(
                     bottomBar = { AppBottomBar(navController) },
@@ -85,6 +83,7 @@ class MainActivity : ComponentActivity() {
                         padding = padding,
                         addFoodToDiary = addFoodToDiary,
                         addRecipeToDiary = addRecipeToDiary,
+                        addToDiaryFromPicker = addToDiaryFromPicker,
                     )
                 }
             }
@@ -149,6 +148,7 @@ class MainActivity : ComponentActivity() {
         padding: androidx.compose.foundation.layout.PaddingValues,
         addFoodToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
         addRecipeToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
+        addToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit,
     ) {
         val onNavigateBack: () -> Unit = { navController.popBackStack() }
         NavHost(
@@ -168,14 +168,19 @@ class MainActivity : ComponentActivity() {
                 },
                 onNavigateToGoals = { navController.navigate(Goals) },
             )
+            val onNavigateToFoodCreate: (barcode: String?) -> Unit = { barcode ->
+                val route =
+                    if (barcode != null) {
+                        "food_edit/_none_?prefillBarcode=$barcode"
+                    } else {
+                        "food_edit/_none_"
+                    }
+                navController.navigate(route)
+            }
             diaryGraph(
                 navController = navController,
-                onNavigateToAddFood = { date ->
-                    navController.navigate("$ROUTE_SEARCH?$ROUTE_SEARCH_PARAM_DATE=$date")
-                },
-                onNavigateToAddRecipe = { date ->
-                    navController.navigate("$ROUTE_LIST?$ROUTE_RECIPES_PARAM_DATE=$date")
-                },
+                onAddToDiaryFromPicker = addToDiaryFromPicker,
+                onNavigateToFoodCreate = onNavigateToFoodCreate,
             )
             foodGraph(
                 navController = navController,
@@ -186,10 +191,44 @@ class MainActivity : ComponentActivity() {
                 navController = navController,
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addRecipeToDiary,
+                onNavigateToFoodCreate = onNavigateToFoodCreate,
             )
             goalsGraph(onNavigateBack = onNavigateBack)
         }
     }
+
+    private fun makeAddToDiaryFromPicker(): (String, Boolean, String, MealSlot, Double, Boolean) -> Unit =
+        { foodId, isRecipe, date, slot, amount, isGrams ->
+            lifecycleScope.launch {
+                if (isRecipe) {
+                    val recipeRepository = get<RecipeRepository>()
+                    val addUseCase = get<AddRecipeToDiaryUseCase>()
+                    recipeRepository
+                        .getById(RecipeId(foodId))
+                        .onSuccess { recipe ->
+                            recipe?.let {
+                                if (isGrams) {
+                                    addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
+                                } else {
+                                    addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
+                                }
+                            }
+                        }
+                } else {
+                    val foodRepository = get<FoodRepository>()
+                    val addUseCase = get<AddFoodToDiaryUseCase>()
+                    foodRepository.getById(FoodId(foodId)).onSuccess { food ->
+                        food?.let {
+                            if (isGrams) {
+                                addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
+                            } else {
+                                addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     private fun makeAddFoodToDiary(
         navController: NavHostController,

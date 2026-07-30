@@ -25,8 +25,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
 import com.example.ezmakro.feature.recipes.presentation.R
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun RecipeEditorRoot(
@@ -34,6 +38,7 @@ fun RecipeEditorRoot(
     isQuickMeal: Boolean,
     onNavigateBack: () -> Unit,
     onSaved: () -> Unit,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     viewModel: RecipeEditorViewModel =
         koinViewModel {
             org.koin.core.parameter
@@ -41,30 +46,42 @@ fun RecipeEditorRoot(
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var showPicker by rememberSaveable { mutableStateOf(false) }
+    var showFoodPicker by rememberSaveable { mutableStateOf(false) }
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             RecipeEditorEvent.Saved -> onSaved()
             RecipeEditorEvent.NavigateBack -> onNavigateBack()
-            is RecipeEditorEvent.ShowIngredientPicker -> showPicker = event.show
+            is RecipeEditorEvent.ShowIngredientPicker -> showFoodPicker = event.show
         }
     }
 
-    if (showPicker) {
-        IngredientPickerDialog(
-            foods = state.availableFoods,
-            recipes = state.availableRecipes,
-            onDismiss = { showPicker = false },
-            onPickFood = { viewModel.onAction(RecipeEditorAction.OnAddIngredientClick(it)) },
-            onPickRecipe = { viewModel.onAction(RecipeEditorAction.OnAddRecipeIngredientClick(it)) },
+    if (showFoodPicker) {
+        val foodPickerViewModel: FoodPickerViewModel =
+            koinViewModel {
+                parametersOf(FoodPickerTarget.RECIPE_INGREDIENT, null)
+            }
+        FoodPickerSheet(
+            isVisible = showFoodPicker,
+            onAddToDiary = { _, _, _, _, _, _ -> },
+            onAddAsIngredient = { itemId, itemName, servingLabel, isRecipe ->
+                if (isRecipe) {
+                    viewModel.onAction(RecipeEditorAction.OnAddRecipeIngredientClick(itemId))
+                } else {
+                    viewModel.onAction(RecipeEditorAction.OnAddIngredientClick(itemId))
+                }
+                showFoodPicker = false
+            },
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
+            onDismiss = { showFoodPicker = false },
+            viewModel = foodPickerViewModel,
         )
     }
 
     RecipeEditorScreen(
         state = state,
         onAction = viewModel::onAction,
-        onOpenPicker = { showPicker = true },
+        onOpenPicker = { showFoodPicker = true },
     )
 }
 

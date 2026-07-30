@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.example.ezmakro.feature.diary.presentation.day
 
 import androidx.compose.foundation.layout.Arrangement
@@ -47,17 +49,28 @@ import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
 import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
 import com.example.ezmakro.feature.diary.presentation.model.formatMacro
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun DiaryDayRoot(
-    onNavigateToAddFood: (String) -> Unit,
-    onNavigateToAddRecipe: (String) -> Unit,
     onNavigateToQuickAdd: () -> Unit,
     onNavigateToHistory: () -> Unit,
+    onAddToDiaryFromPicker: (
+        foodId: String,
+        isRecipe: Boolean,
+        date: String,
+        slot: MealSlot,
+        amount: Double,
+        isGrams: Boolean,
+    ) -> Unit = { _, _, _, _, _, _ -> },
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     viewModel: DiaryDayViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -65,6 +78,7 @@ fun DiaryDayRoot(
     val context = LocalContext.current
     var pendingDelete by remember { mutableStateOf<Pair<String, MealSlot>?>(null) }
     var editEntryId by remember { mutableStateOf<String?>(null) }
+    var showFoodPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.copyYesterdayMessage) {
         state.copyYesterdayMessage?.let {
@@ -81,11 +95,18 @@ fun DiaryDayRoot(
                 onAction = viewModel::onAction,
                 onRequestDelete = { id, slot -> pendingDelete = id to slot },
                 onRequestEdit = { id -> editEntryId = id },
-                onNavigateToAddFood = onNavigateToAddFood,
-                onNavigateToAddRecipe = onNavigateToAddRecipe,
+                onNavigateToAddFood = { showFoodPicker = true },
                 onNavigateToQuickAdd = onNavigateToQuickAdd,
                 onNavigateToHistory = onNavigateToHistory,
             ),
+    )
+
+    FoodPickerDialog(
+        showFoodPicker = showFoodPicker,
+        date = state.date.toString(),
+        onAddToDiaryFromPicker = onAddToDiaryFromPicker,
+        onNavigateToFoodCreate = onNavigateToFoodCreate,
+        onDismiss = { showFoodPicker = false },
     )
 
     if (pendingDelete != null) {
@@ -115,6 +136,30 @@ fun DiaryDayRoot(
     }
 }
 
+@Composable
+private fun FoodPickerDialog(
+    showFoodPicker: Boolean,
+    date: String,
+    onAddToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (showFoodPicker) {
+        val foodPickerViewModel: FoodPickerViewModel =
+            koinViewModel {
+                parametersOf(FoodPickerTarget.DIARY, date)
+            }
+        FoodPickerSheet(
+            isVisible = showFoodPicker,
+            onAddToDiary = onAddToDiaryFromPicker,
+            onAddAsIngredient = { _, _, _, _ -> },
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
+            onDismiss = onDismiss,
+            viewModel = foodPickerViewModel,
+        )
+    }
+}
+
 private fun findEntryById(
     state: DiaryDayState,
     entryId: String?,
@@ -131,7 +176,6 @@ data class DiaryDayCallbacks(
     val onRequestDelete: (String, MealSlot) -> Unit,
     val onRequestEdit: (String) -> Unit,
     val onNavigateToAddFood: (String) -> Unit,
-    val onNavigateToAddRecipe: (String) -> Unit,
     val onNavigateToQuickAdd: () -> Unit,
     val onNavigateToHistory: () -> Unit,
 )
@@ -286,7 +330,6 @@ fun DiaryDayScreen(
             item {
                 DiaryDayActions(
                     onNavigateToAddFood = callbacks.onNavigateToAddFood,
-                    onNavigateToAddRecipe = callbacks.onNavigateToAddRecipe,
                     date = state.date.toString(),
                     onNavigateToQuickAdd = callbacks.onNavigateToQuickAdd,
                 )
@@ -320,7 +363,6 @@ private fun DiaryDayBottomBar(
 @Composable
 private fun DiaryDayActions(
     onNavigateToAddFood: (String) -> Unit,
-    onNavigateToAddRecipe: (String) -> Unit,
     date: String,
     onNavigateToQuickAdd: () -> Unit,
 ) {
@@ -330,9 +372,6 @@ private fun DiaryDayActions(
     ) {
         Button(onClick = { onNavigateToAddFood(date) }, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.diary_add))
-        }
-        Button(onClick = { onNavigateToAddRecipe(date) }, modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.diary_add_recipe))
         }
         Button(onClick = { onNavigateToQuickAdd() }, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.quick_add_title))

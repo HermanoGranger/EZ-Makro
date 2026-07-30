@@ -6,6 +6,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayRoot
 import com.example.ezmakro.feature.diary.presentation.history.HistoryRoot
 import com.example.ezmakro.feature.diary.presentation.quickadd.QuickAddRoot
@@ -50,11 +51,18 @@ internal const val ROUTE_HISTORY = "history"
  */
 fun NavGraphBuilder.diaryGraph(
     navController: NavHostController,
-    onNavigateToAddFood: (String) -> Unit,
-    onNavigateToAddRecipe: (String) -> Unit,
+    onAddToDiaryFromPicker: (
+        foodId: String,
+        isRecipe: Boolean,
+        date: String,
+        slot: MealSlot,
+        amount: Double,
+        isGrams: Boolean,
+    ) -> Unit = { _, _, _, _, _, _ -> },
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
 ) {
     navigation(startDestination = ROUTE_DIARY_DAY, route = ROUTE_DIARY) {
-        dayComposable(navController, onNavigateToAddFood, onNavigateToAddRecipe)
+        dayComposable(navController, onAddToDiaryFromPicker, onNavigateToFoodCreate)
         quickAddComposable(navController)
         historyComposable(navController)
     }
@@ -62,8 +70,15 @@ fun NavGraphBuilder.diaryGraph(
 
 private fun NavGraphBuilder.dayComposable(
     navController: NavHostController,
-    onNavigateToAddFood: (String) -> Unit,
-    onNavigateToAddRecipe: (String) -> Unit,
+    onAddToDiaryFromPicker: (
+        foodId: String,
+        isRecipe: Boolean,
+        date: String,
+        slot: MealSlot,
+        amount: Double,
+        isGrams: Boolean,
+    ) -> Unit,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit,
 ) {
     composable(
         route = ROUTE_DIARY_DAY,
@@ -78,13 +93,13 @@ private fun NavGraphBuilder.dayComposable(
         val date =
             it.arguments?.getString(ROUTE_DIARY_DAY_PARAM_DATE)?.takeIf { d -> d.isNotEmpty() }
         DiaryDayRoot(
-            onNavigateToAddFood = onNavigateToAddFood,
-            onNavigateToAddRecipe = onNavigateToAddRecipe,
+            onAddToDiaryFromPicker = onAddToDiaryFromPicker,
             onNavigateToQuickAdd = {
                 val dateParam = date ?: LocalDate.now().toString()
                 navController.navigate("$ROUTE_QUICK_ADD?date=$dateParam")
             },
             onNavigateToHistory = { navController.navigate(ROUTE_HISTORY) },
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
         )
     }
 }

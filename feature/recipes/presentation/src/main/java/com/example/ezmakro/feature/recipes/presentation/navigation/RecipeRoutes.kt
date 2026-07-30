@@ -59,11 +59,12 @@ fun NavGraphBuilder.recipeGraph(
         Double,
         Boolean,
     ) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
 ) {
     navigation(startDestination = ROUTE_LIST, route = ROUTE_RECIPES) {
         listComposable(navController, onAddToDiary)
         detailComposable(navController, onNavigateBack)
-        editorComposable(navController, onNavigateBack)
+        editorComposable(navController, onNavigateBack, onNavigateToFoodCreate)
     }
 }
 
@@ -112,6 +113,7 @@ private fun NavGraphBuilder.detailComposable(
 private fun NavGraphBuilder.editorComposable(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit,
 ) {
     composable(
         route = ROUTE_EDITOR_PATTERN,
@@ -136,6 +138,7 @@ private fun NavGraphBuilder.editorComposable(
             isQuickMeal = isQuickMeal,
             onNavigateBack = onNavigateBack,
             onSaved = { navController.popBackStack() },
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
         )
     }
 }
