@@ -95,6 +95,7 @@ class RecipeEditorViewModel(
         if (recipeId != null) loadExisting(recipeId)
     }
 
+    @Suppress("LongMethod")
     fun onAction(action: RecipeEditorAction) {
         when (action) {
             is RecipeEditorAction.OnNameChange ->
@@ -153,6 +154,9 @@ class RecipeEditorViewModel(
                             if (it.expandedIngredientIndex == action.index) null else action.index,
                     )
                 }
+
+            RecipeEditorAction.OnToggleFavorite ->
+                _state.update { it.copy(isFavorite = !it.isFavorite) }
 
             RecipeEditorAction.OnSaveClick ->
                 viewModelScope.launch { save() }
@@ -224,6 +228,7 @@ class RecipeEditorViewModel(
                                 ?.grams
                                 ?.toString()
                                 .orEmpty(),
+                        isFavorite = recipe.isFavorite,
                         ingredients =
                             recipe.ingredients.map { ing ->
                                 IngredientDraft(
@@ -338,6 +343,7 @@ class RecipeEditorViewModel(
             finalWeight = parsed.finalWeight,
             portions = parsed.portions,
             category = s.category.trim().ifBlank { null },
+            isFavorite = s.isFavorite,
             lastModifiedAt = System.currentTimeMillis(),
         )
     }

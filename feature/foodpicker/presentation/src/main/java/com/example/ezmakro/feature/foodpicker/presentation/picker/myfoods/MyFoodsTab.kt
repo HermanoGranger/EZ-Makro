@@ -10,7 +10,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -89,6 +94,13 @@ private fun FoodList(
                     )
                     Text(text = "${formatKcal(food.kcalPer100g)} kcal / 100 g")
                 }
+                IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        tint = MaterialTheme.colorScheme.primary,
+                        contentDescription = null,
+                    )
+                }
             }
             HorizontalDivider()
         }
@@ -125,6 +137,13 @@ private fun RecipeList(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
+                }
+                IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(recipe.id)) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        tint = MaterialTheme.colorScheme.primary,
+                        contentDescription = null,
+                    )
                 }
             }
             HorizontalDivider()

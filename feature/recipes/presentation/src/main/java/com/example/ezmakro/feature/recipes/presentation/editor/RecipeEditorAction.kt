@@ -43,6 +43,8 @@ sealed interface RecipeEditorAction {
         val index: Int,
     ) : RecipeEditorAction
 
+    data object OnToggleFavorite : RecipeEditorAction
+
     data object OnSaveClick : RecipeEditorAction
 
     data object OnBackClick : RecipeEditorAction

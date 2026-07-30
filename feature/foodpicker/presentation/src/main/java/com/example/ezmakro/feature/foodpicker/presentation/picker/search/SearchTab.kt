@@ -11,12 +11,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -168,9 +168,16 @@ private fun FoodRow(
             )
             Text(text = "${formatKcal(food.kcalPer100g)} kcal / 100 g")
         }
+        val starTint: androidx.compose.ui.graphics.Color =
+            if (food.isFavorite) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            }
         IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
             Icon(
-                imageVector = if (food.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                imageVector = Icons.Filled.Star,
+                tint = starTint,
                 contentDescription = null,
             )
         }
@@ -199,9 +206,16 @@ private fun RecipeRow(
             )
             Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
         }
+        val starTint: androidx.compose.ui.graphics.Color =
+            if (recipe.isFavorite) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            }
         IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(recipe.id)) }) {
             Icon(
-                imageVector = if (recipe.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                imageVector = Icons.Filled.Star,
+                tint = starTint,
                 contentDescription = null,
             )
         }

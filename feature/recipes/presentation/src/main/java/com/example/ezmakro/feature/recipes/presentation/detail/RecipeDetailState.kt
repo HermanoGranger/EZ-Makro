@@ -27,6 +27,8 @@ sealed interface RecipeDetailAction {
 
     data object OnDeleteClick : RecipeDetailAction
 
+    data object OnToggleFavorite : RecipeDetailAction
+
     data object OnBackClick : RecipeDetailAction
 
     data class OnIngredientClick(

@@ -8,9 +8,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -88,7 +93,7 @@ fun RecipeListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(state.recipes, key = { it.id }) { recipe ->
-                        RecipeRow(recipe = recipe, onClick = { onAction(RecipeListAction.OnRecipeClick(recipe.id)) })
+                        RecipeRow(recipe = recipe, onAction = onAction)
                     }
                 }
             }
@@ -99,13 +104,13 @@ fun RecipeListScreen(
 @Composable
 private fun RecipeRow(
     recipe: com.example.ezmakro.feature.recipes.presentation.model.RecipeUi,
-    onClick: () -> Unit,
+    onAction: (RecipeListAction) -> Unit,
 ) {
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickable { onAction(RecipeListAction.OnRecipeClick(recipe.id)) }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -114,6 +119,19 @@ private fun RecipeRow(
             val label = stringResource(R.string.recipe_list_per_portion)
             Text(
                 text = "${recipe.totalKcal} kcal · ${recipe.perPortionKcal} / $label",
+            )
+        }
+        val starTint: androidx.compose.ui.graphics.Color =
+            if (recipe.isFavorite) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            }
+        IconButton(onClick = { onAction(RecipeListAction.OnToggleFavorite(recipe.id)) }) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                tint = starTint,
+                contentDescription = null,
             )
         }
     }

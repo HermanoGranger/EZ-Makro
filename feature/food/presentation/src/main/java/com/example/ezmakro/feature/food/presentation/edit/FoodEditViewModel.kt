@@ -71,6 +71,8 @@ class FoodEditViewModel(
             is FoodEditAction.OnFiberChange -> _state.update { it.copy(fiber = action.value, numberError = null) }
             is FoodEditAction.OnPortionGramsChange -> _state.update { it.copy(portionGrams = action.value) }
 
+            FoodEditAction.OnToggleFavorite -> _state.update { it.copy(isFavorite = !it.isFavorite) }
+
             FoodEditAction.OnSaveClick -> save()
             FoodEditAction.OnBackClick ->
                 viewModelScope.launch { _events.send(FoodEditEvent.NavigateBack) }
@@ -90,6 +92,7 @@ class FoodEditViewModel(
                     carbs = food.nutritionPer100g?.carbsG?.toString() ?: "",
                     fiber = food.nutritionPer100g?.fiberG?.toString() ?: "",
                     portionGrams = food.servingUnit?.gramsEquivalent?.toString() ?: "",
+                    isFavorite = food.isFavorite,
                 )
             }
         }
@@ -116,6 +119,7 @@ class FoodEditViewModel(
                 } else {
                     null
                 }
+            val isFavorite = _state.value.isFavorite
             val item =
                 if (existingFood != null) {
                     existingFood.copy(
@@ -123,6 +127,7 @@ class FoodEditViewModel(
                         barcode = barcode,
                         nutritionPer100g = nutrition,
                         servingUnit = servingUnit,
+                        isFavorite = isFavorite,
                     )
                 } else {
                     FoodItem(
@@ -131,6 +136,7 @@ class FoodEditViewModel(
                         barcode = barcode,
                         nutritionPer100g = nutrition,
                         servingUnit = servingUnit,
+                        isFavorite = isFavorite,
                         isUserCreated = true,
                         cachedStatus = CachedFoodItemStatus.Original,
                         originalSnapshot = null,

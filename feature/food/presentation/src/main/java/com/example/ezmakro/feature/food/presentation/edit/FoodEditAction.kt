@@ -33,6 +33,8 @@ sealed interface FoodEditAction {
         val value: String,
     ) : FoodEditAction
 
+    data object OnToggleFavorite : FoodEditAction
+
     data object OnSaveClick : FoodEditAction
 
     data object OnBackClick : FoodEditAction

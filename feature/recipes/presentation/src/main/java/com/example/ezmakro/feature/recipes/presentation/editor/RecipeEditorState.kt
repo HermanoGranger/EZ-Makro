@@ -28,6 +28,7 @@ data class RecipeEditorState(
     val numberError: UiText? = null,
     val ingredientError: UiText? = null,
     val saveError: UiText? = null,
+    val isFavorite: Boolean = false,
     val isSaving: Boolean = false,
 )
 

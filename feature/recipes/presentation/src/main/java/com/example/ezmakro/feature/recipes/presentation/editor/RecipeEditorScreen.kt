@@ -6,8 +6,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -100,6 +105,21 @@ fun RecipeEditorScreen(
                             },
                         ),
                     )
+                },
+                actions = {
+                    val starTint: androidx.compose.ui.graphics.Color =
+                        if (state.isFavorite) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        }
+                    IconButton(onClick = { onAction(RecipeEditorAction.OnToggleFavorite) }) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            tint = starTint,
+                            contentDescription = null,
+                        )
+                    }
                 },
             )
         },

@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.recipes.presentation.list
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.feature.recipes.presentation.model.toRecipeUi
 import kotlinx.coroutines.channels.Channel
@@ -54,6 +55,9 @@ class RecipeListViewModel(
 
             is RecipeListAction.OnCreateClick ->
                 viewModelScope.launch { _events.send(RecipeListEvent.NavigateToEditor(recipeId = null)) }
+
+            is RecipeListAction.OnToggleFavorite ->
+                viewModelScope.launch { repository.toggleFavorite(RecipeId(action.recipeId)) }
 
             RecipeListAction.OnDismissAddToDiary ->
                 _state.update { it.copy(pendingAddRecipeId = null) }

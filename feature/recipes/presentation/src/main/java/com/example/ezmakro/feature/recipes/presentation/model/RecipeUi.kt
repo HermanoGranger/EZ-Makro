@@ -23,6 +23,7 @@ data class RecipeUi(
     val perPortionKcal: String,
     val per100gKcal: String?,
     val isEstimated: Boolean = false,
+    val isFavorite: Boolean = false,
 )
 
 private const val MACRO_DECIMAL_PLACES = 10.0
@@ -54,6 +55,7 @@ fun Recipe.toRecipeUi(): RecipeUi {
         perPortionKcal = perPortion.kcal.formatMacro(),
         per100gKcal = per100gKcal,
         isEstimated = finalWeight == null,
+        isFavorite = isFavorite,
     )
 }
 

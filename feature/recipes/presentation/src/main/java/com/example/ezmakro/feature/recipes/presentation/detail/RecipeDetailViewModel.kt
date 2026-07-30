@@ -93,6 +93,9 @@ class RecipeDetailViewModel(
                         .onFailure { error -> _state.update { it.copy(deleteError = error.toUiText()) } }
                 }
 
+            RecipeDetailAction.OnToggleFavorite ->
+                viewModelScope.launch { repository.toggleFavorite(RecipeId(recipeId)) }
+
             RecipeDetailAction.OnBackClick ->
                 viewModelScope.launch { _events.send(RecipeDetailEvent.NavigateBack) }
 

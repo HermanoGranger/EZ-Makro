@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,6 +19,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -81,10 +81,16 @@ fun FoodDetailScreen(
                 actions = {
                     val food = state.food
                     if (food != null) {
+                        val starTint: androidx.compose.ui.graphics.Color =
+                            if (food.isFavorite) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            }
                         IconButton(onClick = { onAction(FoodDetailAction.OnToggleFavorite) }) {
                             Icon(
-                                imageVector =
-                                    if (food.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                                imageVector = Icons.Filled.Star,
+                                tint = starTint,
                                 contentDescription =
                                     if (food.isFavorite) {
                                         stringResource(R.string.food_detail_favorite_remove)
