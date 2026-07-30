@@ -33,6 +33,16 @@ class RoomRecipeLocalDataSource(
             entities.firstOrNull { it.id == id.value }?.toRecipeSuspending()
         }
 
+    override fun observeFavorites(): Flow<List<Recipe>> =
+        dao.observeFavorites().map { entities ->
+            entities.mapNotNull { it.toRecipeSuspending() }
+        }
+
+    override fun observeRecent(limit: Int): Flow<List<Recipe>> =
+        dao.observeRecent(limit).map { entities ->
+            entities.mapNotNull { it.toRecipeSuspending() }
+        }
+
     override suspend fun getById(id: RecipeId): Result<Recipe?, DataError.Local> =
         runCatchingLocal {
             val entity = dao.getById(id.value) ?: return@runCatchingLocal null
@@ -58,6 +68,22 @@ class RoomRecipeLocalDataSource(
                         category = null,
                     )
             dao.deleteRecipe(entity)
+        }
+
+    override suspend fun setFavorite(
+        id: RecipeId,
+        favorite: Boolean,
+    ): EmptyResult<DataError.Local> =
+        runCatchingLocal {
+            dao.setFavorite(id.value, favorite)
+        }
+
+    override suspend fun markUsed(
+        id: RecipeId,
+        usedAt: Long,
+    ): EmptyResult<DataError.Local> =
+        runCatchingLocal {
+            dao.markUsed(id.value, usedAt)
         }
 
     /**

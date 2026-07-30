@@ -41,7 +41,8 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  * - 7: Phase 9 Refinement — Drops `scale` and `is_meal_prep` columns from
  *   `recipes`. These features (Scaling, Meal Prep, Quick Meal) were removed
  *   as they provided no value and added confusion.
- *
+ * - 8: Phase 10 — Recipes favorites/recency: `recipes.is_favorite` and
+ *   `recipes.last_used_at` columns.
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
  */
@@ -54,7 +55,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 7,
+    version = 8,
 )
 @TypeConverters(ScalarConverters::class, JsonConverters::class)
 abstract class EZDatabase : RoomDatabase() {

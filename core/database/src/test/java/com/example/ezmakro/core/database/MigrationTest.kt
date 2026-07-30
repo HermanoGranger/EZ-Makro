@@ -11,6 +11,7 @@ import com.example.ezmakro.core.database.migration.MIGRATION_1_2
 import com.example.ezmakro.core.database.migration.MIGRATION_2_3
 import com.example.ezmakro.core.database.migration.MIGRATION_5_6
 import com.example.ezmakro.core.database.migration.MIGRATION_6_7
+import com.example.ezmakro.core.database.migration.MIGRATION_7_8
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -183,6 +184,38 @@ class MigrationTest {
             assertThat(c.getInt(3)).isEqualTo(2)
             assertThat(c.getString(4)).isEqualTo("Backen")
             assertThat(c.getLong(5)).isEqualTo(0L)
+        }
+
+        migrated.close()
+    }
+
+    @Test
+    fun `migrate 7 to 8 adds is_favorite and last_used_at to recipes preserving rows`() {
+        helper.createDatabase(dbName, 7).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO recipes (id, name, final_weight_grams, portions, category, last_modified_at)
+                VALUES ('r1', 'Pfannkuchen', 500.0, 2, 'Backen', 0)
+                """.trimIndent(),
+            )
+        }
+
+        val migrated = helper.runMigrationsAndValidate(dbName, 8, true, MIGRATION_7_8)
+
+        migrated.query("SELECT is_favorite, last_used_at FROM recipes WHERE id = 'r1'").use { c ->
+            check(c.moveToFirst()) { "expected the pre-migration recipe to survive" }
+            assertThat(c.getInt(0)).isEqualTo(0)
+            assertThat(c.isNull(1)).isTrue()
+        }
+
+        // Also verify original data survived
+        val verifyQuery = "SELECT id, name, final_weight_grams, portions FROM recipes WHERE id = 'r1'"
+        migrated.query(verifyQuery).use { c ->
+            check(c.moveToFirst())
+            assertThat(c.getString(0)).isEqualTo("r1")
+            assertThat(c.getString(1)).isEqualTo("Pfannkuchen")
+            assertThat(c.getDouble(2)).isEqualTo(500.0)
+            assertThat(c.getInt(3)).isEqualTo(2)
         }
 
         migrated.close()

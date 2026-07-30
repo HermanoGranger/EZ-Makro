@@ -2,6 +2,8 @@ build:
   maxIssues: 0
 
 complexity:
+  TooManyFunctions:
+    thresholdInInterfaces: 15
   LongParameterList:
     active: true
     functionThreshold: 8
@@ -12,6 +14,9 @@ complexity:
     threshold: 20
 
 style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 140
   MagicNumber:
     active: true
     ignoreNumbers: ['-1', '0', '1', '2', '100']

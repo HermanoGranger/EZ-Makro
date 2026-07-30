@@ -30,6 +30,8 @@ suspend fun RecipeEntity.toRecipe(
         portions = portions,
         category = category,
         lastModifiedAt = lastModifiedAt,
+        isFavorite = isFavorite == 1,
+        lastUsedAt = lastUsedAt,
     )
 }
 
@@ -76,6 +78,8 @@ fun Recipe.toEntities(): Pair<RecipeEntity, List<RecipeIngredientEntity>> {
             portions = portions,
             category = category,
             lastModifiedAt = lastModifiedAt,
+            isFavorite = if (isFavorite) 1 else 0,
+            lastUsedAt = lastUsedAt,
         )
     val ingredientEntities =
         ingredients.map { ing ->

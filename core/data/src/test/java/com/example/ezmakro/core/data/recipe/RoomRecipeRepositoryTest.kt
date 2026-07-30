@@ -45,7 +45,7 @@ private fun food(id: String): FoodItem =
 
 private class FakeRecipeDao : RecipeDao {
     val recipes = MutableStateFlow<Map<String, RecipeEntity>>(emptyMap())
-    val ingredients = MutableStateFlow<Map<String, MutableList<RecipeIngredientEntity>>>(emptyMap())
+    val ingredientsMap = MutableStateFlow<Map<String, MutableList<RecipeIngredientEntity>>>(emptyMap())
 
     override fun upsertRecipe(recipe: RecipeEntity) {
         recipes.value = recipes.value + (recipe.id to recipe)
@@ -53,16 +53,16 @@ private class FakeRecipeDao : RecipeDao {
 
     override fun upsertIngredients(ings: List<RecipeIngredientEntity>) {
         ings.forEach { e ->
-            val list = ingredients.value[e.recipeId]?.toMutableList() ?: mutableListOf()
+            val list = ingredientsMap.value[e.recipeId]?.toMutableList() ?: mutableListOf()
             list.removeIf { it.foodItemId == e.foodItemId }
             list.add(e)
-            ingredients.value = ingredients.value + (e.recipeId to list)
+            ingredientsMap.value = ingredientsMap.value + (e.recipeId to list)
         }
     }
 
     override suspend fun deleteRecipe(recipe: RecipeEntity) {
         recipes.value = recipes.value - recipe.id
-        ingredients.value = ingredients.value - recipe.id
+        ingredientsMap.value = ingredientsMap.value - recipe.id
     }
 
     override suspend fun getById(id: String): RecipeEntity? = recipes.value[id]
@@ -70,19 +70,52 @@ private class FakeRecipeDao : RecipeDao {
     override fun observeAll(): Flow<List<RecipeEntity>> = recipes.map { it.values.toList() }
 
     override suspend fun getIngredients(recipeId: String): List<RecipeIngredientEntity> =
-        ingredients.value[recipeId] ?: emptyList()
+        ingredientsMap.value[recipeId] ?: emptyList()
 
     override suspend fun upsertRecipeWithIngredients(
         recipe: RecipeEntity,
         ings: List<RecipeIngredientEntity>,
     ) {
         upsertRecipe(recipe)
-        ingredients.value = ingredients.value - recipe.id
+        ingredientsMap.value = ingredientsMap.value - recipe.id
         upsertIngredients(ings)
     }
 
     override fun deleteIngredientsFor(recipeId: String) {
-        ingredients.value = ingredients.value - recipeId
+        ingredientsMap.value = ingredientsMap.value - recipeId
+    }
+
+    override fun observeFavorites(): Flow<List<RecipeEntity>> =
+        recipes.map { entities ->
+            entities.values
+                .filter { it.isFavorite == 1 }
+                .sortedBy { it.name }
+        }
+
+    override fun observeRecent(limit: Int): Flow<List<RecipeEntity>> =
+        recipes.map { entities ->
+            entities.values
+                .filter { it.lastUsedAt != null }
+                .sortedByDescending { it.lastUsedAt }
+                .take(limit)
+        }
+
+    override suspend fun setFavorite(
+        id: String,
+        favorite: Boolean,
+    ) {
+        val updated = recipes.value.toMutableMap()
+        updated[id] = updated[id]?.copy(isFavorite = if (favorite) 1 else 0) ?: return
+        recipes.value = updated
+    }
+
+    override suspend fun markUsed(
+        id: String,
+        usedAt: Long,
+    ) {
+        val updated = recipes.value.toMutableMap()
+        updated[id] = updated[id]?.copy(lastUsedAt = usedAt) ?: return
+        recipes.value = updated
     }
 }
 
@@ -162,7 +195,7 @@ class RoomRecipeRepositoryTest {
 
             assertThat(dao.recipes.value["r1"]?.name).isEqualTo("Pfannkuchen")
             assertThat(dao.recipes.value["r1"]?.category).isEqualTo("Frühstück")
-            assertThat(dao.ingredients.value["r1"]?.size).isEqualTo(2)
+            assertThat(dao.ingredientsMap.value["r1"]?.size).isEqualTo(2)
         }
 
     @Test
@@ -193,7 +226,7 @@ class RoomRecipeRepositoryTest {
             val copyId = (result as Result.Success).data
             assertThat(copyId.value).isNotEqualTo("r1")
             assertThat(dao.recipes.value[copyId.value]?.name).isEqualTo("Pfannkuchen (Kopie)")
-            assertThat(dao.ingredients.value[copyId.value]?.size).isEqualTo(2)
+            assertThat(dao.ingredientsMap.value[copyId.value]?.size).isEqualTo(2)
         }
 
     @Test
@@ -217,7 +250,7 @@ class RoomRecipeRepositoryTest {
             repo.delete(RecipeId("r1"))
 
             assertThat(dao.recipes.value["r1"]).isNull()
-            assertThat(dao.ingredients.value["r1"]).isNull()
+            assertThat(dao.ingredientsMap.value["r1"]).isNull()
         }
 
     @Test

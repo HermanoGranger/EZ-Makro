@@ -18,6 +18,10 @@ data class RecipeEntity(
     val category: String?,
     @ColumnInfo(name = "last_modified_at", defaultValue = "0")
     val lastModifiedAt: Long = 0L,
+    @ColumnInfo(name = "is_favorite", defaultValue = "0")
+    val isFavorite: Int = 0,
+    @ColumnInfo(name = "last_used_at")
+    val lastUsedAt: Long? = null,
 )
 
 @Entity(

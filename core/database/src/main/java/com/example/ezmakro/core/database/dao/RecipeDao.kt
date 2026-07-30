@@ -47,4 +47,22 @@ interface RecipeDao {
 
     @Query("DELETE FROM recipe_ingredients WHERE recipe_id = :recipeId")
     fun deleteIngredientsFor(recipeId: String)
+
+    @Query("SELECT * FROM recipes WHERE is_favorite = 1 ORDER BY name COLLATE NOCASE")
+    fun observeFavorites(): Flow<List<RecipeEntity>>
+
+    @Query("SELECT * FROM recipes WHERE last_used_at IS NOT NULL ORDER BY last_used_at DESC LIMIT :limit")
+    fun observeRecent(limit: Int): Flow<List<RecipeEntity>>
+
+    @Query("UPDATE recipes SET is_favorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(
+        id: String,
+        favorite: Boolean,
+    )
+
+    @Query("UPDATE recipes SET last_used_at = :usedAt WHERE id = :id")
+    suspend fun markUsed(
+        id: String,
+        usedAt: Long,
+    )
 }

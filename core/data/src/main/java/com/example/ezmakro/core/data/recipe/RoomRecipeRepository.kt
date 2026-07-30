@@ -26,7 +26,23 @@ class RoomRecipeRepository(
 
     override suspend fun save(recipe: Recipe): EmptyResult<DataError.Local> = local.upsertRecipeWithIngredients(recipe)
 
+    override fun observeFavorites(): Flow<List<Recipe>> = local.observeFavorites()
+
+    override fun observeRecent(limit: Int): Flow<List<Recipe>> = local.observeRecent(limit)
+
     override suspend fun delete(id: RecipeId): EmptyResult<DataError.Local> = local.deleteById(id)
+
+    override suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local> {
+        val current =
+            when (val result = local.getById(id)) {
+                is Result.Success -> result.data ?: return Result.Error(DataError.Local.NOT_FOUND)
+                is Result.Error -> return Result.Error(result.error)
+            }
+        return local.setFavorite(id, current.isFavorite.not())
+    }
+
+    override suspend fun markUsed(id: RecipeId): EmptyResult<DataError.Local> =
+        local.markUsed(id, System.currentTimeMillis())
 
     override suspend fun duplicate(id: RecipeId): Result<RecipeId, DataError.Local> {
         val source =
@@ -43,6 +59,8 @@ class RoomRecipeRepository(
                 finalWeight = source.finalWeight,
                 portions = source.portions,
                 category = source.category,
+                isFavorite = source.isFavorite,
+                lastUsedAt = source.lastUsedAt,
             )
         return when (val saved = local.upsertRecipeWithIngredients(copy)) {
             is Result.Error -> saved
