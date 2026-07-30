@@ -30,6 +30,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.R
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerAction
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerState
 import com.example.ezmakro.feature.foodpicker.presentation.picker.PickerFoodUi
+import com.example.ezmakro.feature.foodpicker.presentation.picker.PickerRecipeUi
 import java.util.Locale
 
 @Composable
@@ -84,6 +85,13 @@ private fun RecentSection(
                 FoodRow(food = food, onAction = onAction)
             }
         }
+
+        if (state.recentRecipes.isNotEmpty()) {
+            item { SectionHeader(stringResource(R.string.foodpicker_section_recent_recipes)) }
+            items(state.recentRecipes, key = { it.id }) { recipe ->
+                RecipeRow(recipe = recipe, onAction = onAction)
+            }
+        }
     }
 }
 
@@ -101,6 +109,13 @@ private fun SearchResultsSection(
         } else {
             items(state.localSearchResults, key = { it.id }) { food ->
                 FoodRow(food = food, onAction = onAction)
+            }
+        }
+
+        if (state.localRecipeResults.isNotEmpty()) {
+            item { SectionHeader(stringResource(R.string.foodpicker_section_recipes)) }
+            items(state.localRecipeResults, key = { it.id }) { recipe ->
+                RecipeRow(recipe = recipe, onAction = onAction)
             }
         }
 
@@ -156,6 +171,37 @@ private fun FoodRow(
         IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
             Icon(
                 imageVector = if (food.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
+                contentDescription = null,
+            )
+        }
+    }
+    HorizontalDivider()
+}
+
+@Composable
+private fun RecipeRow(
+    recipe: PickerRecipeUi,
+    onAction: (FoodPickerAction) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onAction(FoodPickerAction.OnRecipeClick(recipe.id)) }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = recipe.name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
+        }
+        IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(recipe.id)) }) {
+            Icon(
+                imageVector = if (recipe.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                 contentDescription = null,
             )
         }

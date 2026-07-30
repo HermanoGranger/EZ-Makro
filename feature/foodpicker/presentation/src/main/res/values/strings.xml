@@ -11,6 +11,7 @@
     <string name="foodpicker_section_local">Lokale Treffer</string>
     <string name="foodpicker_section_online">OpenFoodFacts</string>
     <string name="foodpicker_section_foods">Lebensmittel</string>
+    <string name="foodpicker_section_recent_recipes">Zuletzt verwendete Rezepte</string>
     <string name="foodpicker_section_recipes">Rezepte</string>
     <string name="foodpicker_empty">Keine Einträge</string>
     <string name="foodpicker_empty_search">Keine Treffer</string>
