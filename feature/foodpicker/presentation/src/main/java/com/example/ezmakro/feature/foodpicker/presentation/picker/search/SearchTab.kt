@@ -81,14 +81,14 @@ private fun RecentSection(
         if (state.recentFoods.isEmpty()) {
             item { EmptyRow(stringResource(R.string.foodpicker_empty)) }
         } else {
-            items(state.recentFoods, key = { it.id }) { food ->
+            items(state.recentFoods, key = { "recent-food-${it.id}" }) { food ->
                 FoodRow(food = food, onAction = onAction)
             }
         }
 
         if (state.recentRecipes.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recent_recipes)) }
-            items(state.recentRecipes, key = { it.id }) { recipe ->
+            items(state.recentRecipes, key = { "recent-recipe-${it.id}" }) { recipe ->
                 RecipeRow(recipe = recipe, onAction = onAction)
             }
         }
@@ -107,14 +107,14 @@ private fun SearchResultsSection(
         if (state.localSearchResults.isEmpty()) {
             item { EmptyRow(stringResource(R.string.foodpicker_empty_search)) }
         } else {
-            items(state.localSearchResults, key = { it.id }) { food ->
+            items(state.localSearchResults, key = { "local-food-${it.id}" }) { food ->
                 FoodRow(food = food, onAction = onAction)
             }
         }
 
         if (state.localRecipeResults.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recipes)) }
-            items(state.localRecipeResults, key = { it.id }) { recipe ->
+            items(state.localRecipeResults, key = { "local-recipe-${it.id}" }) { recipe ->
                 RecipeRow(recipe = recipe, onAction = onAction)
             }
         }
@@ -144,7 +144,7 @@ private fun SearchResultsSection(
             item {
                 SectionHeader(stringResource(R.string.foodpicker_section_online))
             }
-            items(state.onlineSearchResults, key = { it.id }) { food ->
+            items(state.onlineSearchResults, key = { "online-food-${it.id}" }) { food ->
                 FoodRow(food = food, onAction = onAction)
             }
         }

@@ -368,11 +368,12 @@ class FoodPickerViewModel(
             foodRepository
                 .searchRemote(query)
                 .onSuccess { foods ->
+                    val deduped = foods.distinctBy { it.id }
                     _state.update {
                         it.copy(
                             isSearchingOnline = false,
-                            onlineSearchResults = foods.map { f -> f.toPickerFoodUi() },
-                            onlineFoodItems = foods,
+                            onlineSearchResults = deduped.map { f -> f.toPickerFoodUi() },
+                            onlineFoodItems = deduped,
                         )
                     }
                 }.onFailure { error ->

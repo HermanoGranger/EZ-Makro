@@ -187,6 +187,25 @@ class FoodPickerViewModelTest {
         }
 
     @Test
+    fun `searchOnline deduplicates results with the same id`() =
+        runTest {
+            fakeFoodRepository.searchResult =
+                Result.Success(
+                    listOf(
+                        testFood("3229820762692", name = "Tofu"),
+                        testFood("3229820762692", name = "Tofu Natur"),
+                    ),
+                )
+            val vm = createViewModel()
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("tofu"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+
+            assertThat(vm.state.value.onlineSearchResults).hasSize(1)
+            assertThat(vm.state.value.onlineFoodItems).hasSize(1)
+        }
+
+    @Test
     fun `confirmAddToDiary for online item caches remote item before AddToDiary event`() =
         runTest {
             fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
