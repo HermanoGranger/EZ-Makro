@@ -136,6 +136,10 @@ private fun SearchResultsSection(
             item { EmptyRow(error.asString()) }
         }
 
+        state.selectionError?.let { error ->
+            item { EmptyRow(error.asString()) }
+        }
+
         if (state.onlineSearchResults.isNotEmpty()) {
             item {
                 SectionHeader(stringResource(R.string.foodpicker_section_online))

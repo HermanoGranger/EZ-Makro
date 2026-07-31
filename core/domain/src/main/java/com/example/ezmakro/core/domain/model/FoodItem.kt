@@ -20,6 +20,10 @@ import kotlinx.serialization.Serializable
  * [lastUsedAt] is the epoch-milli timestamp of the last time the food was used;
  * it drives the "recently used" ordering and is `null` until first use (wired in
  * Phase 7 with the meal log).
+ *
+ * [isTransient] marks a one-off snapshot that is NOT persisted as a reusable
+ * library food (e.g. Quick Add). The snapshot is still fully materialized into
+ * the diary entry, but the referenced food is never stored in the food cache.
  */
 @Serializable
 data class FoodItem(
@@ -33,6 +37,7 @@ data class FoodItem(
     val originalSnapshot: FoodItem?,
     val isFavorite: Boolean = false,
     val lastUsedAt: Long? = null,
+    val isTransient: Boolean = false,
 ) {
     init {
         require(name.isNotBlank()) { "FoodItem name must not be blank" }

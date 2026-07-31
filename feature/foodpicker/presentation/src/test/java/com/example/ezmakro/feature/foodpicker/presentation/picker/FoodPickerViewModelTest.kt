@@ -1,13 +1,19 @@
 package com.example.ezmakro.feature.foodpicker.presentation.picker
 
 import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
@@ -165,6 +171,154 @@ class FoodPickerViewModelTest {
             assertThat(results.first().id).isEqualTo("r1")
         }
 
+    @Test
+    fun `searchOnline fills onlineFoodItems with raw items`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel()
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+
+            assertThat(vm.state.value.onlineSearchResults).hasSize(1)
+            val onlineItems = vm.state.value.onlineFoodItems
+            assertThat(onlineItems).hasSize(1)
+            assertThat(onlineItems.first().id).isEqualTo(FoodId("f1"))
+        }
+
+    @Test
+    fun `confirmAddToDiary for online item caches remote item before AddToDiary event`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.BREAKFAST,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+                assertThat(fakeFoodRepository.lastCachedItem?.id).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddToDiary(
+                        foodId = "f1",
+                        isRecipe = false,
+                        date = "2026-07-19",
+                        slot = MealSlot.BREAKFAST,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun `confirmAddToDiary for local item does not cache remote item`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.LUNCH,
+                        amount = 50.0,
+                        isGrams = true,
+                    ),
+                )
+                assertThat(fakeFoodRepository.lastCachedItem).isNull()
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddToDiary(
+                        foodId = "f1",
+                        isRecipe = false,
+                        date = "2026-07-19",
+                        slot = MealSlot.LUNCH,
+                        amount = 50.0,
+                        isGrams = true,
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun `confirmAddToDiary cache failure resets selection and sets selectionError without event`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            fakeFoodRepository.shouldFailCacheRemoteItem = true
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            assertThat(vm.state.value.selectedItemReady).isTrue()
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.BREAKFAST,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+                assertThat(vm.state.value.selectedItemReady).isFalse()
+                assertThat(vm.state.value.selectedItemId).isNull()
+                assertThat(vm.state.value.selectionError).isNotNull()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `recipe ingredient click on online item caches before AddAsIngredient`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+                assertThat(fakeFoodRepository.lastCachedItem?.id).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddAsIngredient(
+                        itemId = "f1",
+                        itemName = "Food f1",
+                        servingLabel = null,
+                        isRecipe = false,
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun `recipe ingredient click on local item does not cache remote item`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+                assertThat(fakeFoodRepository.lastCachedItem).isNull()
+                assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddAsIngredient(
+                        itemId = "f1",
+                        itemName = "Food f1",
+                        servingLabel = null,
+                        isRecipe = false,
+                    ),
+                )
+            }
+        }
+
     private fun testFood(
         id: String,
         name: String = "Food $id",
@@ -214,6 +368,8 @@ private class FakeFoodRepository : FoodRepository {
     var lastToggledFavorite: FoodId? = null
     var lastMarkedUsed: FoodId? = null
     var lastCachedItem: FoodItem? = null
+    var searchResult: Result<List<FoodItem>, DataError.Network> = Result.Success(emptyList())
+    var shouldFailCacheRemoteItem: Boolean = false
 
     fun emitFoods(foods: List<FoodItem>) {
         foodItems.value = foods
@@ -237,8 +393,7 @@ private class FakeFoodRepository : FoodRepository {
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
         Result.Success(foodItems.value.firstOrNull { it.id == id })
 
-    override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
-        Result.Success(emptyList())
+    override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> = searchResult
 
     override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> = Result.Success(null)
 
@@ -268,6 +423,7 @@ private class FakeFoodRepository : FoodRepository {
 
     override suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local> {
         lastCachedItem = item
+        if (shouldFailCacheRemoteItem) return Result.Error(DataError.Local.UNKNOWN)
         foodItems.value = foodItems.value.filter { it.id != item.id } + item
         return Result.Success(Unit)
     }

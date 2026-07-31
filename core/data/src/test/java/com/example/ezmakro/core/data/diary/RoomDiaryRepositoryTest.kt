@@ -7,6 +7,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.database.dao.DiaryEntryDao
 import com.example.ezmakro.core.database.entity.DiaryEntryEntity
 import com.example.ezmakro.core.domain.calculation.consumedNutrition
@@ -128,6 +129,38 @@ class RoomDiaryRepositoryTest {
             assertThat(entryRead.food).isNotNull()
             assertThat(entryRead.food!!.id).isEqualTo(FoodId("f1"))
             assertThat(entryRead.consumedNutrition()).isEqualTo(domainFood("f1").nutritionForGrams(150.0))
+        }
+
+    @Test
+    fun `save entry with transient food stores null food_item_id but keeps snapshot`() =
+        runTest {
+            val dao = FakeDiaryDao()
+            val food = domainFood("f1").copy(id = FoodId("quick-1"), isTransient = true)
+            val entry =
+                DiaryEntry(
+                    id = DiaryEntryId("d1"),
+                    slot = MealSlot.BREAKFAST,
+                    date = LocalDate.of(2026, 7, 19),
+                    food = food,
+                    recipe = null,
+                    amountGrams = 150.0,
+                    portionCount = null,
+                )
+            repoWith(dao).save(entry)
+
+            val stored = dao.getById("d1")
+            assertThat(stored).isNotNull()
+            assertThat(stored!!.foodItemId).isNull()
+            assertThat(stored.foodSnapshot).isNotNull()
+            assertThat(stored.recipeSnapshot).isNull()
+
+            val read = repoWith(dao).getById(DiaryEntryId("d1"))
+            assertThat(read).isInstanceOf(Result.Success::class)
+            val entryRead = (read as Result.Success).data!!
+            assertThat(entryRead.food).isNotNull()
+            assertThat(entryRead.food!!.isTransient).isTrue()
+            assertThat(entryRead.food!!.name).isEqualTo(food.name)
+            assertThat(entryRead.consumedNutrition()).isEqualTo(food.nutritionForGrams(150.0))
         }
 
     @Test

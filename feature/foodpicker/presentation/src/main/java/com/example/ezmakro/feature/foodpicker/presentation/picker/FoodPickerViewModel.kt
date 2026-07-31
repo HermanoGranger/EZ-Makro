@@ -81,7 +81,9 @@ class FoodPickerViewModel(
             is FoodPickerAction.OnSearchQueryChange -> {
                 savedStateHandle[KEY_QUERY] = action.query
                 queryFlow.value = action.query
-                _state.update { it.copy(searchQuery = action.query, onlineError = null) }
+                _state.update {
+                    it.copy(searchQuery = action.query, onlineError = null, selectionError = null)
+                }
             }
 
             FoodPickerAction.OnSearchOnlineClick -> searchOnline()
@@ -134,24 +136,23 @@ class FoodPickerViewModel(
     }
 
     private fun onFoodClick(foodId: String) {
-        viewModelScope.launch {
-            val onlineItem = _state.value.onlineSearchResults.firstOrNull { it.id == foodId }
-
-            if (onlineItem != null) {
-                val query = _state.value.searchQuery
-                foodRepository.searchRemote(query).onSuccess { items ->
-                    items.firstOrNull { it.id.value == foodId }?.let { item ->
-                        foodRepository.cacheRemoteItem(item)
-                    }
-                }
-            } else {
-                foodRepository.markUsed(FoodId(foodId))
-            }
-        }
+        val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
 
         if (_state.value.targetContext == FoodPickerTarget.RECIPE_INGREDIENT) {
             val food = findFood(foodId) ?: return
             viewModelScope.launch {
+                if (onlineItem != null) {
+                    when (val result = foodRepository.cacheRemoteItem(onlineItem)) {
+                        is Result.Error -> {
+                            _state.update { it.copy(selectionError = result.error.toUiText()) }
+                            return@launch
+                        }
+                        is Result.Success -> { /* proceed */ }
+                    }
+                } else {
+                    foodRepository.markUsed(FoodId(foodId))
+                }
+                _state.update { it.copy(selectionError = null) }
                 _events.send(
                     FoodPickerEvent.AddAsIngredient(
                         itemId = foodId,
@@ -162,9 +163,13 @@ class FoodPickerViewModel(
                 )
             }
         } else {
+            if (onlineItem == null) {
+                viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
+            }
             val food = findFood(foodId)
             _state.update {
                 it.copy(
+                    selectionError = null,
                     selectedItemReady = true,
                     selectedItemId = foodId,
                     selectedItemIsRecipe = false,
@@ -216,6 +221,16 @@ class FoodPickerViewModel(
             )
         }
         viewModelScope.launch {
+            val onlineItem = s.onlineFoodItems.firstOrNull { it.id.value == itemId }
+            if (onlineItem != null) {
+                when (val result = foodRepository.cacheRemoteItem(onlineItem)) {
+                    is Result.Error -> {
+                        _state.update { it.copy(selectionError = result.error.toUiText()) }
+                        return@launch
+                    }
+                    is Result.Success -> { /* proceed */ }
+                }
+            }
             _events.send(
                 FoodPickerEvent.AddToDiary(
                     foodId = itemId,
@@ -347,7 +362,9 @@ class FoodPickerViewModel(
         val query = _state.value.searchQuery.trim()
         if (query.isBlank()) return
         viewModelScope.launch {
-            _state.update { it.copy(isSearchingOnline = true, onlineError = null) }
+            _state.update {
+                it.copy(isSearchingOnline = true, onlineError = null, selectionError = null)
+            }
             foodRepository
                 .searchRemote(query)
                 .onSuccess { foods ->
@@ -355,6 +372,7 @@ class FoodPickerViewModel(
                         it.copy(
                             isSearchingOnline = false,
                             onlineSearchResults = foods.map { f -> f.toPickerFoodUi() },
+                            onlineFoodItems = foods,
                         )
                     }
                 }.onFailure { error ->

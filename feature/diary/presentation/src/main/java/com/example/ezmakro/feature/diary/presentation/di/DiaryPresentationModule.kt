@@ -37,6 +37,6 @@ val diaryPresentationModule =
         factory { CopyYesterdayUseCase(get()) }
         factory { DeleteDiaryEntryUseCase(get()) }
         factory { GetHistoryUseCase(get()) }
-        factory { QuickAddUseCase(get(), get()) }
+        factory { QuickAddUseCase(get()) }
         factory { UpdateDiaryEntryUseCase(get()) }
     }
