@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.FoodRepository
@@ -121,6 +122,11 @@ class FoodPickerViewModel(
             FoodPickerAction.OnCreateOwnClick ->
                 viewModelScope.launch { _events.send(FoodPickerEvent.NavigateToFoodCreate(null)) }
 
+            FoodPickerAction.OnQuickAddClick -> onQuickAddClick()
+
+            is FoodPickerAction.OnSlotSet ->
+                _state.update { it.copy(slot = action.slot) }
+
             is FoodPickerAction.OnToggleFavorite -> {
                 viewModelScope.launch {
                     val inUserRecipes = _state.value.userRecipes.any { it.id == action.foodId }
@@ -132,6 +138,14 @@ class FoodPickerViewModel(
                     }
                 }
             }
+        }
+    }
+
+    private fun onQuickAddClick() {
+        val s = _state.value
+        val date = s.targetDate ?: return
+        viewModelScope.launch {
+            _events.send(FoodPickerEvent.NavigateToQuickAdd(date, s.slot ?: MealSlot.BREAKFAST))
         }
     }
 
@@ -236,7 +250,7 @@ class FoodPickerViewModel(
                     foodId = itemId,
                     isRecipe = s.selectedItemIsRecipe,
                     date = date,
-                    slot = action.slot,
+                    slot = s.slot ?: action.slot,
                     amount = action.amount,
                     isGrams = action.isGrams,
                 ),

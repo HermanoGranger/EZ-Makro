@@ -2,6 +2,7 @@ package com.example.ezmakro.feature.foodpicker.presentation.picker
 
 import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.presentation.uitext.UiText
 
@@ -31,6 +32,7 @@ data class FoodPickerState(
     val selectedItemHasServingUnit: Boolean = false,
     val targetContext: FoodPickerTarget = FoodPickerTarget.DIARY,
     val targetDate: String? = null,
+    val slot: MealSlot? = null,
 )
 
 enum class FoodPickerTab { BARCODE, SEARCH, FAVORITES }

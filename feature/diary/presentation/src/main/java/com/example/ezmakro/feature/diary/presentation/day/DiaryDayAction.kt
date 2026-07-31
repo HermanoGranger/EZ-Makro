@@ -16,14 +16,6 @@ sealed interface DiaryDayAction {
         val slot: MealSlot,
     ) : DiaryDayAction
 
-    data object OnAddFoodClick : DiaryDayAction
-
-    data object OnAddRecipeClick : DiaryDayAction
-
-    data object OnQuickAddClick : DiaryDayAction
-
-    data object OnHistoryClick : DiaryDayAction
-
     data object OnMessageShown : DiaryDayAction
 
     data class OnToggleSlot(
@@ -48,18 +40,6 @@ sealed interface DiaryDayAction {
 }
 
 sealed interface DiaryDayEvent {
-    data class NavigateToAddFood(
-        val date: String,
-    ) : DiaryDayEvent
-
-    data class NavigateToAddRecipe(
-        val date: String,
-    ) : DiaryDayEvent
-
-    data object NavigateToQuickAdd : DiaryDayEvent
-
-    data object NavigateToHistory : DiaryDayEvent
-
     data class ConfirmDelete(
         val entryId: String,
         val slot: MealSlot,

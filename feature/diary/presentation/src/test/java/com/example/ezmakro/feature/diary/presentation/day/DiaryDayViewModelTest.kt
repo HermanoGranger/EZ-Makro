@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
@@ -133,16 +134,6 @@ class DiaryDayViewModelTest {
         }
 
     @Test
-    fun `OnAddFoodClick emits NavigateToAddFood with current date`() =
-        runTest {
-            viewModel.events.test {
-                viewModel.onAction(DiaryDayAction.OnAddFoodClick)
-                val event = awaitItem()
-                assertThat(event).isEqualTo(DiaryDayEvent.NavigateToAddFood(date.toString()))
-            }
-        }
-
-    @Test
     fun `OnDeleteEntry emits ConfirmDelete without deleting`() =
         runTest {
             repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 100.0))
@@ -166,15 +157,6 @@ class DiaryDayViewModelTest {
         }
 
     @Test
-    fun `OnHistoryClick emits NavigateToHistory`() =
-        runTest {
-            viewModel.events.test {
-                viewModel.onAction(DiaryDayAction.OnHistoryClick)
-                assertThat(awaitItem()).isEqualTo(DiaryDayEvent.NavigateToHistory)
-            }
-        }
-
-    @Test
     fun `OnToggleSlot toggles the slot in expandedSlots`() =
         runTest {
             viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
@@ -192,6 +174,19 @@ class DiaryDayViewModelTest {
 
             assertThat(viewModel.state.value.expandedSlots)
                 .isEqualTo(setOf(MealSlot.BREAKFAST, MealSlot.LUNCH))
+        }
+
+    @Test
+    fun `OnCopyYesterdayClick copies entries from yesterday into today`() =
+        runTest {
+            val yesterday = date.minusDays(1)
+            repository.emitEntry(entry("y1", MealSlot.BREAKFAST, "f1", 100.0).copy(date = yesterday))
+
+            viewModel.onAction(DiaryDayAction.OnCopyYesterdayClick)
+
+            assertThat(repository.savedCount()).isEqualTo(1)
+            assertThat(repository.entriesForDate(date)).hasSize(1)
+            assertThat(viewModel.state.value.copyYesterdayMessage).isNotNull()
         }
 
     @Test

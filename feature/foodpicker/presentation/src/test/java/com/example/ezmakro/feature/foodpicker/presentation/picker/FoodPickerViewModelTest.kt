@@ -206,6 +206,88 @@ class FoodPickerViewModelTest {
         }
 
     @Test
+    fun `OnSlotSet updates slot in state`() =
+        runTest {
+            val vm = createViewModel()
+
+            vm.onAction(FoodPickerAction.OnSlotSet(MealSlot.LUNCH))
+
+            assertThat(vm.state.value.slot).isEqualTo(MealSlot.LUNCH)
+        }
+
+    @Test
+    fun `OnQuickAddClick emits NavigateToQuickAdd with slot`() =
+        runTest {
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnSlotSet(MealSlot.DINNER))
+                vm.onAction(FoodPickerAction.OnQuickAddClick)
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToQuickAdd(date = "2026-07-19", slot = MealSlot.DINNER),
+                )
+            }
+        }
+
+    @Test
+    fun `OnQuickAddClick defaults to breakfast when no slot is set`() =
+        runTest {
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnQuickAddClick)
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToQuickAdd(date = "2026-07-19", slot = MealSlot.BREAKFAST),
+                )
+            }
+        }
+
+    @Test
+    fun `OnQuickAddClick without target date emits nothing`() =
+        runTest {
+            val vm = createViewModel(targetDate = null)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnQuickAddClick)
+
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `confirmAddToDiary prefers slot from state over action slot`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnSlotSet(MealSlot.SNACKS))
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.BREAKFAST,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddToDiary(
+                        foodId = "f1",
+                        isRecipe = false,
+                        date = "2026-07-19",
+                        slot = MealSlot.SNACKS,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+            }
+        }
+
+    @Test
     fun `confirmAddToDiary for online item caches remote item before AddToDiary event`() =
         runTest {
             fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))

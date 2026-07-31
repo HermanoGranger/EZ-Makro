@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.HorizontalDivider
@@ -21,9 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.presentation.R
 
 private const val ANIM_DURATION = 300
 private const val MACRO_SPACING = 12
@@ -38,6 +41,7 @@ fun CollapsibleMealSlot(
     onToggle: () -> Unit,
     onEditEntry: (String) -> Unit,
     onRequestDelete: (String) -> Unit,
+    onRequestAdd: () -> Unit,
     summaryKcal: String,
     summaryProtein: String,
     summaryFat: String,
@@ -51,6 +55,7 @@ fun CollapsibleMealSlot(
             entries = entries,
             isExpanded = isExpanded,
             onToggle = onToggle,
+            onRequestAdd = onRequestAdd,
             summaryKcal = summaryKcal,
             summaryProtein = summaryProtein,
             summaryFat = summaryFat,
@@ -83,6 +88,7 @@ private fun CollapsibleHeader(
     entries: List<DiaryEntryDetailData>,
     isExpanded: Boolean,
     onToggle: () -> Unit,
+    onRequestAdd: () -> Unit,
     summaryKcal: String,
     summaryProtein: String,
     summaryFat: String,
@@ -121,6 +127,12 @@ private fun CollapsibleHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        IconButton(onClick = onRequestAdd) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.diary_slot_add),
+            )
         }
         if (entries.isNotEmpty()) {
             IconButton(onClick = onToggle) {

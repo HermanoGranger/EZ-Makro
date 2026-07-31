@@ -77,7 +77,12 @@ class QuickAddViewModel(
         savedStateHandle.get<String>("date")?.takeIf { it.isNotEmpty() }?.let { LocalDate.parse(it) }
             ?: LocalDate.now()
 
-    private val _state = MutableStateFlow(QuickAddState())
+    private val slot: MealSlot? =
+        savedStateHandle.get<String>("slot")?.takeIf { it.isNotEmpty() }?.let {
+            runCatching { MealSlot.valueOf(it) }.getOrNull()
+        }
+
+    private val _state = MutableStateFlow(QuickAddState(slot = slot ?: MealSlot.BREAKFAST))
     val state = _state.asStateFlow()
 
     private val _events = Channel<QuickAddEvent>(Channel.BUFFERED)

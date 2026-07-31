@@ -45,6 +45,12 @@ sealed interface FoodPickerAction {
 
     data object OnCreateOwnClick : FoodPickerAction
 
+    data object OnQuickAddClick : FoodPickerAction
+
+    data class OnSlotSet(
+        val slot: MealSlot,
+    ) : FoodPickerAction
+
     data class OnToggleFavorite(
         val foodId: String,
     ) : FoodPickerAction

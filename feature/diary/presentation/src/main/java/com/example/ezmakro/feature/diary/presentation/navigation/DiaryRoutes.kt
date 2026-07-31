@@ -11,7 +11,6 @@ import com.example.ezmakro.feature.diary.presentation.day.DiaryDayRoot
 import com.example.ezmakro.feature.diary.presentation.history.HistoryRoot
 import com.example.ezmakro.feature.diary.presentation.quickadd.QuickAddRoot
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
 
 // Route types — kept for serialization tests and potential future re-use.
 // Navigation uses explicit string routes (below) to avoid
@@ -31,6 +30,7 @@ object History
 @Serializable
 data class QuickAdd(
     val date: String? = null,
+    val slot: String? = null,
 )
 
 // ---- Public string route constants ----
@@ -40,6 +40,7 @@ const val ROUTE_DIARY_DAY_PARAM_DATE = "date"
 
 const val ROUTE_DIARY_DAY = "diary_day"
 internal const val ROUTE_QUICK_ADD = "quick_add"
+internal const val ROUTE_QUICK_ADD_PARAM_SLOT = "slot"
 internal const val ROUTE_HISTORY = "history"
 
 /**
@@ -92,13 +93,10 @@ private fun NavGraphBuilder.dayComposable(
                 },
             ),
     ) {
-        val date =
-            it.arguments?.getString(ROUTE_DIARY_DAY_PARAM_DATE)?.takeIf { d -> d.isNotEmpty() }
         DiaryDayRoot(
             onAddToDiaryFromPicker = onAddToDiaryFromPicker,
-            onNavigateToQuickAdd = {
-                val dateParam = date ?: LocalDate.now().toString()
-                navController.navigate("$ROUTE_QUICK_ADD?date=$dateParam")
+            onNavigateToQuickAdd = { dateParam, slot ->
+                navController.navigate("$ROUTE_QUICK_ADD?date=$dateParam&${ROUTE_QUICK_ADD_PARAM_SLOT}=${slot.name}")
             },
             onNavigateToHistory = { navController.navigate(ROUTE_HISTORY) },
             onNavigateToGoals = onNavigateToGoals,
@@ -113,6 +111,10 @@ private fun NavGraphBuilder.quickAddComposable(navController: NavHostController)
         arguments =
             listOf(
                 navArgument(ROUTE_DIARY_DAY_PARAM_DATE) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument(ROUTE_QUICK_ADD_PARAM_SLOT) {
                     type = NavType.StringType
                     defaultValue = ""
                 },

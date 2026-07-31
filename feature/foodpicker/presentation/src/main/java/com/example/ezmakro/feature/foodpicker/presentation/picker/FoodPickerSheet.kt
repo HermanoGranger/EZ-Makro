@@ -1,10 +1,13 @@
 package com.example.ezmakro.feature.foodpicker.presentation.picker
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
@@ -16,8 +19,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,6 +42,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.picker.search.SearchT
 @Composable
 fun FoodPickerSheet(
     isVisible: Boolean,
+    initialSlot: MealSlot? = null,
     onAddToDiary: (
         foodId: String,
         isRecipe: Boolean,
@@ -47,6 +53,7 @@ fun FoodPickerSheet(
     ) -> Unit,
     onAddAsIngredient: (itemId: String, itemName: String, servingLabel: String?, isRecipe: Boolean) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
+    onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit = { _, _ -> },
     onDismiss: () -> Unit,
     viewModel: FoodPickerViewModel,
 ) {
@@ -54,6 +61,10 @@ fun FoodPickerSheet(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(initialSlot) {
+        initialSlot?.let { viewModel.onAction(FoodPickerAction.OnSlotSet(it)) }
+    }
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
@@ -65,6 +76,7 @@ fun FoodPickerSheet(
 
             is FoodPickerEvent.NavigateToFoodDetail -> { /* handled by caller */ }
             is FoodPickerEvent.NavigateToFoodCreate -> onNavigateToFoodCreate(event.barcode)
+            is FoodPickerEvent.NavigateToQuickAdd -> onNavigateToQuickAdd(event.date, event.slot)
             FoodPickerEvent.Dismissed -> onDismiss()
         }
     }
@@ -73,6 +85,7 @@ fun FoodPickerSheet(
         AddToDiarySheet(
             isRecipe = state.selectedItemIsRecipe,
             hasServingUnit = state.selectedItemHasServingUnit,
+            fixedSlot = state.slot,
             onDismiss = { viewModel.onAction(FoodPickerAction.OnDismissSelection) },
             onConfirm = { slot, amount, isGrams ->
                 viewModel.onAction(
@@ -102,6 +115,17 @@ private fun FoodPickerSheetContent(
                 .fillMaxWidth()
                 .height(500.dp),
     ) {
+        if (state.targetContext == FoodPickerTarget.DIARY) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = { onAction(FoodPickerAction.OnQuickAddClick) }) {
+                    Text(stringResource(R.string.foodpicker_quick_add))
+                }
+            }
+        }
+
         TabRow(selectedTabIndex = state.activeTab.ordinal) {
             FoodPickerTab.entries.forEachIndexed { index, tab ->
                 Tab(

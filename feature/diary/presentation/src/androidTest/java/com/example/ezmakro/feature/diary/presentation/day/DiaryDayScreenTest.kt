@@ -1,8 +1,10 @@
 package com.example.ezmakro.feature.diary.presentation.day
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -79,8 +81,7 @@ class DiaryDayScreenTest {
                         onAction = {},
                         onRequestDelete = { _, _ -> },
                         onRequestEdit = {},
-                        onNavigateToAddFood = {},
-                        onNavigateToQuickAdd = {},
+                        onRequestAdd = {},
                         onNavigateToHistory = {},
                     ),
             )
@@ -111,8 +112,7 @@ class DiaryDayScreenTest {
                         onAction = {},
                         onRequestDelete = { _, _ -> },
                         onRequestEdit = {},
-                        onNavigateToAddFood = {},
-                        onNavigateToQuickAdd = {},
+                        onRequestAdd = {},
                         onNavigateToHistory = {},
                     ),
             )
@@ -180,8 +180,7 @@ class DiaryDayScreenTest {
                         onAction = {},
                         onRequestDelete = { _, _ -> },
                         onRequestEdit = {},
-                        onNavigateToAddFood = {},
-                        onNavigateToQuickAdd = {},
+                        onRequestAdd = {},
                         onNavigateToHistory = {},
                     ),
             )
@@ -192,7 +191,7 @@ class DiaryDayScreenTest {
     }
 
     @Test
-    fun copyYesterdayButton_triggersAction() {
+    fun copyYesterdayIcon_triggersAction() {
         var clicked = false
         composeTestRule.setContent {
             DiaryDayScreen(
@@ -203,14 +202,80 @@ class DiaryDayScreenTest {
                         onAction = { if (it is DiaryDayAction.OnCopyYesterdayClick) clicked = true },
                         onRequestDelete = { _, _ -> },
                         onRequestEdit = {},
-                        onNavigateToAddFood = {},
-                        onNavigateToQuickAdd = {},
+                        onRequestAdd = {},
                         onNavigateToHistory = {},
                     ),
             )
         }
 
-        composeTestRule.onNodeWithText("Gestern kopieren").performClick()
+        composeTestRule.onNodeWithContentDescription("Gestern kopieren").performClick()
         assertEquals(true, clicked)
+    }
+
+    @Test
+    fun eachMealSlotHasItsOwnAddButton() {
+        var requestedSlots = mutableListOf<MealSlot>()
+        composeTestRule.setContent {
+            DiaryDayScreen(
+                state = DiaryDayState(date = LocalDate.of(2026, 7, 19)),
+                snackbarHostState = SnackbarHostState(),
+                callbacks =
+                    DiaryDayCallbacks(
+                        onAction = {},
+                        onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
+                        onRequestAdd = { requestedSlots.add(it) },
+                        onNavigateToHistory = {},
+                    ),
+            )
+        }
+
+        composeTestRule.onAllNodesWithContentDescription("Hinzufügen").assertCountEquals(4)
+        composeTestRule.onAllNodesWithContentDescription("Hinzufügen")[0].performClick()
+        composeTestRule.onAllNodesWithContentDescription("Hinzufügen")[1].performClick()
+        assertEquals(listOf(MealSlot.BREAKFAST, MealSlot.LUNCH), requestedSlots)
+    }
+
+    @Test
+    fun noAddOrQuickAddButtonsAtEndOfList() {
+        composeTestRule.setContent {
+            DiaryDayScreen(
+                state = DiaryDayState(date = LocalDate.of(2026, 7, 19)),
+                snackbarHostState = SnackbarHostState(),
+                callbacks =
+                    DiaryDayCallbacks(
+                        onAction = {},
+                        onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
+                        onRequestAdd = {},
+                        onNavigateToHistory = {},
+                    ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Hinzufügen").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Quick Add").assertDoesNotExist()
+    }
+
+    @Test
+    fun historyIcon_triggersNavigation() {
+        var historyClicked = false
+        composeTestRule.setContent {
+            DiaryDayScreen(
+                state = DiaryDayState(date = LocalDate.of(2026, 7, 19)),
+                snackbarHostState = SnackbarHostState(),
+                callbacks =
+                    DiaryDayCallbacks(
+                        onAction = {},
+                        onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
+                        onRequestAdd = {},
+                        onNavigateToHistory = { historyClicked = true },
+                    ),
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Verlauf").performClick()
+        assertEquals(true, historyClicked)
     }
 }

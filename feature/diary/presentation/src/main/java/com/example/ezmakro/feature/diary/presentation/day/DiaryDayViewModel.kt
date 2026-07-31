@@ -15,14 +15,10 @@ import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.feature.diary.presentation.R
-import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddFoodClick
-import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnAddRecipeClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnConfirmDelete
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnCopyYesterdayClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnDeleteEntry
-import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnHistoryClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnMessageShown
-import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnQuickAddClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnSaveEdit
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnToggleSlot
 import com.example.ezmakro.feature.diary.presentation.model.buildDiarySummary
@@ -86,10 +82,6 @@ class DiaryDayViewModel(
             OnCopyYesterdayClick -> copyYesterday()
             is OnDeleteEntry -> emit(DiaryDayEvent.ConfirmDelete(action.entryId, action.slot))
             is OnConfirmDelete -> delete(action.entryId)
-            OnAddFoodClick -> emit(DiaryDayEvent.NavigateToAddFood(currentDateProvider.date.value.toString()))
-            OnAddRecipeClick -> emit(DiaryDayEvent.NavigateToAddRecipe(currentDateProvider.date.value.toString()))
-            OnQuickAddClick -> emit(DiaryDayEvent.NavigateToQuickAdd)
-            OnHistoryClick -> emit(DiaryDayEvent.NavigateToHistory)
             OnMessageShown -> _state.update { it.copy(copyYesterdayMessage = null) }
             is OnToggleSlot -> {
                 _state.update {

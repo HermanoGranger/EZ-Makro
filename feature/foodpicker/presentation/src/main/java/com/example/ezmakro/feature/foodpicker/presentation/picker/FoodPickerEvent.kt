@@ -11,6 +11,11 @@ sealed interface FoodPickerEvent {
         val barcode: String?,
     ) : FoodPickerEvent
 
+    data class NavigateToQuickAdd(
+        val date: String,
+        val slot: MealSlot,
+    ) : FoodPickerEvent
+
     data class AddToDiary(
         val foodId: String,
         val isRecipe: Boolean,

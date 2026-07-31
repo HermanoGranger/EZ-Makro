@@ -33,11 +33,12 @@ fun AddToDiarySheet(
     isRecipe: Boolean,
     hasServingUnit: Boolean = false,
     initialSlot: MealSlot = MealSlot.BREAKFAST,
+    fixedSlot: MealSlot? = null,
     initialAmount: String = if (isRecipe || hasServingUnit) "1" else "100",
     onDismiss: () -> Unit,
     onConfirm: (slot: MealSlot, amount: Double, isGrams: Boolean) -> Unit,
 ) {
-    var selectedSlot by remember { mutableStateOf(initialSlot) }
+    var selectedSlot by remember { mutableStateOf(fixedSlot ?: initialSlot) }
     var amountText by remember { mutableStateOf(initialAmount) }
     var amountMode by remember {
         mutableStateOf(if (isRecipe || hasServingUnit) RecipeAmountMode.PORTIONS else RecipeAmountMode.GRAMS)
@@ -63,7 +64,9 @@ fun AddToDiarySheet(
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                SlotSelector(selectedSlot = selectedSlot, onSelect = { selectedSlot = it })
+                if (fixedSlot == null) {
+                    SlotSelector(selectedSlot = selectedSlot, onSelect = { selectedSlot = it })
+                }
                 if (showModeSelector) {
                     AmountModeSelector(amountMode = amountMode, onModeChange = { amountMode = it })
                 }

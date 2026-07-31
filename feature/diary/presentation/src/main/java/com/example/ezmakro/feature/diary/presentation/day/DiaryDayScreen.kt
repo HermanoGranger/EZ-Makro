@@ -2,7 +2,6 @@
 
 package com.example.ezmakro.feature.diary.presentation.day
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,15 +12,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -61,7 +60,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun DiaryDayRoot(
-    onNavigateToQuickAdd: () -> Unit,
+    onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToGoals: () -> Unit = {},
     onAddToDiaryFromPicker: (
@@ -80,7 +79,7 @@ fun DiaryDayRoot(
     val context = LocalContext.current
     var pendingDelete by remember { mutableStateOf<Pair<String, MealSlot>?>(null) }
     var editEntryId by remember { mutableStateOf<String?>(null) }
-    var showFoodPicker by remember { mutableStateOf(false) }
+    var pickerSlot by remember { mutableStateOf<MealSlot?>(null) }
 
     LaunchedEffect(state.copyYesterdayMessage) {
         state.copyYesterdayMessage?.let {
@@ -97,19 +96,19 @@ fun DiaryDayRoot(
                 onAction = viewModel::onAction,
                 onRequestDelete = { id, slot -> pendingDelete = id to slot },
                 onRequestEdit = { id -> editEntryId = id },
-                onNavigateToAddFood = { showFoodPicker = true },
-                onNavigateToQuickAdd = onNavigateToQuickAdd,
+                onRequestAdd = { slot -> pickerSlot = slot },
                 onNavigateToHistory = onNavigateToHistory,
                 onNavigateToGoals = onNavigateToGoals,
             ),
     )
 
     FoodPickerDialog(
-        showFoodPicker = showFoodPicker,
+        pickerSlot = pickerSlot,
         date = state.date.toString(),
         onAddToDiaryFromPicker = onAddToDiaryFromPicker,
         onNavigateToFoodCreate = onNavigateToFoodCreate,
-        onDismiss = { showFoodPicker = false },
+        onNavigateToQuickAdd = onNavigateToQuickAdd,
+        onDismiss = { pickerSlot = null },
     )
 
     if (pendingDelete != null) {
@@ -141,22 +140,28 @@ fun DiaryDayRoot(
 
 @Composable
 private fun FoodPickerDialog(
-    showFoodPicker: Boolean,
+    pickerSlot: MealSlot?,
     date: String,
     onAddToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
+    onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    if (showFoodPicker) {
+    if (pickerSlot != null) {
         val foodPickerViewModel: FoodPickerViewModel =
             koinViewModel {
                 parametersOf(FoodPickerTarget.DIARY, date)
             }
         FoodPickerSheet(
-            isVisible = showFoodPicker,
+            isVisible = true,
+            initialSlot = pickerSlot,
             onAddToDiary = onAddToDiaryFromPicker,
             onAddAsIngredient = { _, _, _, _ -> },
             onNavigateToFoodCreate = onNavigateToFoodCreate,
+            onNavigateToQuickAdd = { quickAddDate, slot ->
+                onDismiss()
+                onNavigateToQuickAdd(quickAddDate, slot)
+            },
             onDismiss = onDismiss,
             viewModel = foodPickerViewModel,
         )
@@ -178,8 +183,7 @@ data class DiaryDayCallbacks(
     val onAction: (DiaryDayAction) -> Unit,
     val onRequestDelete: (String, MealSlot) -> Unit,
     val onRequestEdit: (String) -> Unit,
-    val onNavigateToAddFood: (String) -> Unit,
-    val onNavigateToQuickAdd: () -> Unit,
+    val onRequestAdd: (MealSlot) -> Unit,
     val onNavigateToHistory: () -> Unit,
     val onNavigateToGoals: () -> Unit = {},
 )
@@ -241,6 +245,21 @@ fun DiaryDayScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.diary_title)) },
                 actions = {
+                    IconButton(
+                        onClick = { callbacks.onAction(DiaryDayAction.OnCopyYesterdayClick) },
+                        enabled = !state.isCopyingYesterday,
+                    ) {
+                        Icon(
+                            Icons.Filled.Refresh,
+                            contentDescription = stringResource(R.string.diary_copy_yesterday),
+                        )
+                    }
+                    IconButton(onClick = callbacks.onNavigateToHistory) {
+                        Icon(
+                            Icons.Filled.DateRange,
+                            contentDescription = stringResource(R.string.diary_history),
+                        )
+                    }
                     IconButton(onClick = callbacks.onNavigateToGoals) {
                         Icon(
                             Icons.Filled.Settings,
@@ -251,13 +270,6 @@ fun DiaryDayScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            DiaryDayBottomBar(
-                state = state,
-                onAction = callbacks.onAction,
-                onNavigateToHistory = callbacks.onNavigateToHistory,
-            )
-        },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             state.summary?.let { summary ->
@@ -288,6 +300,7 @@ fun DiaryDayScreen(
                         onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST)) },
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
+                        onRequestAdd = callbacks.onRequestAdd,
                     )
                 }
                 item {
@@ -299,6 +312,7 @@ fun DiaryDayScreen(
                         onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.LUNCH)) },
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
+                        onRequestAdd = callbacks.onRequestAdd,
                     )
                 }
                 item {
@@ -310,6 +324,7 @@ fun DiaryDayScreen(
                         onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.DINNER)) },
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
+                        onRequestAdd = callbacks.onRequestAdd,
                     )
                 }
                 item {
@@ -321,66 +336,19 @@ fun DiaryDayScreen(
                         onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.SNACKS)) },
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
+                        onRequestAdd = callbacks.onRequestAdd,
                     )
                 }
 
                 if (state.isEmptyDay()) {
                     item { Text(stringResource(R.string.diary_empty), modifier = Modifier.padding(16.dp)) }
                 }
-
-                item {
-                    DiaryDayActions(
-                        onNavigateToAddFood = callbacks.onNavigateToAddFood,
-                        date = state.date.toString(),
-                        onNavigateToQuickAdd = callbacks.onNavigateToQuickAdd,
-                    )
-                }
             }
         }
     }
 }
 
-@Composable
-private fun DiaryDayBottomBar(
-    state: DiaryDayState,
-    onAction: (DiaryDayAction) -> Unit,
-    onNavigateToHistory: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        OutlinedButton(
-            onClick = { onAction(DiaryDayAction.OnCopyYesterdayClick) },
-            modifier = Modifier.weight(1f),
-            enabled = !state.isCopyingYesterday,
-        ) { Text(stringResource(R.string.diary_copy_yesterday)) }
-        OutlinedButton(
-            onClick = { onNavigateToHistory() },
-            modifier = Modifier.weight(1f),
-        ) { Text(stringResource(R.string.diary_history)) }
-    }
-}
-
-@Composable
-private fun DiaryDayActions(
-    onNavigateToAddFood: (String) -> Unit,
-    date: String,
-    onNavigateToQuickAdd: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Button(onClick = { onNavigateToAddFood(date) }, modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.diary_add))
-        }
-        Button(onClick = { onNavigateToQuickAdd() }, modifier = Modifier.weight(1f)) {
-            Text(stringResource(R.string.quick_add_title))
-        }
-    }
-}
-
+@Suppress("LongParameterList")
 @Composable
 private fun mealSlotSection(
     slot: MealSlot,
@@ -390,6 +358,7 @@ private fun mealSlotSection(
     onToggle: () -> Unit,
     onEditEntry: (String) -> Unit,
     onRequestDelete: (String, MealSlot) -> Unit,
+    onRequestAdd: (MealSlot) -> Unit,
 ) {
     val summary = entries.sumNutrition()
     CollapsibleMealSlot(
@@ -399,6 +368,7 @@ private fun mealSlotSection(
         onToggle = onToggle,
         onEditEntry = onEditEntry,
         onRequestDelete = { entryId -> onRequestDelete(entryId, slot) },
+        onRequestAdd = { onRequestAdd(slot) },
         summaryKcal = summary.kcal.formatMacro(),
         summaryProtein = summary.proteinG.formatMacro(),
         summaryFat = summary.fatG.formatMacro(),

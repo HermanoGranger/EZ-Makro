@@ -10,7 +10,6 @@
     <string name="diary_slot_snacks">Snacks</string>
     <string name="diary_slot_total">Tagesgesamt</string>
     <string name="diary_kcal">%1$s kcal</string>
-    <string name="diary_add">Hinzufügen</string>
     <string name="diary_add_recipe">Rezept</string>
     <string name="diary_history">Verlauf</string>
     <string name="diary_history_empty">Kein Verlauf</string>
