@@ -496,6 +496,69 @@ class FoodPickerViewModelTest {
             }
         }
 
+    @Test
+    fun `diary barcode hit selects item for AddToDiarySheet`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1"))
+            val vm = createViewModel(target = FoodPickerTarget.DIARY)
+
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+            assertThat(vm.state.value.selectedItemReady).isTrue()
+            assertThat(vm.state.value.selectedItemId).isEqualTo("f1")
+            assertThat(vm.state.value.selectedItemIsRecipe).isFalse()
+        }
+
+    @Test
+    fun `diary barcode miss emits NavigateToFoodCreate with barcode`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(null)
+            val vm = createViewModel(target = FoodPickerTarget.DIARY)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToFoodCreate(barcode = "4000000000000"),
+                )
+            }
+        }
+
+    @Test
+    fun `recipe ingredient barcode hit emits AddAsIngredient`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1", name = "Milch"))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddAsIngredient(
+                        itemId = "f1",
+                        itemName = "Milch",
+                        servingLabel = null,
+                        isRecipe = false,
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun `recipe ingredient barcode miss emits NavigateToFoodCreate with barcode`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(null)
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToFoodCreate(barcode = "4000000000000"),
+                )
+            }
+        }
+
     private fun testFood(
         id: String,
         name: String = "Food $id",
