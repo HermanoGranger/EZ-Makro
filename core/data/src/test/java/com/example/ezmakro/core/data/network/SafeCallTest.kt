@@ -65,6 +65,93 @@ class SafeCallTest {
         }
 
     @Test
+    fun `503 maps to SERVICE_UNAVAILABLE`() =
+        runTest {
+            val engine = MockEngine { _ -> respondError(HttpStatusCode.ServiceUnavailable) }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/busy")
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.SERVICE_UNAVAILABLE))
+        }
+
+    @Test
+    fun `503 is retried with backoff and succeeds on second attempt`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    if (calls == 1) {
+                        respondError(HttpStatusCode.ServiceUnavailable)
+                    } else {
+                        respond(
+                            content = ByteReadChannel("""{"id":"1","name":"apple"}"""),
+                            status = HttpStatusCode.OK,
+                            headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                        )
+                    }
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/busy", retryPolicy = RetryPolicy.onServiceUnavailable)
+
+            assertThat(calls).isEqualTo(2)
+            assertThat(result).isEqualTo(Result.Success(SampleDto("1", "apple")))
+        }
+
+    @Test
+    fun `persistent 503 returns SERVICE_UNAVAILABLE after exhausting retries`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    respondError(HttpStatusCode.ServiceUnavailable)
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/busy", retryPolicy = RetryPolicy.onServiceUnavailable)
+
+            assertThat(calls).isEqualTo(RetryPolicy.onServiceUnavailable.maxAttempts)
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.SERVICE_UNAVAILABLE))
+        }
+
+    @Test
+    fun `503 is not retried without a retry policy`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    respondError(HttpStatusCode.ServiceUnavailable)
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/busy")
+
+            assertThat(calls).isEqualTo(1)
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.SERVICE_UNAVAILABLE))
+        }
+
+    @Test
+    fun `non retryable status is not retried`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    respondError(HttpStatusCode.InternalServerError)
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/boom", retryPolicy = RetryPolicy.onServiceUnavailable)
+
+            assertThat(calls).isEqualTo(1)
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.SERVER_ERROR))
+        }
+
+    @Test
     fun `unresolved address maps to NO_INTERNET`() =
         runTest {
             val engine = MockEngine { _ -> throw java.net.UnknownHostException("no dns") }

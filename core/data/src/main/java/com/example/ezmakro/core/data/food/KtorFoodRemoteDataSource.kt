@@ -3,6 +3,7 @@ package com.example.ezmakro.core.data.food
 import com.example.ezmakro.core.data.food.dto.OffProductResponseDto
 import com.example.ezmakro.core.data.food.dto.OffSearchResponseDto
 import com.example.ezmakro.core.data.food.mapper.toFoodItem
+import com.example.ezmakro.core.data.network.RetryPolicy
 import com.example.ezmakro.core.data.network.get
 import com.example.ezmakro.core.domain.datasource.FoodRemoteDataSource
 import com.example.ezmakro.core.domain.model.FoodItem
@@ -15,6 +16,10 @@ import io.ktor.client.HttpClient
  * OpenFoodFacts remote source. The mandatory User-Agent is set globally by
  * [com.example.ezmakro.core.data.network.HttpClientFactory] and therefore
  * applies to every request issued here.
+ *
+ * OFF returns 503 when its global rate limit is hit; both calls therefore use
+ * [RetryPolicy.onServiceUnavailable] to retry with a conservative backoff
+ * instead of immediately hammering the service again.
  */
 class KtorFoodRemoteDataSource(
     private val httpClient: HttpClient,
@@ -31,13 +36,17 @@ class KtorFoodRemoteDataSource(
                         "json" to 1,
                         "page_size" to DEFAULT_PAGE_SIZE,
                     ),
+                retryPolicy = RetryPolicy.onServiceUnavailable,
             )
         return response.map { dto -> dto.products.mapNotNull { it.toFoodItem() } }
     }
 
     override suspend fun getByBarcode(barcode: String): Result<FoodItem?, DataError.Network> {
         val response: Result<OffProductResponseDto, DataError.Network> =
-            httpClient.get(route = productRoute(barcode))
+            httpClient.get(
+                route = productRoute(barcode),
+                retryPolicy = RetryPolicy.onServiceUnavailable,
+            )
         return response.map { dto ->
             if (dto.status == PRODUCT_FOUND) dto.product?.toFoodItem() else null
         }

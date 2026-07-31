@@ -9,7 +9,7 @@
     <string name="error_too_many_requests">Zu viele Anfragen, bitte später erneut</string>
     <string name="error_payload_too_large">Daten sind zu groß</string>
     <string name="error_server">Serverfehler</string>
-    <string name="error_service_unavailable">Dienst vorübergehend nicht verfügbar</string>
+    <string name="error_service_unavailable">Der Dienst ist gerade überlastet – bitte versuche es später erneut</string>
     <string name="error_serialization">Daten konnten nicht gelesen werden</string>
     <string name="error_disk_full">Speicherplatz ist voll</string>
     <string name="error_unknown">Ein unbekannter Fehler ist aufgetreten</string>

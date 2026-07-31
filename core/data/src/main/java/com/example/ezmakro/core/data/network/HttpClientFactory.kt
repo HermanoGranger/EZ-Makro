@@ -18,7 +18,8 @@ import kotlinx.serialization.json.Json
  * their own routes and set the mandatory User-Agent header per ADR/scope.
  */
 object HttpClientFactory {
-    const val BASE_URL = "https://world.openfoodfacts.org"
+    // api.* ist die für API-Zugriffe vorgesehene Subdomain (statt world.*)
+    const val BASE_URL = "https://world.openfoodfacts.org/api/v2"
 
     /**
      * Mandatory OpenFoodFacts User-Agent (App name, version, contact). OFF
@@ -28,7 +29,7 @@ object HttpClientFactory {
      * TODO(Phase 4): replace the placeholder contact with a real address/URL
      * before release, and wire the version from BuildConfig.
      */
-    const val USER_AGENT = "EZMakro/0.1 (Android; contact: TODO@example.com)"
+    const val USER_AGENT = "EZMakro/0.1 (Android; contact: openfoodfacts.perfume121@passmail.net)"
 
     fun create(engine: HttpClientEngine): HttpClient =
         HttpClient(engine) {

@@ -15,6 +15,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.serialization.ContentConvertException
 import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.serialization.SerializationException
 import java.net.UnknownHostException
 
@@ -26,17 +27,19 @@ import java.net.UnknownHostException
 suspend inline fun <reified Response : Any> HttpClient.get(
     route: String,
     queryParameters: Map<String, Any?> = emptyMap(),
-): Result<Response, DataError.Network> = safeCall { get(route) { applyParameters(queryParameters) } }
+    retryPolicy: RetryPolicy = RetryPolicy.none,
+): Result<Response, DataError.Network> = safeCall({ get(route) { applyParameters(queryParameters) } }, retryPolicy)
 
 suspend inline fun <reified Request : Any, reified Response : Any> HttpClient.post(
     route: String,
     body: Request,
-): Result<Response, DataError.Network> = safeCall { post(route) { setBody(body) } }
+): Result<Response, DataError.Network> = safeCall({ post(route) { setBody(body) } }, RetryPolicy.none)
 
 suspend inline fun <reified Response : Any> HttpClient.delete(
     route: String,
     queryParameters: Map<String, Any?> = emptyMap(),
-): Result<Response, DataError.Network> = safeCall { delete(route) { applyParameters(queryParameters) } }
+): Result<Response, DataError.Network> =
+    safeCall({ delete(route) { applyParameters(queryParameters) } }, RetryPolicy.none)
 
 fun HttpRequestBuilder.applyParameters(queryParameters: Map<String, Any?>) {
     queryParameters.forEach { (key, value) ->
@@ -50,29 +53,40 @@ fun HttpRequestBuilder.applyParameters(queryParameters: Map<String, Any?>) {
     "ReturnCount",
     "MagicNumber",
 )
-suspend inline fun <reified T> safeCall(execute: () -> HttpResponse): Result<T, DataError.Network> {
-    val response =
-        try {
-            execute()
-        } catch (e: UnresolvedAddressException) {
-            AppLogger.e("No internet", e, tag = "safeCall")
-            return Result.Error(DataError.Network.NO_INTERNET)
-        } catch (e: UnknownHostException) {
-            AppLogger.e("No internet", e, tag = "safeCall")
-            return Result.Error(DataError.Network.NO_INTERNET)
-        } catch (e: SerializationException) {
-            AppLogger.e("Serialization failed", e, tag = "safeCall")
-            return Result.Error(DataError.Network.SERIALIZATION)
-        } catch (e: ContentConvertException) {
-            AppLogger.e("Serialization failed", e, tag = "safeCall")
-            return Result.Error(DataError.Network.SERIALIZATION)
-        } catch (e: Exception) {
-            if (e is CancellationException) throw e
-            AppLogger.e("Unknown network error", e, tag = "safeCall")
-            return Result.Error(DataError.Network.UNKNOWN)
-        }
+suspend inline fun <reified T> safeCall(
+    execute: () -> HttpResponse,
+    retryPolicy: RetryPolicy = RetryPolicy.none,
+): Result<T, DataError.Network> {
+    var attempt = 0
+    while (true) {
+        val response =
+            try {
+                execute()
+            } catch (e: UnresolvedAddressException) {
+                AppLogger.e("No internet", e, tag = "safeCall")
+                return Result.Error(DataError.Network.NO_INTERNET)
+            } catch (e: UnknownHostException) {
+                AppLogger.e("No internet", e, tag = "safeCall")
+                return Result.Error(DataError.Network.NO_INTERNET)
+            } catch (e: SerializationException) {
+                AppLogger.e("Serialization failed", e, tag = "safeCall")
+                return Result.Error(DataError.Network.SERIALIZATION)
+            } catch (e: ContentConvertException) {
+                AppLogger.e("Serialization failed", e, tag = "safeCall")
+                return Result.Error(DataError.Network.SERIALIZATION)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                AppLogger.e("Unknown network error", e, tag = "safeCall")
+                return Result.Error(DataError.Network.UNKNOWN)
+            }
 
-    return responseToResult(response)
+        val statusCode = response.status.value
+        if (attempt + 1 >= retryPolicy.maxAttempts || !retryPolicy.isRetryable(statusCode)) {
+            return responseToResult(response)
+        }
+        attempt++
+        delay(retryPolicy.backoffDelay(attempt))
+    }
 }
 
 @Suppress("MagicNumber")
@@ -96,6 +110,7 @@ suspend inline fun <reified T> responseToResult(response: HttpResponse): Result<
         409 -> Result.Error(DataError.Network.CONFLICT)
         413 -> Result.Error(DataError.Network.PAYLOAD_TOO_LARGE)
         429 -> Result.Error(DataError.Network.TOO_MANY_REQUESTS)
+        503 -> Result.Error(DataError.Network.SERVICE_UNAVAILABLE)
         in 500..599 -> Result.Error(DataError.Network.SERVER_ERROR)
         else -> Result.Error(DataError.Network.UNKNOWN)
     }
