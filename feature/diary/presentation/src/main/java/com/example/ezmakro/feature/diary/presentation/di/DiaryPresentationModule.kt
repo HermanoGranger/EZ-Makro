@@ -8,6 +8,7 @@ import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayViewModel
+import com.example.ezmakro.feature.diary.presentation.goals.GoalsViewModel
 import com.example.ezmakro.feature.diary.presentation.history.HistoryViewModel
 import com.example.ezmakro.feature.diary.presentation.quickadd.QuickAddViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -22,6 +23,7 @@ val diaryPresentationModule =
         viewModel {
             DiaryDayViewModel(
                 repository = get(),
+                goalRepository = get(),
                 copyYesterdayUseCase = get(),
                 deleteEntryUseCase = get(),
                 updateEntryUseCase = get(),
@@ -31,6 +33,7 @@ val diaryPresentationModule =
         }
         viewModel { HistoryViewModel(get()) }
         viewModel { QuickAddViewModel(get(), get()) }
+        viewModel { GoalsViewModel(get()) }
 
         factory { AddFoodToDiaryUseCase(get()) }
         factory { AddRecipeToDiaryUseCase(get()) }

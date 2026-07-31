@@ -1,17 +1,17 @@
-package com.example.ezmakro.feature.dashboard.presentation.model
+package com.example.ezmakro.feature.diary.presentation.model
 
 import com.example.ezmakro.core.domain.calculation.Macro
 import com.example.ezmakro.core.domain.calculation.dayNutrition
 import com.example.ezmakro.core.domain.calculation.progress
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.NutritionGoal
-import com.example.ezmakro.core.domain.model.NutritionValues
 
 /**
- * Pre-formatted, presentation-ready dashboard figures. All numbers are already
- * strings so composables never do math or rounding (see [DiaryEntryUi]).
+ * Pre-formatted, presentation-ready summary figures for a diary day. All numbers
+ * are already strings so composables never do math or rounding (see
+ * [DiaryEntryUi]).
  */
-data class DashboardUi(
+data class DiarySummaryUi(
     val remainingKcal: String,
     val consumedKcal: String,
     val goalKcal: String,
@@ -29,19 +29,19 @@ data class MacroRowUi(
 )
 
 /**
- * Build the dashboard UI model from raw domain inputs. [goal] is converted to a
- * [NutritionGoal]; the remaining kcal sign drives [DashboardUi.isOverGoal].
+ * Build the diary summary UI model from raw domain inputs. [goal] is converted
+ * to a [NutritionGoal]; the remaining kcal sign drives [DiarySummaryUi.isOverGoal].
  */
-fun buildDashboardUi(
+fun buildDiarySummary(
     entries: List<DiaryEntry>,
     goal: NutritionGoal,
     macroLabels: (Macro) -> String,
-): DashboardUi {
+): DiarySummaryUi {
     val day = dayNutrition(entries, goal)
     val remaining = day.remaining
     val overGoal = remaining.kcal < 0
 
-    return DashboardUi(
+    return DiarySummaryUi(
         remainingKcal = formatSigned(remaining.kcal),
         consumedKcal = day.consumed.kcal.formatMacro(),
         goalKcal = goal.kcal.formatMacro(),
@@ -81,17 +81,8 @@ fun buildDashboardUi(
     )
 }
 
-internal const val MACRO_DECIMAL_PLACES = 10.0
-
-internal fun Double.formatMacro(): String {
-    val rounded = Math.round(this * MACRO_DECIMAL_PLACES) / MACRO_DECIMAL_PLACES
-    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
-}
-
 /** Format remaining kcal with an explicit leading "+" when still budget remains. */
 private fun formatSigned(value: Double): String {
     val base = value.formatMacro()
     return if (value < 0) base else "+$base"
 }
-
-fun NutritionValues.toConsumedLabels(): String = kcal.formatMacro()

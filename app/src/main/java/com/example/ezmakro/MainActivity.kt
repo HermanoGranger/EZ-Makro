@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -38,10 +37,8 @@ import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
-import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.Goals
-import com.example.ezmakro.feature.dashboard.presentation.goals.navigation.goalsGraph
-import com.example.ezmakro.feature.dashboard.presentation.navigation.Dashboard
-import com.example.ezmakro.feature.dashboard.presentation.navigation.dashboardGraph
+import com.example.ezmakro.feature.diary.presentation.goals.navigation.Goals
+import com.example.ezmakro.feature.diary.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY_DAY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
@@ -94,7 +91,6 @@ class MainActivity : ComponentActivity() {
     private fun AppBottomBar(navController: NavHostController) {
         val items =
             listOf(
-                BottomNavItem(Dashboard, R.string.dashboard_title, R.drawable.ic_dashboard),
                 BottomNavItem(ROUTE_DIARY, R.string.diary_title, R.drawable.ic_diary),
                 BottomNavItem(ROUTE_FOOD, R.string.food_title, R.drawable.ic_food),
                 BottomNavItem(ROUTE_RECIPES, R.string.recipe_title, R.drawable.ic_recipe),
@@ -106,12 +102,7 @@ class MainActivity : ComponentActivity() {
                 val selected =
                     currentDestination
                         ?.hierarchy
-                        ?.any { dest ->
-                            when (val route = item.route) {
-                                is String -> dest.route == route
-                                else -> dest.hasRoute(route::class)
-                            }
-                        } == true
+                        ?.any { dest -> dest.route == item.route } == true
                 NavigationBarItem(
                     selected = selected,
                     onClick = {
@@ -123,12 +114,7 @@ class MainActivity : ComponentActivity() {
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        when (val route = item.route) {
-                            is String -> navController.navigate(route, navOpts, null)
-                            else ->
-                                @Suppress("UNCHECKED_CAST")
-                                navController.navigate(route, navOpts, null)
-                        }
+                        navController.navigate(item.route, navOpts, null)
                     },
                     icon = {
                         Icon(
@@ -153,21 +139,9 @@ class MainActivity : ComponentActivity() {
         val onNavigateBack: () -> Unit = { navController.popBackStack() }
         NavHost(
             navController = navController,
-            startDestination = Dashboard,
+            startDestination = ROUTE_DIARY_DAY,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            dashboardGraph(
-                onNavigateToDiary = { date ->
-                    navController.navigate("$ROUTE_DIARY_DAY?date=$date") {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onNavigateToGoals = { navController.navigate(Goals) },
-            )
             val onNavigateToFoodCreate: (barcode: String?) -> Unit = { barcode ->
                 val route =
                     if (barcode != null) {
@@ -181,6 +155,7 @@ class MainActivity : ComponentActivity() {
                 navController = navController,
                 onAddToDiaryFromPicker = addToDiaryFromPicker,
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
+                onNavigateToGoals = { navController.navigate(Goals) },
             )
             foodGraph(
                 navController = navController,
@@ -274,7 +249,7 @@ class MainActivity : ComponentActivity() {
 }
 
 private data class BottomNavItem(
-    val route: Any,
+    val route: String,
     val labelRes: Int,
     val iconRes: Int,
 )

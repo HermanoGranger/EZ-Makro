@@ -6,13 +6,16 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.DiaryEntryId
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
@@ -20,6 +23,7 @@ import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.feature.diary.presentation.fake.FakeDiaryRepository
+import com.example.ezmakro.feature.diary.presentation.fake.FakeGoalRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -35,7 +39,9 @@ import java.time.LocalDate
 class DiaryDayViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val date = LocalDate.of(2026, 7, 19)
+    private val goal = NutritionGoal(kcal = 2000.0, proteinG = 150.0, fatG = 56.0, carbsG = 225.0, fiberG = 30.0)
     private lateinit var repository: FakeDiaryRepository
+    private lateinit var goals: FakeGoalRepository
     private lateinit var currentDateProvider: CurrentDateProvider
     private lateinit var viewModel: DiaryDayViewModel
 
@@ -71,11 +77,13 @@ class DiaryDayViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeDiaryRepository()
+        goals = FakeGoalRepository(goal)
         currentDateProvider = CurrentDateProvider()
         currentDateProvider.setDate(date)
         viewModel =
             DiaryDayViewModel(
                 repository = repository,
+                goalRepository = goals,
                 copyYesterdayUseCase = CopyYesterdayUseCase(repository),
                 deleteEntryUseCase = DeleteDiaryEntryUseCase(repository),
                 updateEntryUseCase = UpdateDiaryEntryUseCase(repository),
@@ -90,7 +98,7 @@ class DiaryDayViewModelTest {
     }
 
     @Test
-    fun `observeByDate groups entries by slot and computes day total`() =
+    fun `observeByDate groups entries by slot and computes summary`() =
         runTest {
             repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 100.0))
             repository.emitEntry(entry("b", MealSlot.LUNCH, "f2", 100.0))
@@ -99,7 +107,29 @@ class DiaryDayViewModelTest {
             assertThat(state.breakfast.map { it.id }).containsExactly("a")
             assertThat(state.lunch.map { it.id }).containsExactly("b")
             assertThat(state.dinner).isEqualTo(emptyList())
-            assertThat(state.dayTotal?.kcal).isEqualTo("200")
+            assertThat(state.summary?.consumedKcal).isEqualTo("200")
+            assertThat(state.summary?.goalKcal).isEqualTo("2000")
+            assertThat(state.summary?.remainingKcal).isEqualTo("+1800")
+            assertThat(state.summary?.isOverGoal ?: false).isFalse()
+        }
+
+    @Test
+    fun `marks over goal when consumed exceeds target`() =
+        runTest {
+            repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 2500.0))
+
+            val state = viewModel.state.value
+            assertThat(state.summary?.remainingKcal).isEqualTo("-500")
+            assertThat(state.summary?.isOverGoal ?: false).isTrue()
+        }
+
+    @Test
+    fun `empty day shows full goal remaining and not over`() =
+        runTest {
+            val state = viewModel.state.value
+            assertThat(state.summary?.consumedKcal).isEqualTo("0")
+            assertThat(state.summary?.remainingKcal).isEqualTo("+2000")
+            assertThat(state.summary?.isOverGoal ?: false).isFalse()
         }
 
     @Test
@@ -250,5 +280,9 @@ class DiaryDayViewModelTest {
                     .map { it.id },
             ).containsExactly("t1")
             assertThat(viewModel.state.value.breakfast).isEmpty()
+            assertThat(
+                viewModel.state.value.summary
+                    ?.consumedKcal,
+            ).isEqualTo("200")
         }
 }

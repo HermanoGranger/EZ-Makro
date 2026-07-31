@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.dashboard.presentation.goals
+package com.example.ezmakro.feature.diary.presentation.goals
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText

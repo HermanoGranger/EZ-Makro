@@ -21,6 +21,21 @@
     <string name="diary_previous_day">Vorheriger Tag</string>
     <string name="diary_next_day">Nächster Tag</string>
     <string name="diary_today">Heute</string>
+    <string name="diary_configure_goals">Ziele anpassen</string>
+    <string name="diary_collapse_header">Zusammenklappen</string>
+    <string name="diary_expand_header">Ausklappen</string>
+    <string name="diary_summary_remaining_kcal">Restkalorien</string>
+    <string name="diary_summary_consumed_kcal">Verbraucht</string>
+
+    <string name="goals_title">Tagesziele</string>
+    <string name="goals_kcal">Kalorien (kcal)</string>
+    <string name="goals_protein">Protein (g)</string>
+    <string name="goals_fat">Fett (g)</string>
+    <string name="goals_carbs">Kohlenhydrate (g)</string>
+    <string name="goals_fiber">Ballaststoffe (g)</string>
+    <string name="goals_save">Speichern</string>
+    <string name="goals_reset_default">Auf Standard zurücksetzen</string>
+    <string name="goals_error_invalid">Bitte gültige, nicht-negative Werte eingeben</string>
 
     <string name="quick_add_title">Quick Add</string>
     <string name="quick_add_name">Name</string>

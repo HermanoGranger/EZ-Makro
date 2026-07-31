@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.dashboard.presentation.goals
+package com.example.ezmakro.feature.diary.presentation.goals
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,7 +6,7 @@ import com.example.ezmakro.core.domain.model.DefaultNutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.repository.GoalRepository
 import com.example.ezmakro.core.presentation.uitext.UiText
-import com.example.ezmakro.feature.dashboard.presentation.R
+import com.example.ezmakro.feature.diary.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

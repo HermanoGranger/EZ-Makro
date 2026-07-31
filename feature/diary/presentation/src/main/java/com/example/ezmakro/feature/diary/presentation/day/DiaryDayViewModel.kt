@@ -3,9 +3,11 @@ package com.example.ezmakro.feature.diary.presentation.day
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.calculation.Macro
 import com.example.ezmakro.core.domain.model.DiaryEntryId
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.repository.DiaryRepository
+import com.example.ezmakro.core.domain.repository.GoalRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
@@ -23,14 +25,13 @@ import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnMessa
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnQuickAddClick
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnSaveEdit
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnToggleSlot
-import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
-import com.example.ezmakro.feature.diary.presentation.model.formatMacro
-import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
+import com.example.ezmakro.feature.diary.presentation.model.buildDiarySummary
 import com.example.ezmakro.feature.diary.presentation.model.toDiaryEntryUi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -42,6 +43,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class DiaryDayViewModel(
     private val repository: DiaryRepository,
+    private val goalRepository: GoalRepository,
     private val copyYesterdayUseCase: CopyYesterdayUseCase,
     private val deleteEntryUseCase: DeleteDiaryEntryUseCase,
     private val updateEntryUseCase: UpdateDiaryEntryUseCase,
@@ -60,10 +62,12 @@ class DiaryDayViewModel(
         }
 
         currentDateProvider.date
-            .flatMapLatest { d -> repository.observeByDate(d) }
-            .onEach { entries ->
+            .flatMapLatest { d ->
+                repository
+                    .observeByDate(d)
+                    .combine(goalRepository.observeGoal()) { entries, goal -> entries to goal }
+            }.onEach { (entries, goal) ->
                 val ui = entries.map { it.toDiaryEntryUi() }
-                val total = ui.sumNutrition()
                 _state.update {
                     it.copy(
                         date = currentDateProvider.date.value,
@@ -71,16 +75,7 @@ class DiaryDayViewModel(
                         lunch = ui.filter { e -> e.slot == MealSlot.LUNCH },
                         dinner = ui.filter { e -> e.slot == MealSlot.DINNER },
                         snacks = ui.filter { e -> e.slot == MealSlot.SNACKS },
-                        dayTotal =
-                            SlotSummaryUi(
-                                slot = null,
-                                title = "",
-                                kcal = total.kcal.formatMacro(),
-                                protein = total.proteinG.formatMacro(),
-                                fat = total.fatG.formatMacro(),
-                                carbs = total.carbsG.formatMacro(),
-                                fiber = total.fiberG.formatMacro(),
-                            ),
+                        summary = buildDiarySummary(entries, goal, ::macroLabel),
                     )
                 }
             }.launchIn(viewModelScope)
@@ -162,6 +157,15 @@ class DiaryDayViewModel(
     ) {
         viewModelScope.launch { updateEntryUseCase(DiaryEntryId(entryId), amountGrams, portionCount) }
     }
+
+    private fun macroLabel(macro: Macro): String =
+        when (macro) {
+            Macro.PROTEIN -> "Protein"
+            Macro.FAT -> "Fett"
+            Macro.CARBS -> "Kohlenhydrate"
+            Macro.FIBER -> "Ballaststoffe"
+            Macro.KCAL -> "Kalorien"
+        }
 
     private fun emit(event: DiaryDayEvent) {
         viewModelScope.launch { _events.send(event) }

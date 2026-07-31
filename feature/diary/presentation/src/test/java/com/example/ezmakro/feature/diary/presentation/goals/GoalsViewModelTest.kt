@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.dashboard.presentation.goals
+package com.example.ezmakro.feature.diary.presentation.goals
 
 import app.cash.turbine.test
 import assertk.assertThat
@@ -7,7 +7,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import com.example.ezmakro.core.domain.model.DefaultNutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionGoal
-import com.example.ezmakro.feature.dashboard.presentation.fake.FakeGoalRepository
+import com.example.ezmakro.feature.diary.presentation.fake.FakeGoalRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -74,7 +74,7 @@ class GoalsViewModelTest {
 
             assertThat(viewModel.state.value.numberError).isEqualTo(
                 com.example.ezmakro.core.presentation.uitext.UiText
-                    .StringResource(com.example.ezmakro.feature.dashboard.presentation.R.string.goals_error_invalid),
+                    .StringResource(com.example.ezmakro.feature.diary.presentation.R.string.goals_error_invalid),
             )
             assertThat(repository.savedGoals).isEmpty()
         }

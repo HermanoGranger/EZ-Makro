@@ -3,23 +3,24 @@
 package com.example.ezmakro.feature.diary.presentation.day
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -46,7 +47,6 @@ import com.example.ezmakro.core.presentation.diary.DiaryEntryDetailData
 import com.example.ezmakro.core.presentation.diary.EditPortionDialog
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
-import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
 import com.example.ezmakro.feature.diary.presentation.model.formatMacro
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
@@ -55,6 +55,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerView
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -62,6 +63,7 @@ import java.time.format.DateTimeFormatter
 fun DiaryDayRoot(
     onNavigateToQuickAdd: () -> Unit,
     onNavigateToHistory: () -> Unit,
+    onNavigateToGoals: () -> Unit = {},
     onAddToDiaryFromPicker: (
         foodId: String,
         isRecipe: Boolean,
@@ -98,6 +100,7 @@ fun DiaryDayRoot(
                 onNavigateToAddFood = { showFoodPicker = true },
                 onNavigateToQuickAdd = onNavigateToQuickAdd,
                 onNavigateToHistory = onNavigateToHistory,
+                onNavigateToGoals = onNavigateToGoals,
             ),
     )
 
@@ -178,6 +181,7 @@ data class DiaryDayCallbacks(
     val onNavigateToAddFood: (String) -> Unit,
     val onNavigateToQuickAdd: () -> Unit,
     val onNavigateToHistory: () -> Unit,
+    val onNavigateToGoals: () -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -195,6 +199,8 @@ fun DiaryDayScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy") }
+
+    val listState = rememberLazyListState()
 
     if (showDatePicker) {
         val datePickerState =
@@ -233,28 +239,13 @@ fun DiaryDayScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    TextButton(onClick = { showDatePicker = true }) {
-                        Text(state.date.format(dateFormatter))
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { callbacks.onAction(DiaryDayAction.OnPreviousDay) }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                            contentDescription = stringResource(R.string.diary_previous_day),
-                        )
-                    }
-                },
+                title = { Text(stringResource(R.string.diary_title)) },
                 actions = {
-                    IconButton(onClick = { callbacks.onAction(DiaryDayAction.OnNextDay) }) {
+                    IconButton(onClick = callbacks.onNavigateToGoals) {
                         Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = stringResource(R.string.diary_next_day),
+                            Icons.Filled.Settings,
+                            contentDescription = stringResource(R.string.diary_configure_goals),
                         )
-                    }
-                    TextButton(onClick = { callbacks.onAction(DiaryDayAction.OnTodayClick) }) {
-                        Text(stringResource(R.string.diary_today))
                     }
                 },
             )
@@ -268,71 +259,82 @@ fun DiaryDayScreen(
             )
         },
     ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-            state.dayTotal?.let { total ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            state.summary?.let { summary ->
+                CollapsingSummaryHeader(
+                    summary = summary,
+                    listState = listState,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            DiaryDateRow(
+                date = state.date,
+                dateFormatter = dateFormatter,
+                onPreviousDay = { callbacks.onAction(DiaryDayAction.OnPreviousDay) },
+                onNextDay = { callbacks.onAction(DiaryDayAction.OnNextDay) },
+                onTodayClick = { callbacks.onAction(DiaryDayAction.OnTodayClick) },
+                onOpenDatePicker = { showDatePicker = true },
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            ) {
                 item {
-                    SummaryRow(
-                        total.copy(title = stringResource(R.string.diary_slot_total)),
-                        isTotal = true,
+                    mealSlotSection(
+                        slot = MealSlot.BREAKFAST,
+                        title = breakfastTitle,
+                        entries = state.breakfast,
+                        isExpanded = state.expandedSlots.contains(MealSlot.BREAKFAST),
+                        onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST)) },
+                        onEditEntry = callbacks.onRequestEdit,
+                        onRequestDelete = callbacks.onRequestDelete,
                     )
                 }
-            }
+                item {
+                    mealSlotSection(
+                        slot = MealSlot.LUNCH,
+                        title = lunchTitle,
+                        entries = state.lunch,
+                        isExpanded = state.expandedSlots.contains(MealSlot.LUNCH),
+                        onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.LUNCH)) },
+                        onEditEntry = callbacks.onRequestEdit,
+                        onRequestDelete = callbacks.onRequestDelete,
+                    )
+                }
+                item {
+                    mealSlotSection(
+                        slot = MealSlot.DINNER,
+                        title = dinnerTitle,
+                        entries = state.dinner,
+                        isExpanded = state.expandedSlots.contains(MealSlot.DINNER),
+                        onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.DINNER)) },
+                        onEditEntry = callbacks.onRequestEdit,
+                        onRequestDelete = callbacks.onRequestDelete,
+                    )
+                }
+                item {
+                    mealSlotSection(
+                        slot = MealSlot.SNACKS,
+                        title = snacksTitle,
+                        entries = state.snacks,
+                        isExpanded = state.expandedSlots.contains(MealSlot.SNACKS),
+                        onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.SNACKS)) },
+                        onEditEntry = callbacks.onRequestEdit,
+                        onRequestDelete = callbacks.onRequestDelete,
+                    )
+                }
 
-            item {
-                mealSlotSection(
-                    slot = MealSlot.BREAKFAST,
-                    title = breakfastTitle,
-                    entries = state.breakfast,
-                    isExpanded = state.expandedSlots.contains(MealSlot.BREAKFAST),
-                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST)) },
-                    onEditEntry = callbacks.onRequestEdit,
-                    onRequestDelete = callbacks.onRequestDelete,
-                )
-            }
-            item {
-                mealSlotSection(
-                    slot = MealSlot.LUNCH,
-                    title = lunchTitle,
-                    entries = state.lunch,
-                    isExpanded = state.expandedSlots.contains(MealSlot.LUNCH),
-                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.LUNCH)) },
-                    onEditEntry = callbacks.onRequestEdit,
-                    onRequestDelete = callbacks.onRequestDelete,
-                )
-            }
-            item {
-                mealSlotSection(
-                    slot = MealSlot.DINNER,
-                    title = dinnerTitle,
-                    entries = state.dinner,
-                    isExpanded = state.expandedSlots.contains(MealSlot.DINNER),
-                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.DINNER)) },
-                    onEditEntry = callbacks.onRequestEdit,
-                    onRequestDelete = callbacks.onRequestDelete,
-                )
-            }
-            item {
-                mealSlotSection(
-                    slot = MealSlot.SNACKS,
-                    title = snacksTitle,
-                    entries = state.snacks,
-                    isExpanded = state.expandedSlots.contains(MealSlot.SNACKS),
-                    onToggle = { callbacks.onAction(DiaryDayAction.OnToggleSlot(MealSlot.SNACKS)) },
-                    onEditEntry = callbacks.onRequestEdit,
-                    onRequestDelete = callbacks.onRequestDelete,
-                )
-            }
+                if (state.isEmptyDay()) {
+                    item { Text(stringResource(R.string.diary_empty), modifier = Modifier.padding(16.dp)) }
+                }
 
-            if (state.isEmptyDay()) {
-                item { Text(stringResource(R.string.diary_empty), modifier = Modifier.padding(16.dp)) }
-            }
-
-            item {
-                DiaryDayActions(
-                    onNavigateToAddFood = callbacks.onNavigateToAddFood,
-                    date = state.date.toString(),
-                    onNavigateToQuickAdd = callbacks.onNavigateToQuickAdd,
-                )
+                item {
+                    DiaryDayActions(
+                        onNavigateToAddFood = callbacks.onNavigateToAddFood,
+                        date = state.date.toString(),
+                        onNavigateToQuickAdd = callbacks.onNavigateToQuickAdd,
+                    )
+                }
             }
         }
     }
@@ -418,19 +420,37 @@ private fun DiaryEntryUi.toDetailData(): DiaryEntryDetailData =
     )
 
 @Composable
-private fun SummaryRow(
-    summary: SlotSummaryUi,
-    isTotal: Boolean,
+private fun DiaryDateRow(
+    date: LocalDate,
+    dateFormatter: DateTimeFormatter,
+    onPreviousDay: () -> Unit,
+    onNextDay: () -> Unit,
+    onTodayClick: () -> Unit,
+    onOpenDatePicker: () -> Unit,
 ) {
-    val titleStyle = MaterialTheme.typography.titleMedium
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = if (isTotal) 12.dp else 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(summary.title, modifier = Modifier.weight(1f), style = titleStyle)
-        Text("${summary.kcal} kcal", style = titleStyle)
+        IconButton(onClick = onPreviousDay) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = stringResource(R.string.diary_previous_day),
+            )
+        }
+        TextButton(onClick = onOpenDatePicker, modifier = Modifier.weight(1f)) {
+            Text(date.format(dateFormatter))
+        }
+        IconButton(onClick = onNextDay) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.diary_next_day),
+            )
+        }
+        TextButton(onClick = onTodayClick) {
+            Text(stringResource(R.string.diary_today))
+        }
     }
-    if (isTotal) HorizontalDivider()
 }
 
 @Composable

@@ -3,15 +3,18 @@ package com.example.ezmakro.feature.diary.presentation.day
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.example.ezmakro.core.domain.calculation.Macro
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
-import com.example.ezmakro.feature.diary.presentation.model.SlotSummaryUi
+import com.example.ezmakro.feature.diary.presentation.model.DiarySummaryUi
+import com.example.ezmakro.feature.diary.presentation.model.MacroRowUi
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -56,7 +59,7 @@ class DiaryDayScreenTest {
         )
 
     @Test
-    fun displaysEntriesGroupedBySlot_withDayTotal() {
+    fun displaysEntriesGroupedBySlot_withSummaryHeader() {
         val state =
             DiaryDayState(
                 date = LocalDate.of(2026, 7, 19),
@@ -64,16 +67,7 @@ class DiaryDayScreenTest {
                 lunch = listOf(entryUi("b", MealSlot.LUNCH, "Reis", "150")),
                 dinner = emptyList(),
                 snacks = emptyList(),
-                dayTotal =
-                    SlotSummaryUi(
-                        slot = null,
-                        title = "Tagesgesamt",
-                        kcal = "300",
-                        protein = "30",
-                        fat = "6",
-                        carbs = "14",
-                        fiber = "2",
-                    ),
+                summary = sampleSummary(),
             )
 
         composeTestRule.setContent {
@@ -94,9 +88,86 @@ class DiaryDayScreenTest {
 
         composeTestRule.onNodeWithText("Haferflocken").assertIsDisplayed()
         composeTestRule.onNodeWithText("Reis").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Tagesgesamt").assertIsDisplayed()
-        composeTestRule.onNodeWithText("300 kcal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+1700").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Restkalorien").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Protein").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kohlenhydrate").assertIsDisplayed()
     }
+
+    @Test
+    fun summaryHeader_showsNegativeRemaining_whenOverGoal() {
+        val state =
+            DiaryDayState(
+                date = LocalDate.of(2026, 7, 19),
+                summary = sampleSummary(remainingKcal = "-500", isOverGoal = true),
+            )
+
+        composeTestRule.setContent {
+            DiaryDayScreen(
+                state = state,
+                snackbarHostState = SnackbarHostState(),
+                callbacks =
+                    DiaryDayCallbacks(
+                        onAction = {},
+                        onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
+                        onNavigateToAddFood = {},
+                        onNavigateToQuickAdd = {},
+                        onNavigateToHistory = {},
+                    ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("-500").assertIsDisplayed()
+    }
+
+    @Test
+    fun collapsedSummaryHeader_showsExpandChevronAndBars() {
+        composeTestRule.setContent {
+            CollapsingSummaryHeaderContent(
+                summary = sampleSummary(),
+                fraction = 1f,
+                onToggleCollapse = {},
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Ausklappen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Protein").assertIsDisplayed()
+    }
+
+    @Test
+    fun summaryHeader_chevronToggleInvokesCallback() {
+        var toggled = false
+        composeTestRule.setContent {
+            CollapsingSummaryHeaderContent(
+                summary = sampleSummary(),
+                fraction = 0f,
+                onToggleCollapse = { toggled = true },
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Zusammenklappen").performClick()
+        assertEquals(true, toggled)
+    }
+
+    private fun sampleSummary(
+        remainingKcal: String = "+1700",
+        isOverGoal: Boolean = false,
+    ): DiarySummaryUi =
+        DiarySummaryUi(
+            remainingKcal = remainingKcal,
+            consumedKcal = "300",
+            goalKcal = "2000",
+            kcalProgress = 0.15f,
+            isOverGoal = isOverGoal,
+            macros =
+                listOf(
+                    MacroRowUi(Macro.PROTEIN, "Protein", "30", "150", 0.2f),
+                    MacroRowUi(Macro.FAT, "Fett", "15", "56", 0.27f),
+                    MacroRowUi(Macro.CARBS, "Kohlenhydrate", "60", "225", 0.27f),
+                    MacroRowUi(Macro.FIBER, "Ballaststoffe", "8", "30", 0.27f),
+                ),
+        )
 
     @Test
     fun showsEmptyState_whenNoEntries() {

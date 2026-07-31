@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.dashboard.presentation.fake
+package com.example.ezmakro.feature.diary.presentation.fake
 
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.repository.GoalRepository

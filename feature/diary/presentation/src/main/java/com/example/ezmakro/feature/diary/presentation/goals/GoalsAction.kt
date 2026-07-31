@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.dashboard.presentation.goals
+package com.example.ezmakro.feature.diary.presentation.goals
 
 sealed interface GoalsAction {
     data class OnKcalChange(
