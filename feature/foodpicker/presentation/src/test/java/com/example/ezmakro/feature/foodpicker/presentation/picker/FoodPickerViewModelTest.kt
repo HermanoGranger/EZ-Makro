@@ -420,6 +420,82 @@ class FoodPickerViewModelTest {
             }
         }
 
+    @Test
+    fun `browse foodClick emits NavigateToFoodDetail and marks food as used`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1", lastUsedAt = 100L)))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+                assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+            }
+        }
+
+    @Test
+    fun `browse foodClick on online item does not mark used and emits NavigateToFoodDetail`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+                assertThat(fakeFoodRepository.lastMarkedUsed).isNull()
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+            }
+        }
+
+    @Test
+    fun `browse recipeClick marks recipe as used and does not select it`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
+
+                assertThat(fakeRecipeRepository.lastMarkedUsed).isEqualTo(RecipeId("r1"))
+                assertThat(vm.state.value.selectedItemReady).isFalse()
+                assertThat(vm.state.value.selectedItemId).isNull()
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `browse barcode hit emits NavigateToFoodDetail`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1"))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+                assertThat(vm.state.value.selectedItemReady).isFalse()
+            }
+        }
+
+    @Test
+    fun `browse barcode miss emits NavigateToFoodCreate with barcode`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(null)
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToFoodCreate(barcode = "4000000000000"),
+                )
+            }
+        }
+
     private fun testFood(
         id: String,
         name: String = "Food $id",
@@ -496,7 +572,9 @@ private class FakeFoodRepository : FoodRepository {
 
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> = searchResult
 
-    override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> = Result.Success(null)
+    var lookupResult: Result<FoodItem?, DataError> = Result.Success(null)
+
+    override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> = lookupResult
 
     override suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local> = Result.Success(Unit)
 

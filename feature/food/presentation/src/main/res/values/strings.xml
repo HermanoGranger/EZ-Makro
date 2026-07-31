@@ -1,16 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="food_search_title">Lebensmittel</string>
-    <string name="food_search_hint">Suchen</string>
-    <string name="food_search_online">Online suchen</string>
-    <string name="food_section_favorites">Favoriten</string>
-    <string name="food_section_recent">Zuletzt verwendet</string>
-    <string name="food_section_local_results">Lokale Treffer</string>
-    <string name="food_section_online_results">OpenFoodFacts</string>
-    <string name="food_empty_favorites">Noch keine Favoriten</string>
     <string name="food_empty_search">Keine Treffer</string>
-    <string name="food_scan_barcode">Barcode scannen</string>
-    <string name="food_create_own">Eigenes Lebensmittel</string>
 
     <string name="food_detail_per_100g">Pro 100 g</string>
     <string name="food_detail_kcal">Kalorien</string>
@@ -46,8 +37,4 @@
     <string name="food_edit_save">Speichern</string>
     <string name="food_edit_error_name_blank">Name darf nicht leer sein</string>
     <string name="food_edit_error_invalid_number">Ungültiger Wert</string>
-
-    <string name="food_scan_title">Barcode scannen</string>
-    <string name="food_scan_permission_required">Kamerazugriff erforderlich</string>
-    <string name="food_scan_not_found">Kein Treffer – lege ein eigenes Lebensmittel an</string>
 </resources>

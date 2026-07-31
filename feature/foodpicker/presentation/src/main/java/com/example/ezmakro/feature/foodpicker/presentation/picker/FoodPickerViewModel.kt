@@ -176,6 +176,13 @@ class FoodPickerViewModel(
                     ),
                 )
             }
+        } else if (_state.value.targetContext == FoodPickerTarget.BROWSE) {
+            if (onlineItem == null) {
+                viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
+            }
+            viewModelScope.launch {
+                _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
+            }
         } else {
             if (onlineItem == null) {
                 viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
@@ -210,7 +217,7 @@ class FoodPickerViewModel(
                     ),
                 )
             }
-        } else {
+        } else if (_state.value.targetContext != FoodPickerTarget.BROWSE) {
             _state.update {
                 it.copy(
                     selectedItemReady = true,
@@ -266,28 +273,44 @@ class FoodPickerViewModel(
                 is Result.Success -> {
                     _state.update { it.copy(isLookingUpBarcode = false) }
                     val food = result.data
-                    if (food != null) {
-                        if (_state.value.targetContext == FoodPickerTarget.DIARY) {
-                            _state.update {
-                                it.copy(
-                                    selectedItemReady = true,
-                                    selectedItemId = food.id.value,
-                                    selectedItemIsRecipe = false,
-                                    selectedItemHasServingUnit = food.servingUnit != null,
-                                )
+                    when (_state.value.targetContext) {
+                        FoodPickerTarget.DIARY -> {
+                            if (food != null) {
+                                _state.update {
+                                    it.copy(
+                                        selectedItemReady = true,
+                                        selectedItemId = food.id.value,
+                                        selectedItemIsRecipe = false,
+                                        selectedItemHasServingUnit = food.servingUnit != null,
+                                    )
+                                }
+                            } else {
+                                _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
                             }
-                        } else {
-                            _events.send(
-                                FoodPickerEvent.AddAsIngredient(
-                                    itemId = food.id.value,
-                                    itemName = food.name,
-                                    servingLabel = food.servingUnit?.label,
-                                    isRecipe = false,
-                                ),
-                            )
                         }
-                    } else {
-                        _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
+
+                        FoodPickerTarget.BROWSE -> {
+                            if (food != null) {
+                                _events.send(FoodPickerEvent.NavigateToFoodDetail(food.id.value))
+                            } else {
+                                _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
+                            }
+                        }
+
+                        FoodPickerTarget.RECIPE_INGREDIENT -> {
+                            if (food != null) {
+                                _events.send(
+                                    FoodPickerEvent.AddAsIngredient(
+                                        itemId = food.id.value,
+                                        itemName = food.name,
+                                        servingLabel = food.servingUnit?.label,
+                                        isRecipe = false,
+                                    ),
+                                )
+                            } else {
+                                _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
+                            }
+                        }
                     }
                 }
 

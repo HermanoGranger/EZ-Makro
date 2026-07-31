@@ -100,21 +100,21 @@ fun FoodPickerSheet(
         sheetState = sheetState,
         shape = remember { RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) },
     ) {
-        FoodPickerSheetContent(state = state, onAction = viewModel::onAction)
+        FoodPickerContent(
+            state = state,
+            onAction = viewModel::onAction,
+            modifier = Modifier.fillMaxWidth().height(500.dp),
+        )
     }
 }
 
 @Composable
-private fun FoodPickerSheetContent(
+fun FoodPickerContent(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(500.dp),
-    ) {
+    Column(modifier = modifier) {
         if (state.targetContext == FoodPickerTarget.DIARY) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 4.dp),

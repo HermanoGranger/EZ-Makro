@@ -28,7 +28,6 @@ class FoodRoutesTest {
 
     @Test
     fun objectRoutes_encodeAsUnit() {
-        assertEquals("{}", Json.encodeToString(FoodSearch()))
-        assertEquals("{}", Json.encodeToString(BarcodeScan))
+        assertEquals("{}", Json.encodeToString(FoodSearch))
     }
 }

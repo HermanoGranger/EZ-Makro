@@ -37,7 +37,7 @@ data class FoodPickerState(
 
 enum class FoodPickerTab { BARCODE, SEARCH, FAVORITES }
 
-enum class FoodPickerTarget { DIARY, RECIPE_INGREDIENT }
+enum class FoodPickerTarget { DIARY, RECIPE_INGREDIENT, BROWSE }
 
 data class PickerFoodUi(
     val id: String,

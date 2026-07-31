@@ -9,7 +9,6 @@ import androidx.navigation.navigation
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.feature.food.presentation.detail.FoodDetailRoot
 import com.example.ezmakro.feature.food.presentation.edit.FoodEditRoot
-import com.example.ezmakro.feature.food.presentation.scan.BarcodeScanRoot
 import com.example.ezmakro.feature.food.presentation.search.FoodSearchRoot
 import kotlinx.serialization.Serializable
 
@@ -18,12 +17,7 @@ import kotlinx.serialization.Serializable
 // KClass.serializer() companion-resolution edge case in Navigation 2.9.
 
 @Serializable
-object BarcodeScan
-
-@Serializable
-data class FoodSearch(
-    val addToDiaryDate: String? = null,
-)
+object FoodSearch
 
 @Serializable
 data class FoodDetail(
@@ -46,7 +40,6 @@ object Food
 
 const val ROUTE_FOOD = "food"
 const val ROUTE_SEARCH = "food_search"
-const val ROUTE_SEARCH_PARAM_DATE = "addToDiaryDate"
 
 // Route patterns for composable registration (include {param} placeholders)
 internal const val ROUTE_DETAIL_PATTERN = "food_detail/{foodId}"
@@ -58,7 +51,6 @@ internal const val ROUTE_EDIT = "food_edit"
 internal const val ROUTE_DETAIL_PARAM_ID = "foodId"
 internal const val ROUTE_EDIT_PARAM_ID = "foodId"
 internal const val ROUTE_EDIT_PARAM_BARCODE = "prefillBarcode"
-internal const val ROUTE_SCAN = "barcode_scan"
 
 internal const val EDIT_ROUTE_MISSING_ID = "_none_"
 
@@ -78,7 +70,6 @@ fun NavGraphBuilder.foodGraph(
         searchComposable(navController, onAddToDiary)
         detailComposable(navController, onNavigateBack)
         editComposable(navController, onNavigateBack)
-        scanComposable(navController, onNavigateBack)
     }
 }
 
@@ -86,19 +77,9 @@ private fun NavGraphBuilder.searchComposable(
     navController: NavHostController,
     onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
 ) {
-    composable(
-        route = "$ROUTE_SEARCH?$ROUTE_SEARCH_PARAM_DATE={$ROUTE_SEARCH_PARAM_DATE}",
-        arguments =
-            listOf(
-                navArgument(ROUTE_SEARCH_PARAM_DATE) {
-                    type = NavType.StringType
-                    defaultValue = ""
-                },
-            ),
-    ) {
+    composable(route = ROUTE_SEARCH) {
         FoodSearchRoot(
             onNavigateToDetail = { foodId -> navController.navigate("$ROUTE_DETAIL/$foodId") },
-            onNavigateToScanner = { navController.navigate(ROUTE_SCAN) },
             onNavigateToCreate = { barcode ->
                 val route =
                     if (barcode != null) {
@@ -157,27 +138,6 @@ private fun NavGraphBuilder.editComposable(
             prefillBarcode = prefillBarcode,
             onNavigateBack = onNavigateBack,
             onSaved = { navController.popBackStack() },
-        )
-    }
-}
-
-private fun NavGraphBuilder.scanComposable(
-    navController: NavHostController,
-    onNavigateBack: () -> Unit,
-) {
-    composable(route = ROUTE_SCAN) {
-        BarcodeScanRoot(
-            onNavigateBack = onNavigateBack,
-            onNavigateToDetail = { foodId -> navController.navigate("$ROUTE_DETAIL/$foodId") },
-            onNavigateToCreate = { barcode ->
-                val route =
-                    if (barcode != null) {
-                        "$ROUTE_EDIT/$EDIT_ROUTE_MISSING_ID?$ROUTE_EDIT_PARAM_BARCODE=$barcode"
-                    } else {
-                        "$ROUTE_EDIT/$EDIT_ROUTE_MISSING_ID"
-                    }
-                navController.navigate(route)
-            },
         )
     }
 }

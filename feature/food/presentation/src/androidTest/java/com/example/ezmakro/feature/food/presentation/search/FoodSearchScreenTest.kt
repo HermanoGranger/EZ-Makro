@@ -2,10 +2,12 @@ package com.example.ezmakro.feature.food.presentation.search
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.example.ezmakro.feature.food.presentation.model.FoodUi
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerAction
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerState
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTab
+import com.example.ezmakro.feature.foodpicker.presentation.picker.PickerFoodUi
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -14,107 +16,78 @@ class FoodSearchScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val favoriteFood =
-        FoodUi(
+    private val food =
+        PickerFoodUi(
             id = "1",
             name = "Apple",
-            barcode = null,
-            kcalPer100g = "52",
-            proteinPer100g = "0",
-            fatPer100g = "0",
-            carbsPer100g = "14",
-            fiberPer100g = "2",
+            kcalPer100g = 52.0,
             servingLabel = null,
-            isUserCreated = false,
             isFavorite = true,
-            editStatus = com.example.ezmakro.feature.food.presentation.model.FoodEditStatusUi.Original,
         )
 
     @Test
-    fun displaysFavoritesSection_whenNotQuerying() {
+    fun showsTitleAndTabs() {
         composeTestRule.setContent {
             FoodSearchScreen(
-                state =
-                    FoodSearchState(
-                        favorites = listOf(favoriteFood),
-                        recent = emptyList(),
-                    ),
+                state = FoodPickerState(),
                 onAction = {},
             )
         }
 
-        composeTestRule.onNodeWithText("Apple").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Lebensmittel").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Barcode").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Suche").assertIsDisplayed()
         composeTestRule.onNodeWithText("Favoriten").assertIsDisplayed()
     }
 
     @Test
-    fun doesNotShowFavoritesSection_whenQuerying() {
+    fun showsRecentFoods_inSearchTab() {
         composeTestRule.setContent {
             FoodSearchScreen(
-                state =
-                    FoodSearchState(
-                        query = "app",
-                        favorites = listOf(favoriteFood),
-                        localResults = listOf(favoriteFood),
-                    ),
+                state = FoodPickerState(recentFoods = listOf(food)),
                 onAction = {},
             )
         }
 
-        composeTestRule.onNodeWithText("Favoriten").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Lokale Treffer").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zuletzt verwendet").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Apple").assertIsDisplayed()
     }
 
     @Test
-    fun clickingFavoriteIcon_triggersToggleAction() {
-        var toggledId: String? = null
+    fun clickingRecentFood_triggersFoodClickAction() {
+        var clickedId: String? = null
         composeTestRule.setContent {
             FoodSearchScreen(
-                state = FoodSearchState(favorites = listOf(favoriteFood)),
+                state = FoodPickerState(recentFoods = listOf(food)),
                 onAction = { action ->
-                    if (action is FoodSearchAction.OnToggleFavorite) toggledId = action.foodId
-                },
-            )
-        }
-
-        composeTestRule
-            .onNodeWithContentDescription("Aus Favoriten entfernen")
-            .performClick()
-
-        assertEquals("1", toggledId)
-    }
-
-    @Test
-    fun clickingFoodRow_triggersNavigationAction() {
-        var navigatedId: String? = null
-        composeTestRule.setContent {
-            FoodSearchScreen(
-                state = FoodSearchState(favorites = listOf(favoriteFood)),
-                onAction = { action ->
-                    if (action is FoodSearchAction.OnFoodClick) navigatedId = action.foodId
+                    if (action is FoodPickerAction.OnFoodClick) clickedId = action.foodId
                 },
             )
         }
 
         composeTestRule.onNodeWithText("Apple").performClick()
 
-        assertEquals("1", navigatedId)
+        assertEquals("1", clickedId)
     }
 
     @Test
-    fun onlineSearchButton_triggersSearchAction() {
-        var searched = false
+    fun clickingFavoriteFood_triggersFoodClickAction() {
+        var clickedId: String? = null
         composeTestRule.setContent {
             FoodSearchScreen(
-                state = FoodSearchState(query = "app", localResults = listOf(favoriteFood)),
+                state =
+                    FoodPickerState(
+                        activeTab = FoodPickerTab.FAVORITES,
+                        favoriteFoods = listOf(food),
+                    ),
                 onAction = { action ->
-                    if (action is FoodSearchAction.OnSearchOnlineClick) searched = true
+                    if (action is FoodPickerAction.OnFoodClick) clickedId = action.foodId
                 },
             )
         }
 
-        composeTestRule.onNodeWithText("Online suchen").performClick()
+        composeTestRule.onNodeWithText("Apple").performClick()
 
-        assertEquals(true, searched)
+        assertEquals("1", clickedId)
     }
 }

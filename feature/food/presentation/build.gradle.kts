@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:presentation"))
     implementation(project(":core:design-system"))
+    implementation(project(":feature:foodpicker:presentation"))
 
     implementation(libs.findLibrary("koin-android").get())
     implementation(libs.findLibrary("koin-androidx-compose").get())
@@ -37,8 +38,6 @@ dependencies {
     implementation(libs.findLibrary("androidx-lifecycle-viewmodel-compose").get())
     implementation(libs.findLibrary("androidx-lifecycle-runtime-compose").get())
     implementation(libs.findLibrary("androidx-navigation-compose").get())
-
-    implementation(libs.findBundle("camerax").get())
 
     testImplementation(libs.findLibrary("junit5-jupiter-aggregator").get())
     testImplementation(libs.findLibrary("assertk").get())
