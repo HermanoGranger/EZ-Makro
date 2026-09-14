@@ -43,6 +43,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.picker.search.SearchT
 fun FoodPickerSheet(
     isVisible: Boolean,
     initialSlot: MealSlot? = null,
+    date: String? = null,
     onAddToDiary: (
         foodId: String,
         isRecipe: Boolean,
@@ -62,8 +63,9 @@ fun FoodPickerSheet(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    LaunchedEffect(initialSlot) {
+    LaunchedEffect(initialSlot, date) {
         initialSlot?.let { viewModel.onAction(FoodPickerAction.OnSlotSet(it)) }
+        date?.let { viewModel.onAction(FoodPickerAction.OnDateSet(it)) }
     }
 
     ObserveAsEvents(viewModel.events) { event ->

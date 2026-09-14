@@ -155,6 +155,7 @@ private fun FoodPickerDialog(
         FoodPickerSheet(
             isVisible = true,
             initialSlot = pickerSlot,
+            date = date,
             onAddToDiary = onAddToDiaryFromPicker,
             onAddAsIngredient = { _, _, _, _ -> },
             onNavigateToFoodCreate = onNavigateToFoodCreate,

@@ -72,6 +72,7 @@ class FoodPickerViewModel(
         observeFavoriteRecipes()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     fun onAction(action: FoodPickerAction) {
         when (action) {
             is FoodPickerAction.OnTabSelected -> {
@@ -126,6 +127,9 @@ class FoodPickerViewModel(
 
             is FoodPickerAction.OnSlotSet ->
                 _state.update { it.copy(slot = action.slot) }
+
+            is FoodPickerAction.OnDateSet ->
+                _state.update { it.copy(targetDate = action.date) }
 
             is FoodPickerAction.OnToggleFavorite -> {
                 viewModelScope.launch {

@@ -84,7 +84,7 @@ private fun NavGraphBuilder.dayComposable(
     onNavigateToGoals: () -> Unit,
 ) {
     composable(
-        route = ROUTE_DIARY_DAY,
+        route = "$ROUTE_DIARY_DAY?$ROUTE_DIARY_DAY_PARAM_DATE={$ROUTE_DIARY_DAY_PARAM_DATE}",
         arguments =
             listOf(
                 navArgument(ROUTE_DIARY_DAY_PARAM_DATE) {
@@ -107,7 +107,9 @@ private fun NavGraphBuilder.dayComposable(
 
 private fun NavGraphBuilder.quickAddComposable(navController: NavHostController) {
     composable(
-        route = ROUTE_QUICK_ADD,
+        route =
+            "$ROUTE_QUICK_ADD?$ROUTE_DIARY_DAY_PARAM_DATE={$ROUTE_DIARY_DAY_PARAM_DATE}" +
+                "&$ROUTE_QUICK_ADD_PARAM_SLOT={$ROUTE_QUICK_ADD_PARAM_SLOT}",
         arguments =
             listOf(
                 navArgument(ROUTE_DIARY_DAY_PARAM_DATE) {

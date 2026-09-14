@@ -51,6 +51,10 @@ sealed interface FoodPickerAction {
         val slot: MealSlot,
     ) : FoodPickerAction
 
+    data class OnDateSet(
+        val date: String,
+    ) : FoodPickerAction
+
     data class OnToggleFavorite(
         val foodId: String,
     ) : FoodPickerAction

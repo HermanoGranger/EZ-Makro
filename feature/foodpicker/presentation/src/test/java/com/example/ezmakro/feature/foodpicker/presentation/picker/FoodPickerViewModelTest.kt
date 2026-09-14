@@ -216,6 +216,61 @@ class FoodPickerViewModelTest {
         }
 
     @Test
+    fun `OnDateSet updates targetDate in state`() =
+        runTest {
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnDateSet("2026-08-03"))
+
+            assertThat(vm.state.value.targetDate).isEqualTo("2026-08-03")
+        }
+
+    @Test
+    fun `confirmAddToDiary uses date provided via OnDateSet instead of stale construction date`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(targetDate = "2026-07-19")
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnDateSet("2026-08-03"))
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.LUNCH,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddToDiary(
+                        foodId = "f1",
+                        isRecipe = false,
+                        date = "2026-08-03",
+                        slot = MealSlot.LUNCH,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+            }
+        }
+
+    @Test
+    fun `OnQuickAddClick uses date provided via OnDateSet instead of stale construction date`() =
+        runTest {
+            val vm = createViewModel(targetDate = "2026-07-19")
+            vm.onAction(FoodPickerAction.OnDateSet("2026-08-03"))
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnQuickAddClick)
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.NavigateToQuickAdd(date = "2026-08-03", slot = MealSlot.BREAKFAST),
+                )
+            }
+        }
+
+    @Test
     fun `OnQuickAddClick emits NavigateToQuickAdd with slot`() =
         runTest {
             val vm = createViewModel(targetDate = "2026-07-19")
