@@ -40,7 +40,6 @@ import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.Goals
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
-import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY_DAY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
@@ -139,7 +138,7 @@ class MainActivity : ComponentActivity() {
         val onNavigateBack: () -> Unit = { navController.popBackStack() }
         NavHost(
             navController = navController,
-            startDestination = ROUTE_DIARY_DAY,
+            startDestination = ROUTE_DIARY,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             val onNavigateToFoodCreate: (barcode: String?) -> Unit = { barcode ->
