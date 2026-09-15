@@ -336,6 +336,8 @@ graph TD
     A[Phase 1 Dashboard-Merge] --> B[Phase 2 Per-Slot-Buttons]
     A --> C[Phase 3 Picker-Konsolidierung]
     B --> C
+    C --> D[Phase 4 FoodPicker über alle Tabs]
+    B --> D
 ```
 
 **Key Dependencies:**
@@ -348,6 +350,10 @@ graph TD
 - **Phase 3** (Picker-Konsolidierung) kann technisch unabhängig umgesetzt
   werden, sollte aber nach Phase 2 erfolgen, damit der fixe Slot-Kontext
   gleich mit eingeplant wird statt später nachgerüstet zu werden.
+- **Phase 4** (FoodPicker über alle Tabs) baut auf Phase 2 (`slot`-Flow,
+  `AddToDiarySheet(fixedSlot)`) und Phase 3 (`FoodPickerContent` als kanonische
+  Implementierung) auf. Es konsolidiert das Tap-/„+"-Verhalten über alle drei
+  Tabs und verlegt den Add-Button zusätzlich auf die Detailseiten.
 
 ---
 
@@ -389,7 +395,189 @@ Niemals automatisch committen. Erst nach explizitem Befehl vom User
 
 ---
 
-**Document Version:** 1.0
+## 🔲 Phase 4 — FoodPicker über alle Tabs vereinheitlichen (Tagebuch / Lebensmittel / Rezepte)
+
+**Kontext:** Der Picker wird aus drei Kontexten geöffnet (`DIARY` über den
+Slot-"+"-Button, `BROWSE` über den Food-Tab-Vollbild-Wrapper,
+`RECIPE_INGREDIENT` über den Rezept-Editor), verhält sich aber inkonsistent:
+Im Food-Tab zeigt ein Tap auf einen Online-Suchtreffer „Keine Treffer"
+statt der Detailseite (Bug), Rezept-Zeilen navigieren nicht zur
+Detailseite, und das Hinzufügen läuft je nach Tab anders.
+Ziel: ein konsistentes Muster — **Tap → Detailseite**, **„+" →
+kontextabhängig hinzufügen**, plus **Add-Button direkt auf den
+Detailseiten**.
+
+### Ziel
+
+- Tap auf eine Zeile (Lebensmittel **oder** Rezept) navigiert **immer** auf
+  die Detailseite (Makros sichtbar) — in allen drei Tabs.
+- „+"-IconButton (neben dem Favoriten-Stern) fügt kontextabhängig hinzu:
+  - `DIARY`: direkt zum Slot, an dem „+" gedrückt wurde (kein Dialog)
+  - `BROWSE` (Food-Tab, kein Slot-Kontext): `AddToDiarySheet` mit Slot-Auswahl
+  - `RECIPE_INGREDIENT`: als Zutat zum Rezept (unverändert)
+- Bugfix: Online-Suchtreffer im Food-Tab zeigen beim Tap Details statt
+  „Keine Treffer".
+- Food- und Rezept-Detailseiten bekommen einen „+"-Button (TopAppBar), der
+  direkt einfügt (mit Slot-Auswahl nur bei fehlendem Slot-Kontext).
+- Reaktivierung des toten BROWSE-Hinzufüge-Flows (`confirmAddToDiary` bricht
+  heute vorzeitig ab, weil `targetDate == null`).
+
+### Design-Entscheidungen (vorab geklärt)
+
+1. **Tap → immer Detailseite.** Es gibt keine Aktionen mehr, die per Tap
+   direkt einfügen. Das Hinzufügen passiert ausschließlich über „+".
+2. **Rezepte navigieren ebenfalls zur Detailseite** — neues Event
+   `NavigateToRecipeDetail`, analog zu `NavigateToFoodDetail`.
+3. **Add-Button auf der Detailseite.** Ablauf: erst Details ansehen, dann
+   Hinzufügen.
+4. **DIARY-Ziel ist über Nav-Routen mit `slot`/`date` erreichbar.** Die heute
+   tote Kette `NavigateToFoodDetail`/`NavigateToRecipeDetail` im
+   Diary-Kontext wird neu verdrahtet (Events sind heute No-op in
+   `FoodPickerSheet`). Routen
+   `food_detail/{foodId}?slot={slot}&date={date}` und
+   `recipe_detail/{recipeId}?slot={slot}&date={date}` tragen den Kontext.
+5. **`navArgument("slot")`/`navArgument("date")` mit `defaultValue = ""`** —
+   Pflicht, sonst schlägt das Inflaten des Nav-Graphs fehl (leere Nav-Pakete).
+6. **Datum-Fallback `LocalDate.now().toString()`** in `confirmAddToDiary`
+   reaktiviert den BROWSE-Hinzufüge-Flow (`targetDate ?: ...`);
+   `yyyy-MM-dd` ist kompatibel mit `LocalDate.parse` in `makeAddFoodToDiary`.
+7. **`AddToDiarySheet` wandert in `FoodPickerContent`**, damit der
+   Selection-Zustand in beiden Wrappern (Sheet & Vollbild) sichtbar ist.
+8. **`onQuickAddClick` bleibt unverändert** (nur im `DIARY`-Kontext mit
+   gesetztem `targetDate` gerendert).
+9. **`@Serializable`-Route-Objekte bleiben unverändert** — Navigation läuft
+   über String-Routen (Muster existiert in `MainActivity`:
+   `food_edit/_none_`).
+
+### Änderungen
+
+**4.1 `feature:foodpicker`**
+
+- `FoodPickerAction.kt`:
+  - Neu: `OnAddClick(foodId: String)`, `OnAddRecipeClick(recipeId: String)`
+- `FoodPickerEvent.kt`:
+  - Neu: `NavigateToRecipeDetail(recipeId: String)`
+- `FoodPickerViewModel.kt`:
+  - `onFoodClick(foodId)` → **immer** `FoodPickerEvent.NavigateToFoodDetail(foodId)`
+    (der BROWSE-Zweig mit `cacheRemoteItem` + Navigate entfällt — das ist der
+    Bugfix; `cacheRemoteItem` passiert weiterhin im `lookupByBarcode`-Flow bzw.
+    beim Nutzen eines Treffers)
+  - `onRecipeClick(recipeId)` → `FoodPickerEvent.NavigateToRecipeDetail(recipeId)`
+    (statt bisherigem direktem Add als Zutat)
+  - Neu `onAddClick(foodId)` → `selectFoodId = foodId` + bestehender
+    Selection-Flow bis `selectedItemReady = true`
+  - Neu `onAddRecipeClick(recipeId)` → analog mit `selectRecipeId`
+  - `confirmAddToDiary` → `val date = state.targetDate ?: LocalDate.now().toString()`
+    (Bugfix BROWSE)
+  - DIARY-Barcode-Flow: Treffer → `NavigateToFoodDetail(food.id.value)`
+    (erst Detailseite, dort Add-Button); kein Treffer →
+    `NavigateToFoodCreate(barcode)` unverändert
+- `FoodPickerSheet.kt`:
+  - `AddToDiarySheet`-Overlay aus dem Sheet in `FoodPickerContent` verschieben
+    (gerendert bei `state.selectedItemReady`)
+  - `onDismissRequest` → zusätzlich `FoodPickerAction.OnDismissSelection`
+    (Härtung: Selektion wird auch beim Wegswipen zurückgesetzt, nicht nur über
+    die Dialog-Schließen-Action)
+- `SearchTab.kt` / `MyFoodsTab.kt`:
+  - `FoodRow`/`RecipeRow` (bzw. `FoodList`/`RecipeList`): neuer rechtsbündiger
+    „+"-IconButton neben dem Favoriten-Stern
+  - Neue Parameter `onAddClick: (String) -> Unit`,
+    `onAddRecipeClick: (String) -> Unit` bis zu `FoodPickerContent`
+- `res/values/strings.xml`:
+  - Neu: `foodpicker_add` (contentDescription für den „+"-Button)
+  - `foodpicker_empty_search` (= „Keine Treffer") bleibt als Untertitel in
+    der Suche
+
+**4.2 `feature:food`**
+
+- `FoodRoutes.kt`:
+  - Detail-Route: `"food_detail/{foodId}?slot={slot}&date={date}"`
+  - `navArgument("slot") { defaultValue = "" }` und
+    `navArgument("date") { defaultValue = "" }`
+- `FoodSearchScreen.kt`:
+  - Verarbeitet `NavigateToRecipeDetail` → `onNavigateToRecipeDetail(recipeId)`
+    (Callback vom `foodGraph` in `MainActivity`)
+- `FoodDetailScreen.kt`:
+  - TopAppBar-Aktion „+" → öffnet `AddToDiarySheet`
+  - `AddToDiarySheet(initialSlot = slotArg, fixedSlot = slotArg.takeIf { it.isNotEmpty() })`;
+    `slot`/`date`-Argumente aus der Route (leer = BROWSE-Kontext → Selector
+    sichtbar, Datum = heute)
+  - Confirm → `onAddToDiary(foodId, quantity, slot, date)`-Callback
+    (Verdrahtung in `MainActivity`; `makeAddFoodToDiary` bleibt unverändert)
+- `res/values/strings.xml`: contentDescription für den „+"-Button
+- `food_empty_search` („Keine Treffer") bleibt — nur noch für echte
+  No-Food-Fälle (z. B. ungültige ID)
+
+**4.3 `feature:recipes`**
+
+- `RecipeRoutes.kt`:
+  - Detail-Route: `"recipe_detail/{recipeId}?slot={slot}&date={date}"`
+  - `navArgument("slot")`/`navArgument("date")` mit `defaultValue = ""`
+- `RecipeDetailScreen.kt`:
+  - TopAppBar-Aktion „+" → `AddToDiarySheet` (analog FoodDetail)
+  - Confirm → `onAddRecipeToDiary(recipeId, quantity, slot, date)`-Callback
+- `RecipeEditorScreen.kt`:
+  - `onNavigateToFoodDetail` und `onNavigateToRecipeDetail` (im
+    `RECIPE_INGREDIENT`-Kontext) werden an `FoodPickerSheet` durchgereicht
+- `res/values/strings.xml`: contentDescription für den „+"-Button
+
+**4.4 `feature:diary`**
+
+- `DiaryRoutes.kt`:
+  - `dayGraph`/`dayComposable` um `onNavigateToFoodDetail`/
+    `onNavigateToRecipeDetail` erweitern (heute nicht vorhanden → No-op fixen)
+- `DiaryDayScreen.kt`:
+  - Kette neu verdrahten: `DiaryDayRoot` → `FoodPickerDialog` →
+    `FoodPickerSheet` → Event → `DiaryDayRoot`-Callback → Navigation
+
+**4.5 `:app` (`MainActivity.kt`)**
+
+- `foodGraph`: `onNavigateToFoodDetail` →
+  `navController.navigate("food_detail/$foodId?slot=${slot.name}&date=$date")`;
+  `onNavigateToRecipeDetail` analog
+- `recipeGraph`: `onNavigateToFoodDetail` (FoodPicker im Rezept-Editor) analog
+- `diaryGraph`: `onNavigateToFoodDetail`/`onNavigateToRecipeDetail` →
+  `navController.navigate("...?slot=...&date=$date")` mit Slot + Datum des
+  Tabs (DIARY-Kontext → Detailseite zeigt fixen Slot, kein Selector)
+- `makeAddFoodToDiary`/`makeAddRecipeToDiary` bleiben unverändert (werden von
+  den Detailseiten-Callbacks aufgerufen)
+
+### Tests
+
+- `FoodPickerViewModelTest`:
+  - Bestehende Selektions-Tests von `OnFoodClick`/`OnRecipeClick` auf
+    `OnAddClick`/`OnAddRecipeClick` umstellen (Tap → navigieren, „+" →
+    auswählen)
+  - Neu: `onFoodClick` → `NavigateToFoodDetail(foodId)` in allen Targets
+  - Neu: `onRecipeClick` → `NavigateToRecipeDetail(recipeId)`
+  - Neu: `onAddClick`/`onAddRecipeClick` → `selectedItemReady = true` +
+    jeweiliges Selected-Feld gesetzt
+  - Neu: `confirmAddToDiary` in `BROWSE` ohne `targetDate` →
+    `LocalDate.now().toString()` wird verwendet
+  - Neu: DIARY-Barcode Treffer → `NavigateToFoodDetail`
+- `FoodDetailScreenTest` / `RecipeDetailScreenTest` (Compose):
+  - „+"-Icon vorhanden; `AddToDiarySheet` erscheint; Confirm ruft Callback mit
+    fixem Slot (aus Nav-Argument) bzw. offener Slot-Auswahl bei leerem Slot
+- Bestehende Tests müssen weiterhin passen
+
+### Acceptance Criteria
+
+- [ ] Tap auf eine Lebensmittel-Zeile zeigt in **allen** Tabs die
+      Detailseite (kein „Keine Treffer" bei Online-Suchtrefeern mehr)
+- [ ] Tap auf eine Rezept-Zeile zeigt die Rezept-Detailseite
+- [ ] „+" im FoodPicker fügt kontextabhängig hinzu: `DIARY` → fester Slot,
+      `BROWSE` → Slot-Auswahl-Dialog, `RECIPE_INGREDIENT` → als Zutat
+- [ ] Food- und Rezept-Detailseite haben einen „+"-Button; bei fehlendem
+      Slot-Kontext erscheint die Slot-Auswahl
+- [ ] BROWSE-Hinzufügen funktioniert wieder (kein Abbruch durch null-Datum)
+- [ ] Wegwischen des Sheets/Diaglogs setzt die selektierte Zeile zurück
+- [ ] `./gradlew ktlintCheck` + `./gradlew detekt` + `./gradlew build`
+      grün; betroffene Modul-Tests grün
+- [ ] Manueller Smoke-Test über alle 3 Tabs erfolgreich
+
+---
+
+**Document Version:** 2.0
 **Created:** 2026-07-31
 **Project:** EZ Makro — Dashboard/Diary-Merge & Diary-UX-Verbesserungen
 **Status:** Planning abgeschlossen, bereit zur Implementierung
