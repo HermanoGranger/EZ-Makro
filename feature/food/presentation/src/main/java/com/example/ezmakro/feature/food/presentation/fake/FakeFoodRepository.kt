@@ -71,6 +71,18 @@ class FakeFoodRepository : FoodRepository {
         return Result.Success(Unit)
     }
 
+    private val sessionItems = mutableMapOf<FoodId, FoodItem>()
+
+    fun rememberSessionItem(item: FoodItem) {
+        sessionItems[item.id] = item
+    }
+
+    override suspend fun rememberRemoteItem(item: FoodItem) {
+        sessionItems[item.id] = item
+    }
+
+    override suspend fun getSessionItem(id: FoodId): FoodItem? = sessionItems[id]
+
     companion object {
         fun food(
             id: String = "1",

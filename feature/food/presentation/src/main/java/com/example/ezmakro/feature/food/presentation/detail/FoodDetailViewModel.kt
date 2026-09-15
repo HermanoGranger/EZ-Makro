@@ -59,7 +59,8 @@ class FoodDetailViewModel(
             .observeAll()
             .onEach { foods ->
                 val match = foods.firstOrNull { it.id.value == foodId }
-                _state.update { it.copy(food = match?.toFoodUi(), isLoading = false) }
+                val food = match ?: repository.getSessionItem(FoodId(foodId))
+                _state.update { it.copy(food = food?.toFoodUi(), isLoading = false) }
             }.launchIn(viewModelScope)
     }
 

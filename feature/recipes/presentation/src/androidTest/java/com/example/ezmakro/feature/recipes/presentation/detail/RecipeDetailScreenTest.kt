@@ -3,8 +3,10 @@ package com.example.ezmakro.feature.recipes.presentation.detail
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.example.ezmakro.core.domain.model.MealSlot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -66,5 +68,72 @@ class RecipeDetailScreenTest {
         }
         composeTestRule.onNodeWithText("Duplizieren").performClick()
         assertTrue(clicked)
+    }
+
+    @Test
+    fun addButton_opensAddToDiarySheet_withFixedSlot_hidesSlotSelector() {
+        composeTestRule.setContent {
+            RecipeDetailScreen(
+                state = RecipeDetailState(recipe = recipeUi()),
+                onAction = {},
+                onRequestDelete = {},
+                initialSlot = MealSlot.DINNER,
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+
+        composeTestRule.onNodeWithText("Rezept hinzufügen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mahlzeit").assertDoesNotExist()
+    }
+
+    @Test
+    fun addButton_withoutSlot_showsSlotSelector() {
+        composeTestRule.setContent {
+            RecipeDetailScreen(
+                state = RecipeDetailState(recipe = recipeUi()),
+                onAction = {},
+                onRequestDelete = {},
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+
+        composeTestRule.onNodeWithText("Mahlzeit").assertIsDisplayed()
+    }
+
+    @Test
+    fun addSheet_confirm_callsOnAddToDiaryWithFixedSlotAndRecipeDefaults() {
+        var addedRecipeId: String? = null
+        var addedDate: String? = null
+        var addedSlot: MealSlot? = null
+        var addedAmount: Double? = null
+        var addedIsGrams: Boolean? = null
+        composeTestRule.setContent {
+            RecipeDetailScreen(
+                state = RecipeDetailState(recipe = recipeUi()),
+                onAction = {},
+                onRequestDelete = {},
+                onAddToDiary = { recipeId, date, slot, amount, isGrams ->
+                    addedRecipeId = recipeId
+                    addedDate = date
+                    addedSlot = slot
+                    addedAmount = amount
+                    addedIsGrams = isGrams
+                },
+                initialSlot = MealSlot.SNACKS,
+                date = "2026-08-03",
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+        composeTestRule.onNodeWithText("OK").performClick()
+
+        assertEquals("r1", addedRecipeId)
+        assertEquals("2026-08-03", addedDate)
+        assertEquals(MealSlot.SNACKS, addedSlot)
+        assertEquals(1.0, addedAmount ?: -1.0, 0.0)
+        assertEquals(false, addedIsGrams)
     }
 }

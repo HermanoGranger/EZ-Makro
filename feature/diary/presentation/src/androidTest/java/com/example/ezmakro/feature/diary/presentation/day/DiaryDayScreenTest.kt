@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.example.ezmakro.core.domain.calculation.Macro
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FoodId
@@ -69,6 +70,7 @@ class DiaryDayScreenTest {
                 lunch = listOf(entryUi("b", MealSlot.LUNCH, "Reis", "150")),
                 dinner = emptyList(),
                 snacks = emptyList(),
+                expandedSlots = setOf(MealSlot.BREAKFAST, MealSlot.LUNCH),
                 summary = sampleSummary(),
             )
 
@@ -87,8 +89,8 @@ class DiaryDayScreenTest {
             )
         }
 
-        composeTestRule.onNodeWithText("Haferflocken").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Reis").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Haferflocken").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Reis").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("+1700").assertIsDisplayed()
         composeTestRule.onNodeWithText("Restkalorien").assertIsDisplayed()
         composeTestRule.onNodeWithText("Protein").assertIsDisplayed()

@@ -55,6 +55,8 @@ fun FoodPickerSheet(
     onAddAsIngredient: (itemId: String, itemName: String, servingLabel: String?, isRecipe: Boolean) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
     onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit = { _, _ -> },
+    onNavigateToFoodDetail: (String) -> Unit = {},
+    onNavigateToRecipeDetail: (String) -> Unit = {},
     onDismiss: () -> Unit,
     viewModel: FoodPickerViewModel,
 ) {
@@ -76,29 +78,19 @@ fun FoodPickerSheet(
             is FoodPickerEvent.AddAsIngredient ->
                 onAddAsIngredient(event.itemId, event.itemName, event.servingLabel, event.isRecipe)
 
-            is FoodPickerEvent.NavigateToFoodDetail -> { /* handled by caller */ }
+            is FoodPickerEvent.NavigateToFoodDetail -> onNavigateToFoodDetail(event.foodId)
+            is FoodPickerEvent.NavigateToRecipeDetail -> onNavigateToRecipeDetail(event.recipeId)
             is FoodPickerEvent.NavigateToFoodCreate -> onNavigateToFoodCreate(event.barcode)
             is FoodPickerEvent.NavigateToQuickAdd -> onNavigateToQuickAdd(event.date, event.slot)
             FoodPickerEvent.Dismissed -> onDismiss()
         }
     }
 
-    if (state.selectedItemReady) {
-        AddToDiarySheet(
-            isRecipe = state.selectedItemIsRecipe,
-            hasServingUnit = state.selectedItemHasServingUnit,
-            fixedSlot = state.slot,
-            onDismiss = { viewModel.onAction(FoodPickerAction.OnDismissSelection) },
-            onConfirm = { slot, amount, isGrams ->
-                viewModel.onAction(
-                    FoodPickerAction.OnConfirmAddToDiary(slot = slot, amount = amount, isGrams = isGrams),
-                )
-            },
-        )
-    }
-
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            onDismiss()
+            viewModel.onAction(FoodPickerAction.OnDismissSelection)
+        },
         sheetState = sheetState,
         shape = remember { RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) },
     ) {
@@ -111,11 +103,28 @@ fun FoodPickerSheet(
 }
 
 @Composable
+@Suppress("LongMethod")
 fun FoodPickerContent(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
     modifier: Modifier = Modifier,
+    onAddClick: (String) -> Unit = { foodId -> onAction(FoodPickerAction.OnAddClick(foodId)) },
+    onAddRecipeClick: (String) -> Unit = { recipeId -> onAction(FoodPickerAction.OnAddRecipeClick(recipeId)) },
 ) {
+    if (state.selectedItemReady) {
+        AddToDiarySheet(
+            isRecipe = state.selectedItemIsRecipe,
+            hasServingUnit = state.selectedItemHasServingUnit,
+            fixedSlot = state.slot,
+            onDismiss = { onAction(FoodPickerAction.OnDismissSelection) },
+            onConfirm = { slot, amount, isGrams ->
+                onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(slot = slot, amount = amount, isGrams = isGrams),
+                )
+            },
+        )
+    }
+
     Column(modifier = modifier) {
         if (state.targetContext == FoodPickerTarget.DIARY) {
             Row(
@@ -147,8 +156,20 @@ fun FoodPickerContent(
                         onAction = onAction,
                         modifier = Modifier.fillMaxSize(),
                     )
-                FoodPickerTab.SEARCH -> SearchTab(state = state, onAction = onAction)
-                FoodPickerTab.FAVORITES -> MyFoodsTab(state = state, onAction = onAction)
+                FoodPickerTab.SEARCH ->
+                    SearchTab(
+                        state = state,
+                        onAction = onAction,
+                        onAddClick = onAddClick,
+                        onAddRecipeClick = onAddRecipeClick,
+                    )
+                FoodPickerTab.FAVORITES ->
+                    MyFoodsTab(
+                        state = state,
+                        onAction = onAction,
+                        onAddClick = onAddClick,
+                        onAddRecipeClick = onAddRecipeClick,
+                    )
             }
         }
     }

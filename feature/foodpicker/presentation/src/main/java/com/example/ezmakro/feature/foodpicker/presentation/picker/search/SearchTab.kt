@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,6 +38,8 @@ import java.util.Locale
 fun SearchTab(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -62,9 +65,19 @@ fun SearchTab(
         }
 
         if (state.searchQuery.isBlank()) {
-            RecentSection(state = state, onAction = onAction)
+            RecentSection(
+                state = state,
+                onAction = onAction,
+                onAddClick = onAddClick,
+                onAddRecipeClick = onAddRecipeClick,
+            )
         } else {
-            SearchResultsSection(state = state, onAction = onAction)
+            SearchResultsSection(
+                state = state,
+                onAction = onAction,
+                onAddClick = onAddClick,
+                onAddRecipeClick = onAddRecipeClick,
+            )
         }
     }
 }
@@ -73,6 +86,8 @@ fun SearchTab(
 private fun RecentSection(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -82,14 +97,14 @@ private fun RecentSection(
             item { EmptyRow(stringResource(R.string.foodpicker_empty)) }
         } else {
             items(state.recentFoods, key = { "recent-food-${it.id}" }) { food ->
-                FoodRow(food = food, onAction = onAction)
+                FoodRow(food = food, onAction = onAction, onAddClick = onAddClick)
             }
         }
 
         if (state.recentRecipes.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recent_recipes)) }
             items(state.recentRecipes, key = { "recent-recipe-${it.id}" }) { recipe ->
-                RecipeRow(recipe = recipe, onAction = onAction)
+                RecipeRow(recipe = recipe, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
             }
         }
     }
@@ -99,6 +114,8 @@ private fun RecentSection(
 private fun SearchResultsSection(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
@@ -108,14 +125,14 @@ private fun SearchResultsSection(
             item { EmptyRow(stringResource(R.string.foodpicker_empty_search)) }
         } else {
             items(state.localSearchResults, key = { "local-food-${it.id}" }) { food ->
-                FoodRow(food = food, onAction = onAction)
+                FoodRow(food = food, onAction = onAction, onAddClick = onAddClick)
             }
         }
 
         if (state.localRecipeResults.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recipes)) }
             items(state.localRecipeResults, key = { "local-recipe-${it.id}" }) { recipe ->
-                RecipeRow(recipe = recipe, onAction = onAction)
+                RecipeRow(recipe = recipe, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
             }
         }
 
@@ -145,7 +162,12 @@ private fun SearchResultsSection(
                 SectionHeader(stringResource(R.string.foodpicker_section_online))
             }
             items(state.onlineSearchResults, key = { "online-food-${it.id}" }) { food ->
-                FoodRow(food = food, onAction = onAction)
+                FoodRow(
+                    food = food,
+                    onAction = onAction,
+                    onAddClick = onAddClick,
+                    showFavorite = false,
+                )
             }
         }
     }
@@ -155,6 +177,8 @@ private fun SearchResultsSection(
 private fun FoodRow(
     food: PickerFoodUi,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+    showFavorite: Boolean = true,
 ) {
     Row(
         modifier =
@@ -172,18 +196,26 @@ private fun FoodRow(
             )
             Text(text = "${formatKcal(food.kcalPer100g)} kcal / 100 g")
         }
-        val starTint: androidx.compose.ui.graphics.Color =
-            if (food.isFavorite) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            }
-        IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
+        IconButton(onClick = { onAddClick(food.id) }) {
             Icon(
-                imageVector = Icons.Filled.Star,
-                tint = starTint,
-                contentDescription = null,
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.foodpicker_add),
             )
+        }
+        if (showFavorite) {
+            val starTint: androidx.compose.ui.graphics.Color =
+                if (food.isFavorite) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                }
+            IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    tint = starTint,
+                    contentDescription = null,
+                )
+            }
         }
     }
     HorizontalDivider()
@@ -193,6 +225,7 @@ private fun FoodRow(
 private fun RecipeRow(
     recipe: PickerRecipeUi,
     onAction: (FoodPickerAction) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     Row(
         modifier =
@@ -209,6 +242,12 @@ private fun RecipeRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
+        }
+        IconButton(onClick = { onAddRecipeClick(recipe.id) }) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.foodpicker_add),
+            )
         }
         val starTint: androidx.compose.ui.graphics.Color =
             if (recipe.isFavorite) {

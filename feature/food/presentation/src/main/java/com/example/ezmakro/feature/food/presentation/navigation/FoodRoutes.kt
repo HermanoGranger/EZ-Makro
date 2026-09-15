@@ -42,7 +42,7 @@ const val ROUTE_FOOD = "food"
 const val ROUTE_SEARCH = "food_search"
 
 // Route patterns for composable registration (include {param} placeholders)
-internal const val ROUTE_DETAIL_PATTERN = "food_detail/{foodId}"
+internal const val ROUTE_DETAIL_PATTERN = "food_detail/{foodId}?slot={slot}&date={date}"
 internal const val ROUTE_EDIT_PATTERN = "food_edit/{foodId}?prefillBarcode={prefillBarcode}"
 
 // Route prefixes for navigation (no {param} placeholders; append values directly)
@@ -51,6 +51,8 @@ internal const val ROUTE_EDIT = "food_edit"
 internal const val ROUTE_DETAIL_PARAM_ID = "foodId"
 internal const val ROUTE_EDIT_PARAM_ID = "foodId"
 internal const val ROUTE_EDIT_PARAM_BARCODE = "prefillBarcode"
+internal const val ROUTE_DETAIL_PARAM_SLOT = "slot"
+internal const val ROUTE_DETAIL_PARAM_DATE = "date"
 
 internal const val EDIT_ROUTE_MISSING_ID = "_none_"
 
@@ -65,10 +67,12 @@ fun NavGraphBuilder.foodGraph(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
     onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
+    onNavigateToFoodDetail: (String) -> Unit = {},
+    onNavigateToRecipeDetail: (String) -> Unit = {},
 ) {
     navigation(startDestination = ROUTE_SEARCH, route = ROUTE_FOOD) {
-        searchComposable(navController, onAddToDiary)
-        detailComposable(navController, onNavigateBack)
+        searchComposable(navController, onAddToDiary, onNavigateToFoodDetail, onNavigateToRecipeDetail)
+        detailComposable(navController, onNavigateBack, onAddToDiary)
         editComposable(navController, onNavigateBack)
     }
 }
@@ -76,10 +80,13 @@ fun NavGraphBuilder.foodGraph(
 private fun NavGraphBuilder.searchComposable(
     navController: NavHostController,
     onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
+    onNavigateToFoodDetail: (String) -> Unit,
+    onNavigateToRecipeDetail: (String) -> Unit,
 ) {
     composable(route = ROUTE_SEARCH) {
         FoodSearchRoot(
-            onNavigateToDetail = { foodId -> navController.navigate("$ROUTE_DETAIL/$foodId") },
+            onNavigateToFoodDetail = onNavigateToFoodDetail,
+            onNavigateToRecipeDetail = onNavigateToRecipeDetail,
             onNavigateToCreate = { barcode ->
                 val route =
                     if (barcode != null) {
@@ -97,16 +104,33 @@ private fun NavGraphBuilder.searchComposable(
 private fun NavGraphBuilder.detailComposable(
     navController: NavHostController,
     onNavigateBack: () -> Unit,
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit,
 ) {
     composable(
         route = ROUTE_DETAIL_PATTERN,
-        arguments = listOf(navArgument(ROUTE_DETAIL_PARAM_ID) { type = NavType.StringType }),
+        arguments =
+            listOf(
+                navArgument(ROUTE_DETAIL_PARAM_ID) { type = NavType.StringType },
+                navArgument(ROUTE_DETAIL_PARAM_SLOT) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+                navArgument(ROUTE_DETAIL_PARAM_DATE) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
     ) {
         val foodId = it.arguments?.getString(ROUTE_DETAIL_PARAM_ID) ?: return@composable
+        val slotArg = it.arguments?.getString(ROUTE_DETAIL_PARAM_SLOT).orEmpty()
+        val date = it.arguments?.getString(ROUTE_DETAIL_PARAM_DATE).orEmpty()
         FoodDetailRoot(
             foodId = foodId,
+            initialSlot = MealSlot.entries.firstOrNull { slot -> slot.name == slotArg },
+            date = date,
             onNavigateBack = onNavigateBack,
             onNavigateToEdit = { id -> navController.navigate("$ROUTE_EDIT/$id") },
+            onAddToDiary = onAddToDiary,
         )
     }
 }

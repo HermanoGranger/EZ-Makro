@@ -89,6 +89,10 @@ class QuickAddUseCaseTest {
         override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = Result.Success(Unit)
 
         override suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local> = Result.Success(Unit)
+
+        override suspend fun rememberRemoteItem(item: FoodItem) = Unit
+
+        override suspend fun getSessionItem(id: FoodId): FoodItem? = null
     }
 
     @Test

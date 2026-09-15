@@ -59,6 +59,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
+@Suppress("LongMethod")
 fun DiaryDayRoot(
     onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit,
     onNavigateToHistory: () -> Unit,
@@ -72,6 +73,8 @@ fun DiaryDayRoot(
         isGrams: Boolean,
     ) -> Unit = { _, _, _, _, _, _ -> },
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
+    onNavigateToFoodDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
+    onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
     viewModel: DiaryDayViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,6 +111,8 @@ fun DiaryDayRoot(
         onAddToDiaryFromPicker = onAddToDiaryFromPicker,
         onNavigateToFoodCreate = onNavigateToFoodCreate,
         onNavigateToQuickAdd = onNavigateToQuickAdd,
+        onNavigateToFoodDetail = onNavigateToFoodDetail,
+        onNavigateToRecipeDetail = onNavigateToRecipeDetail,
         onDismiss = { pickerSlot = null },
     )
 
@@ -139,12 +144,15 @@ fun DiaryDayRoot(
 }
 
 @Composable
+@Suppress("LongParameterList")
 private fun FoodPickerDialog(
     pickerSlot: MealSlot?,
     date: String,
     onAddToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
     onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit,
+    onNavigateToFoodDetail: (String, MealSlot, String) -> Unit,
+    onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     if (pickerSlot != null) {
@@ -163,6 +171,8 @@ private fun FoodPickerDialog(
                 onDismiss()
                 onNavigateToQuickAdd(quickAddDate, slot)
             },
+            onNavigateToFoodDetail = { foodId -> onNavigateToFoodDetail(foodId, pickerSlot, date) },
+            onNavigateToRecipeDetail = { recipeId -> onNavigateToRecipeDetail(recipeId, pickerSlot, date) },
             onDismiss = onDismiss,
             viewModel = foodPickerViewModel,
         )

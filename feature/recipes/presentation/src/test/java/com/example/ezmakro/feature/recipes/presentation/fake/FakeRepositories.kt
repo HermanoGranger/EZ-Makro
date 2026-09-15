@@ -51,6 +51,10 @@ class FakeFoodRepository : FoodRepository {
 
     override suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local> = Result.Success(Unit)
 
+    override suspend fun rememberRemoteItem(item: FoodItem) = Unit
+
+    override suspend fun getSessionItem(id: FoodId): FoodItem? = null
+
     companion object {
         fun food(
             id: String,

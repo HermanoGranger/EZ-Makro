@@ -4,6 +4,7 @@
     <string name="foodpicker_tab_search">Suche</string>
     <string name="foodpicker_tab_favorites">Favoriten</string>
     <string name="foodpicker_search_hint">Lebensmittel suchen</string>
+    <string name="foodpicker_add">Hinzufügen</string>
     <string name="foodpicker_search_online">Online suchen</string>
     <string name="foodpicker_search_scan">Barcode scannen</string>
     <string name="foodpicker_search_create">Eigenes anlegen</string>

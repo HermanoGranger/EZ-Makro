@@ -62,9 +62,18 @@ fun NavGraphBuilder.diaryGraph(
     ) -> Unit = { _, _, _, _, _, _ -> },
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     onNavigateToGoals: () -> Unit = {},
+    onNavigateToFoodDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
+    onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
 ) {
     navigation(startDestination = ROUTE_DIARY_DAY, route = ROUTE_DIARY) {
-        dayComposable(navController, onAddToDiaryFromPicker, onNavigateToFoodCreate, onNavigateToGoals)
+        dayComposable(
+            navController,
+            onAddToDiaryFromPicker,
+            onNavigateToFoodCreate,
+            onNavigateToGoals,
+            onNavigateToFoodDetail,
+            onNavigateToRecipeDetail,
+        )
         quickAddComposable(navController)
         historyComposable(navController)
     }
@@ -82,6 +91,8 @@ private fun NavGraphBuilder.dayComposable(
     ) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
     onNavigateToGoals: () -> Unit,
+    onNavigateToFoodDetail: (String, MealSlot, String) -> Unit,
+    onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit,
 ) {
     composable(
         route = "$ROUTE_DIARY_DAY?$ROUTE_DIARY_DAY_PARAM_DATE={$ROUTE_DIARY_DAY_PARAM_DATE}",
@@ -101,6 +112,8 @@ private fun NavGraphBuilder.dayComposable(
             onNavigateToHistory = { navController.navigate(ROUTE_HISTORY) },
             onNavigateToGoals = onNavigateToGoals,
             onNavigateToFoodCreate = onNavigateToFoodCreate,
+            onNavigateToFoodDetail = onNavigateToFoodDetail,
+            onNavigateToRecipeDetail = onNavigateToRecipeDetail,
         )
     }
 }

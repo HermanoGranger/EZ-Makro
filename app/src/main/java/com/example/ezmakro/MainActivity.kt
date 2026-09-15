@@ -28,12 +28,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.example.ezmakro.core.designsystem.theme.EZMakroTheme
 import com.example.ezmakro.core.domain.model.FoodId
-import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
+import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
@@ -155,17 +155,27 @@ class MainActivity : ComponentActivity() {
                 onAddToDiaryFromPicker = addToDiaryFromPicker,
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
                 onNavigateToGoals = { navController.navigate(Goals) },
+                onNavigateToFoodDetail = { foodId, slot, date ->
+                    navController.navigate("food_detail/$foodId?slot=${slot.name}&date=$date")
+                },
+                onNavigateToRecipeDetail = { recipeId, slot, date ->
+                    navController.navigate("recipe_detail/$recipeId?slot=${slot.name}&date=$date")
+                },
             )
             foodGraph(
                 navController = navController,
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addFoodToDiary,
+                onNavigateToFoodDetail = { foodId -> navController.navigate("food_detail/$foodId") },
+                onNavigateToRecipeDetail = { recipeId -> navController.navigate("recipe_detail/$recipeId") },
             )
             recipeGraph(
                 navController = navController,
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addRecipeToDiary,
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
+                onNavigateToFoodDetail = { foodId -> navController.navigate("food_detail/$foodId") },
+                onNavigateToRecipeDetail = { recipeId -> navController.navigate("recipe_detail/$recipeId") },
             )
             goalsGraph(onNavigateBack = onNavigateBack)
         }
@@ -211,13 +221,19 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch {
                 val foodRepository = get<FoodRepository>()
                 val addUseCase = get<AddFoodToDiaryUseCase>()
-                foodRepository.getById(FoodId(foodId)).onSuccess { food: FoodItem? ->
-                    food?.let {
-                        if (isGrams) {
-                            addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
-                        } else {
-                            addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
-                        }
+                val food =
+                    when (val result = foodRepository.getById(FoodId(foodId))) {
+                        is Result.Success -> result.data
+                        is Result.Error -> null
+                    } ?: foodRepository.getSessionItem(FoodId(foodId))
+                food?.let {
+                    // Persist online items that were only session-cached for the
+                    // detail view once they are actually used in the diary.
+                    foodRepository.cacheRemoteItem(food)
+                    if (isGrams) {
+                        addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
+                    } else {
+                        addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
                     }
                 }
             }

@@ -44,6 +44,18 @@ class FoodDetailViewModelTest {
         }
 
     @Test
+    fun sessionItem_fallbackRendersOnlineFood() =
+        runTest {
+            repository.rememberSessionItem(FakeFoodRepository.food(id = "1", name = "Alpro"))
+            val rm = FoodDetailViewModel(foodId = "1", repository = repository)
+            dispatcher.scheduler.runCurrent()
+
+            val food = rm.state.value.food
+            assertEquals("Alpro", food?.name)
+            assertEquals(false, rm.state.value.isLoading)
+        }
+
+    @Test
     fun backClick_emitsNavigateBackEvent() =
         runTest {
             viewModel.events.test {

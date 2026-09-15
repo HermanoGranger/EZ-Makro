@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @Suppress("TooManyFunctions")
 class FoodPickerViewModel(
@@ -94,6 +95,10 @@ class FoodPickerViewModel(
 
             is FoodPickerAction.OnRecipeClick -> onRecipeClick(action.recipeId)
 
+            is FoodPickerAction.OnAddClick -> onAddClick(action.foodId)
+
+            is FoodPickerAction.OnAddRecipeClick -> onAddRecipeClick(action.recipeId)
+
             FoodPickerAction.OnDismissSelection ->
                 _state.update {
                     it.copy(
@@ -155,9 +160,33 @@ class FoodPickerViewModel(
 
     private fun onFoodClick(foodId: String) {
         val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
+        if (onlineItem == null) {
+            viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
+            viewModelScope.launch {
+                _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
+            }
+            return
+        }
+        _state.update { it.copy(selectionError = null) }
+        viewModelScope.launch {
+            foodRepository.rememberRemoteItem(onlineItem)
+            _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
+        }
+    }
 
+    private fun onRecipeClick(recipeId: String) {
+        viewModelScope.launch {
+            recipeRepository.markUsed(RecipeId(recipeId))
+        }
+        viewModelScope.launch {
+            _events.send(FoodPickerEvent.NavigateToRecipeDetail(recipeId))
+        }
+    }
+
+    private fun onAddClick(foodId: String) {
         if (_state.value.targetContext == FoodPickerTarget.RECIPE_INGREDIENT) {
             val food = findFood(foodId) ?: return
+            val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
             viewModelScope.launch {
                 if (onlineItem != null) {
                     when (val result = foodRepository.cacheRemoteItem(onlineItem)) {
@@ -180,38 +209,29 @@ class FoodPickerViewModel(
                     ),
                 )
             }
-        } else if (_state.value.targetContext == FoodPickerTarget.BROWSE) {
-            if (onlineItem == null) {
-                viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
-            }
-            viewModelScope.launch {
-                _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
-            }
-        } else {
-            if (onlineItem == null) {
-                viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
-            }
-            val food = findFood(foodId)
-            _state.update {
-                it.copy(
-                    selectionError = null,
-                    selectedItemReady = true,
-                    selectedItemId = foodId,
-                    selectedItemIsRecipe = false,
-                    selectedItemHasServingUnit = food?.servingLabel != null,
-                )
-            }
+            return
+        }
+        val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
+        if (onlineItem == null) {
+            viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
+        }
+        val food = findFood(foodId)
+        _state.update {
+            it.copy(
+                selectionError = null,
+                selectedItemReady = true,
+                selectedItemId = foodId,
+                selectedItemIsRecipe = false,
+                selectedItemHasServingUnit = food?.servingLabel != null,
+            )
         }
     }
 
-    private fun onRecipeClick(recipeId: String) {
-        viewModelScope.launch {
-            recipeRepository.markUsed(RecipeId(recipeId))
-        }
-
+    private fun onAddRecipeClick(recipeId: String) {
         if (_state.value.targetContext == FoodPickerTarget.RECIPE_INGREDIENT) {
             val recipe = findRecipe(recipeId) ?: return
             viewModelScope.launch {
+                recipeRepository.markUsed(RecipeId(recipeId))
                 _events.send(
                     FoodPickerEvent.AddAsIngredient(
                         itemId = recipeId,
@@ -221,22 +241,25 @@ class FoodPickerViewModel(
                     ),
                 )
             }
-        } else if (_state.value.targetContext != FoodPickerTarget.BROWSE) {
-            _state.update {
-                it.copy(
-                    selectedItemReady = true,
-                    selectedItemId = recipeId,
-                    selectedItemIsRecipe = true,
-                    selectedItemHasServingUnit = true,
-                )
-            }
+            return
+        }
+        viewModelScope.launch {
+            recipeRepository.markUsed(RecipeId(recipeId))
+        }
+        _state.update {
+            it.copy(
+                selectedItemReady = true,
+                selectedItemId = recipeId,
+                selectedItemIsRecipe = true,
+                selectedItemHasServingUnit = true,
+            )
         }
     }
 
     private fun confirmAddToDiary(action: FoodPickerAction.OnConfirmAddToDiary) {
         val s = _state.value
         val itemId = s.selectedItemId ?: return
-        val date = s.targetDate ?: return
+        val date = s.targetDate ?: LocalDate.now().toString()
         _state.update {
             it.copy(
                 selectedItemReady = false,
@@ -280,14 +303,7 @@ class FoodPickerViewModel(
                     when (_state.value.targetContext) {
                         FoodPickerTarget.DIARY -> {
                             if (food != null) {
-                                _state.update {
-                                    it.copy(
-                                        selectedItemReady = true,
-                                        selectedItemId = food.id.value,
-                                        selectedItemIsRecipe = false,
-                                        selectedItemHasServingUnit = food.servingUnit != null,
-                                    )
-                                }
+                                _events.send(FoodPickerEvent.NavigateToFoodDetail(food.id.value))
                             } else {
                                 _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
                             }

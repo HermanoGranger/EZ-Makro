@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,15 +30,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.recipes.presentation.R
 import org.koin.androidx.compose.koinViewModel
+import java.time.LocalDate
 
 @Composable
 fun RecipeDetailRoot(
     recipeId: String,
+    initialSlot: MealSlot?,
+    date: String,
     onNavigateBack: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
     viewModel: RecipeDetailViewModel =
         koinViewModel {
             org.koin.core.parameter
@@ -76,6 +83,9 @@ fun RecipeDetailRoot(
         state = state,
         onAction = viewModel::onAction,
         onRequestDelete = { showDeleteConfirm = true },
+        onAddToDiary = onAddToDiary,
+        initialSlot = initialSlot,
+        date = date,
     )
 }
 
@@ -86,14 +96,47 @@ fun RecipeDetailScreen(
     state: RecipeDetailState,
     onAction: (RecipeDetailAction) -> Unit,
     onRequestDelete: () -> Unit,
+    onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
+    initialSlot: MealSlot? = null,
+    date: String = "",
 ) {
     val recipe = state.recipe
+    var showAddSheet by rememberSaveable { mutableStateOf(false) }
+
+    if (showAddSheet) {
+        if (recipe != null) {
+            AddToDiarySheet(
+                isRecipe = true,
+                hasServingUnit = true,
+                initialSlot = initialSlot ?: MealSlot.BREAKFAST,
+                fixedSlot = initialSlot,
+                onDismiss = { showAddSheet = false },
+                onConfirm = { slot, amount, isGrams ->
+                    onAddToDiary(
+                        recipe.id,
+                        date.ifEmpty { LocalDate.now().toString() },
+                        slot,
+                        amount,
+                        isGrams,
+                    )
+                    showAddSheet = false
+                },
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.recipe_detail_title)) },
                 actions = {
                     if (recipe != null) {
+                        IconButton(onClick = { showAddSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = stringResource(R.string.recipe_detail_add),
+                            )
+                        }
                         val starTint: androidx.compose.ui.graphics.Color =
                             if (recipe.isFavorite) {
                                 MaterialTheme.colorScheme.primary

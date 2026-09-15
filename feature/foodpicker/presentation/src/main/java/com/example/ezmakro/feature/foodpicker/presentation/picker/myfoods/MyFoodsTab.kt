@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,6 +38,8 @@ import java.util.Locale
 fun MyFoodsTab(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -56,9 +59,9 @@ fun MyFoodsTab(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (state.showFoods) {
-            FoodList(foods = state.favoriteFoods, onAction = onAction)
+            FoodList(foods = state.favoriteFoods, onAction = onAction, onAddClick = onAddClick)
         } else {
-            RecipeList(recipes = state.favoriteRecipes, onAction = onAction)
+            RecipeList(recipes = state.favoriteRecipes, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
         }
     }
 }
@@ -67,6 +70,7 @@ fun MyFoodsTab(
 private fun FoodList(
     foods: List<PickerFoodUi>,
     onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
 ) {
     if (foods.isEmpty()) {
         Text(
@@ -94,6 +98,12 @@ private fun FoodList(
                     )
                     Text(text = "${formatKcal(food.kcalPer100g)} kcal / 100 g")
                 }
+                IconButton(onClick = { onAddClick(food.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.foodpicker_add),
+                    )
+                }
                 IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(food.id)) }) {
                     Icon(
                         imageVector = Icons.Filled.Star,
@@ -111,6 +121,7 @@ private fun FoodList(
 private fun RecipeList(
     recipes: List<PickerRecipeUi>,
     onAction: (FoodPickerAction) -> Unit,
+    onAddRecipeClick: (String) -> Unit,
 ) {
     if (recipes.isEmpty()) {
         Text(
@@ -137,6 +148,12 @@ private fun RecipeList(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
+                }
+                IconButton(onClick = { onAddRecipeClick(recipe.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = stringResource(R.string.foodpicker_add),
+                    )
                 }
                 IconButton(onClick = { onAction(FoodPickerAction.OnToggleFavorite(recipe.id)) }) {
                     Icon(

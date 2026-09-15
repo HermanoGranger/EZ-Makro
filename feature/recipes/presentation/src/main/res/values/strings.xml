@@ -15,6 +15,7 @@
     <string name="recipe_detail_category">Kategorie: %1$s</string>
     <string name="recipe_detail_duplicate">Duplizieren</string>
     <string name="recipe_detail_edit">Bearbeiten</string>
+    <string name="recipe_detail_add">Hinzufügen</string>
     <string name="recipe_detail_delete">Löschen</string>
     <string name="recipe_detail_delete_confirm">Rezept wirklich löschen?</string>
     <string name="recipe_detail_ingredient_amount">Menge: %1$s</string>

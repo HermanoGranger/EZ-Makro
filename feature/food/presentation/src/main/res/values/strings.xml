@@ -4,12 +4,14 @@
     <string name="food_empty_search">Keine Treffer</string>
 
     <string name="food_detail_per_100g">Pro 100 g</string>
+    <string name="food_detail_per_serving">Pro Portion (%1$s)</string>
     <string name="food_detail_kcal">Kalorien</string>
     <string name="food_detail_protein">Protein</string>
     <string name="food_detail_fat">Fett</string>
     <string name="food_detail_carbs">Kohlenhydrate</string>
     <string name="food_detail_fiber">Ballaststoffe</string>
     <string name="food_detail_edit">Bearbeiten</string>
+    <string name="food_detail_add">Hinzufügen</string>
     <string name="food_detail_favorite_add">Zu Favoriten</string>
     <string name="food_detail_favorite_remove">Aus Favoriten entfernen</string>
 

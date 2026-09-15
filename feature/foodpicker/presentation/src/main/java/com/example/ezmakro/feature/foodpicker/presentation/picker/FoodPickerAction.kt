@@ -21,6 +21,14 @@ sealed interface FoodPickerAction {
         val recipeId: String,
     ) : FoodPickerAction
 
+    data class OnAddClick(
+        val foodId: String,
+    ) : FoodPickerAction
+
+    data class OnAddRecipeClick(
+        val recipeId: String,
+    ) : FoodPickerAction
+
     data object OnDismissSelection : FoodPickerAction
 
     data class OnConfirmAddToDiary(

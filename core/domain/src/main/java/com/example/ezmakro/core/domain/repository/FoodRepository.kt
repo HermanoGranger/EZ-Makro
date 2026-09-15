@@ -74,6 +74,20 @@ interface FoodRepository {
     /** Explicitly cache a remote [FoodItem] locally (deferred caching). */
     suspend fun cacheRemoteItem(item: FoodItem): EmptyResult<DataError.Local>
 
+    /**
+     * Keep a remote [FoodItem] available for the current session in memory only,
+     * WITHOUT persisting it locally. Used so the detail screen can render online
+     * results before the user decides to use them; a later [cacheRemoteItem]
+     * (favorite, diary entry, recipe ingredient) persists them permanently.
+     */
+    suspend fun rememberRemoteItem(item: FoodItem)
+
+    /**
+     * Read an entry that may only exist in the session cache (see
+     * [rememberRemoteItem]). Returns null when the item is not remembered.
+     */
+    suspend fun getSessionItem(id: FoodId): FoodItem?
+
     companion object {
         const val DEFAULT_RECENT_LIMIT = 20
     }

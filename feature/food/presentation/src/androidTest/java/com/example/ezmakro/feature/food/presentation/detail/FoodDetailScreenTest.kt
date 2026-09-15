@@ -5,12 +5,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.feature.food.presentation.model.FoodEditStatusUi
 import com.example.ezmakro.feature.food.presentation.model.FoodUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 class FoodDetailScreenTest {
     @get:Rule
@@ -41,6 +43,29 @@ class FoodDetailScreenTest {
         composeTestRule.onNodeWithText("Apple").assertIsDisplayed()
         composeTestRule.onNodeWithText("52 kcal").assertIsDisplayed()
         composeTestRule.onNodeWithText("14 g").assertIsDisplayed()
+    }
+
+    @Test
+    fun displaysServingNutrition_whenServingUnitPresent() {
+        val servingFood =
+            food.copy(
+                servingLabel = "100 ml",
+                servingGrams = 200.0,
+                servingAmount = "100 ml",
+                kcalPerServing = "104",
+                proteinPerServing = "0",
+                fatPerServing = "0",
+                carbsPerServing = "28",
+                fiberPerServing = "4",
+            )
+
+        composeTestRule.setContent {
+            FoodDetailScreen(state = FoodDetailState(food = servingFood, isLoading = false), onAction = {})
+        }
+
+        composeTestRule.onNodeWithText("Pro Portion (100 ml)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("104 kcal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("28 g").assertIsDisplayed()
     }
 
     @Test
@@ -115,5 +140,89 @@ class FoodDetailScreenTest {
         composeTestRule.onNodeWithText("Fortfahren").performClick()
 
         assertEquals(true, confirmed)
+    }
+
+    @Test
+    fun addButton_openAddToDiarySheet_withFixedSlot_hidesSlotSelector() {
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false),
+                onAction = {},
+                initialSlot = MealSlot.LUNCH,
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+
+        composeTestRule.onNodeWithText("Lebensmittel hinzufügen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Mahlzeit").assertDoesNotExist()
+    }
+
+    @Test
+    fun addButton_withoutSlot_showsSlotSelector() {
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+
+        composeTestRule.onNodeWithText("Mahlzeit").assertIsDisplayed()
+    }
+
+    @Test
+    fun addSheet_confirm_callsOnAddToDiaryWithFixedSlotAndTodayDate() {
+        var addedFoodId: String? = null
+        var addedDate: String? = null
+        var addedSlot: MealSlot? = null
+        var addedAmount: Double? = null
+        var addedIsGrams: Boolean? = null
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false),
+                onAction = {},
+                onAddToDiary = { foodId, date, slot, amount, isGrams ->
+                    addedFoodId = foodId
+                    addedDate = date
+                    addedSlot = slot
+                    addedAmount = amount
+                    addedIsGrams = isGrams
+                },
+                initialSlot = MealSlot.DINNER,
+                date = "",
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+        composeTestRule.onNodeWithText("OK").performClick()
+
+        assertEquals("1", addedFoodId)
+        assertEquals(LocalDate.now().toString(), addedDate)
+        assertEquals(MealSlot.DINNER, addedSlot)
+        assertEquals(100.0, addedAmount ?: -1.0, 0.0)
+        assertEquals(true, addedIsGrams)
+    }
+
+    @Test
+    fun addSheet_confirm_withoutSlot_usesUserSelectedSlot() {
+        var addedSlot: MealSlot? = null
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false),
+                onAction = {},
+                onAddToDiary = { _, date, slot, amount, isGrams ->
+                    addedSlot = slot
+                },
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Hinzufügen").performClick()
+        composeTestRule.onNodeWithText("Mittag").performClick()
+        composeTestRule.onNodeWithText("OK").performClick()
+
+        assertEquals(MealSlot.LUNCH, addedSlot)
     }
 }

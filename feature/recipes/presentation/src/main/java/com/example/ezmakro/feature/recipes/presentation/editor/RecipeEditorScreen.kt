@@ -40,6 +40,8 @@ fun RecipeEditorRoot(
     onNavigateBack: () -> Unit,
     onSaved: () -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
+    onNavigateToFoodDetail: (String) -> Unit = {},
+    onNavigateToRecipeDetail: (String) -> Unit = {},
     viewModel: RecipeEditorViewModel =
         koinViewModel {
             org.koin.core.parameter
@@ -74,6 +76,8 @@ fun RecipeEditorRoot(
                 showFoodPicker = false
             },
             onNavigateToFoodCreate = onNavigateToFoodCreate,
+            onNavigateToFoodDetail = onNavigateToFoodDetail,
+            onNavigateToRecipeDetail = onNavigateToRecipeDetail,
             onDismiss = { showFoodPicker = false },
             viewModel = foodPickerViewModel,
         )

@@ -36,8 +36,10 @@ import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass")
 class FoodPickerViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -230,7 +232,7 @@ class FoodPickerViewModelTest {
         runTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(targetDate = "2026-07-19")
-            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
             vm.onAction(FoodPickerAction.OnDateSet("2026-08-03"))
 
             vm.events.test {
@@ -317,7 +319,7 @@ class FoodPickerViewModelTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(targetDate = "2026-07-19")
 
-            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
             vm.onAction(FoodPickerAction.OnSlotSet(MealSlot.SNACKS))
 
             vm.events.test {
@@ -350,7 +352,7 @@ class FoodPickerViewModelTest {
 
             vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
             vm.onAction(FoodPickerAction.OnSearchOnlineClick)
-            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
 
             vm.events.test {
                 vm.onAction(
@@ -380,7 +382,7 @@ class FoodPickerViewModelTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(targetDate = "2026-07-19")
 
-            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
 
             vm.events.test {
                 vm.onAction(
@@ -413,7 +415,7 @@ class FoodPickerViewModelTest {
 
             vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
             vm.onAction(FoodPickerAction.OnSearchOnlineClick)
-            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
             assertThat(vm.state.value.selectedItemReady).isTrue()
 
             vm.events.test {
@@ -432,7 +434,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `recipe ingredient click on online item caches before AddAsIngredient`() =
+    fun `recipe ingredient add on online item caches before AddAsIngredient`() =
         runTest {
             fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
@@ -441,7 +443,7 @@ class FoodPickerViewModelTest {
             vm.onAction(FoodPickerAction.OnSearchOnlineClick)
 
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+                vm.onAction(FoodPickerAction.OnAddClick("f1"))
                 assertThat(fakeFoodRepository.lastCachedItem?.id).isEqualTo(FoodId("f1"))
                 assertThat(awaitItem()).isEqualTo(
                     FoodPickerEvent.AddAsIngredient(
@@ -455,13 +457,13 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `recipe ingredient click on local item does not cache remote item`() =
+    fun `recipe ingredient add on local item does not cache remote item`() =
         runTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
 
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+                vm.onAction(FoodPickerAction.OnAddClick("f1"))
                 assertThat(fakeFoodRepository.lastCachedItem).isNull()
                 assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
                 assertThat(awaitItem()).isEqualTo(
@@ -490,7 +492,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `browse foodClick on online item does not mark used and emits NavigateToFoodDetail`() =
+    fun `browse foodClick on online item remembers remote item without persisting and emits NavigateToFoodDetail`() =
         runTest {
             fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
             val vm = createViewModel(target = FoodPickerTarget.BROWSE)
@@ -501,13 +503,33 @@ class FoodPickerViewModelTest {
             vm.events.test {
                 vm.onAction(FoodPickerAction.OnFoodClick("f1"))
 
+                assertThat(fakeFoodRepository.lastRememberedItem).isEqualTo(testFood("f1"))
+                assertThat(fakeFoodRepository.lastCachedItem).isNull()
                 assertThat(fakeFoodRepository.lastMarkedUsed).isNull()
                 assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
             }
         }
 
     @Test
-    fun `browse recipeClick marks recipe as used and does not select it`() =
+    fun `diary foodClick on online item remembers remote item without persisting and emits NavigateToFoodDetail`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.DIARY)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+                assertThat(fakeFoodRepository.lastRememberedItem).isEqualTo(testFood("f1"))
+                assertThat(fakeFoodRepository.lastCachedItem).isNull()
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+            }
+        }
+
+    @Test
+    fun `browse recipeClick marks recipe as used and emits NavigateToRecipeDetail`() =
         runTest {
             fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
             val vm = createViewModel(target = FoodPickerTarget.BROWSE)
@@ -517,8 +539,142 @@ class FoodPickerViewModelTest {
 
                 assertThat(fakeRecipeRepository.lastMarkedUsed).isEqualTo(RecipeId("r1"))
                 assertThat(vm.state.value.selectedItemReady).isFalse()
-                assertThat(vm.state.value.selectedItemId).isNull()
-                expectNoEvents()
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToRecipeDetail(recipeId = "r1"))
+            }
+        }
+
+    @Test
+    fun `diary recipeClick marks recipe as used and emits NavigateToRecipeDetail`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
+            val vm = createViewModel(target = FoodPickerTarget.DIARY)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
+
+                assertThat(fakeRecipeRepository.lastMarkedUsed).isEqualTo(RecipeId("r1"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToRecipeDetail(recipeId = "r1"))
+            }
+        }
+
+    @Test
+    fun `recipe ingredient recipeClick marks recipe as used and emits NavigateToRecipeDetail`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
+
+                assertThat(fakeRecipeRepository.lastMarkedUsed).isEqualTo(RecipeId("r1"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToRecipeDetail(recipeId = "r1"))
+            }
+        }
+
+    @Test
+    fun `diary foodClick emits NavigateToFoodDetail and marks food as used`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1", lastUsedAt = 100L)))
+            val vm = createViewModel(target = FoodPickerTarget.DIARY)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+                assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+            }
+        }
+
+    @Test
+    fun `recipe ingredient foodClick emits NavigateToFoodDetail and marks food as used`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1", lastUsedAt = 100L)))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+
+                assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+            }
+        }
+
+    @Test
+    fun `onAddClick selects food`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+
+            val state = vm.state.value
+            assertThat(state.selectedItemReady).isTrue()
+            assertThat(state.selectedItemId).isEqualTo("f1")
+            assertThat(state.selectedItemIsRecipe).isFalse()
+            assertThat(state.selectedItemHasServingUnit).isFalse()
+            assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+        }
+
+    @Test
+    fun `onAddRecipeClick selects recipe`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddRecipeClick("r1"))
+
+            val state = vm.state.value
+            assertThat(state.selectedItemReady).isTrue()
+            assertThat(state.selectedItemId).isEqualTo("r1")
+            assertThat(state.selectedItemIsRecipe).isTrue()
+            assertThat(state.selectedItemHasServingUnit).isTrue()
+            assertThat(fakeRecipeRepository.lastMarkedUsed).isEqualTo(RecipeId("r1"))
+        }
+
+    @Test
+    fun `OnDismissSelection resets selected item`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+            assertThat(vm.state.value.selectedItemReady).isTrue()
+
+            vm.onAction(FoodPickerAction.OnDismissSelection)
+
+            val state = vm.state.value
+            assertThat(state.selectedItemReady).isFalse()
+            assertThat(state.selectedItemId).isNull()
+            assertThat(state.selectedItemIsRecipe).isFalse()
+        }
+
+    @Test
+    fun `confirmAddToDiary in BROWSE without targetDate uses today`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE, targetDate = null)
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+
+            vm.events.test {
+                vm.onAction(
+                    FoodPickerAction.OnConfirmAddToDiary(
+                        slot = MealSlot.LUNCH,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
+
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddToDiary(
+                        foodId = "f1",
+                        isRecipe = false,
+                        date = LocalDate.now().toString(),
+                        slot = MealSlot.LUNCH,
+                        amount = 100.0,
+                        isGrams = true,
+                    ),
+                )
             }
         }
 
@@ -552,16 +708,17 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `diary barcode hit selects item for AddToDiarySheet`() =
+    fun `diary barcode hit emits NavigateToFoodDetail`() =
         runTest {
             fakeFoodRepository.lookupResult = Result.Success(testFood("f1"))
             val vm = createViewModel(target = FoodPickerTarget.DIARY)
 
-            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
 
-            assertThat(vm.state.value.selectedItemReady).isTrue()
-            assertThat(vm.state.value.selectedItemId).isEqualTo("f1")
-            assertThat(vm.state.value.selectedItemIsRecipe).isFalse()
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+                assertThat(vm.state.value.selectedItemReady).isFalse()
+            }
         }
 
     @Test
@@ -663,6 +820,7 @@ private class FakeFoodRepository : FoodRepository {
     var lastToggledFavorite: FoodId? = null
     var lastMarkedUsed: FoodId? = null
     var lastCachedItem: FoodItem? = null
+    var lastRememberedItem: FoodItem? = null
     var searchResult: Result<List<FoodItem>, DataError.Network> = Result.Success(emptyList())
     var shouldFailCacheRemoteItem: Boolean = false
 
@@ -724,6 +882,12 @@ private class FakeFoodRepository : FoodRepository {
         foodItems.value = foodItems.value.filter { it.id != item.id } + item
         return Result.Success(Unit)
     }
+
+    override suspend fun rememberRemoteItem(item: FoodItem) {
+        lastRememberedItem = item
+    }
+
+    override suspend fun getSessionItem(id: FoodId): FoodItem? = null
 }
 
 private class FakeRecipeRepository : RecipeRepository {

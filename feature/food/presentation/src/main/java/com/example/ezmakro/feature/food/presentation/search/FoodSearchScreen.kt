@@ -25,7 +25,8 @@ import org.koin.core.parameter.parametersOf
 
 @Composable
 fun FoodSearchRoot(
-    onNavigateToDetail: (String) -> Unit,
+    onNavigateToFoodDetail: (String) -> Unit,
+    onNavigateToRecipeDetail: (String) -> Unit,
     onNavigateToCreate: (String?) -> Unit,
     onAddToDiary: (String, String, MealSlot, Double, Boolean) -> Unit = { _, _, _, _, _ -> },
     viewModel: FoodPickerViewModel =
@@ -37,7 +38,8 @@ fun FoodSearchRoot(
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
-            is FoodPickerEvent.NavigateToFoodDetail -> onNavigateToDetail(event.foodId)
+            is FoodPickerEvent.NavigateToFoodDetail -> onNavigateToFoodDetail(event.foodId)
+            is FoodPickerEvent.NavigateToRecipeDetail -> onNavigateToRecipeDetail(event.recipeId)
             is FoodPickerEvent.NavigateToFoodCreate -> onNavigateToCreate(event.barcode)
             is FoodPickerEvent.AddToDiary ->
                 onAddToDiary(event.foodId, event.date, event.slot, event.amount, event.isGrams)

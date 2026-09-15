@@ -11,6 +11,7 @@ import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.map
 import kotlinx.coroutines.flow.Flow
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Offline-first food repository (ADR-002): the UI observes local flows only;
@@ -25,6 +26,8 @@ class OfflineFirstFoodRepository(
     private val remote: FoodRemoteDataSource,
     private val now: () -> Long = { System.currentTimeMillis() },
 ) : FoodRepository {
+    private val sessionItems = ConcurrentHashMap<FoodId, FoodItem>()
+
     override fun observeAll(): Flow<List<FoodItem>> = local.observeAll()
 
     override fun observeFavorites(): Flow<List<FoodItem>> = local.observeFavorites()
@@ -105,10 +108,16 @@ class OfflineFirstFoodRepository(
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
         val current =
             when (val result = local.getById(id)) {
-                is Result.Success -> result.data ?: return Result.Error(DataError.Local.NOT_FOUND)
+                is Result.Success -> result.data
                 is Result.Error -> return Result.Error(result.error)
             }
-        return local.setFavorite(id, !current.isFavorite)
+        if (current == null) {
+            // Online item viewed via session cache: favoriting is an explicit
+            // use, so persist it permanently first.
+            val remembered = sessionItems[id] ?: return Result.Error(DataError.Local.NOT_FOUND)
+            cacheRemoteItem(remembered)
+        }
+        return local.setFavorite(id, !(current?.isFavorite ?: false))
     }
 
     override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = local.markUsed(id, now())
@@ -129,6 +138,12 @@ class OfflineFirstFoodRepository(
         }
         return result
     }
+
+    override suspend fun rememberRemoteItem(item: FoodItem) {
+        sessionItems[item.id] = item
+    }
+
+    override suspend fun getSessionItem(id: FoodId): FoodItem? = sessionItems[id]
 
     /**
      * ADR-004: persist an OFF result only if there is no existing UserModified

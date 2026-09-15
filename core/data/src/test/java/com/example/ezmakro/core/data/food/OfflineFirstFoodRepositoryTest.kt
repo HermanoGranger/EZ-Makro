@@ -195,6 +195,39 @@ class OfflineFirstFoodRepositoryTest {
         }
 
     @Test
+    fun `rememberRemoteItem keeps item in session without persisting`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            repo.rememberRemoteItem(food("1", "Alpro", hasSnapshot = false))
+
+            assertThat(local.store.value["1"]).isNull()
+            assertThat(repo.getSessionItem(FoodId("1"))?.name).isEqualTo("Alpro")
+        }
+
+    @Test
+    fun `toggleFavorite persists a session-remembered remote item`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            repo.rememberRemoteItem(food("1", "Alpro", hasSnapshot = false))
+
+            repo.toggleFavorite(FoodId("1"))
+
+            assertThat(local.store.value["1"]?.name).isEqualTo("Alpro")
+            assertThat(local.store.value["1"]?.isFavorite).isEqualTo(true)
+        }
+
+    @Test
+    fun `getSessionItem is null for an unknown id`() =
+        runTest {
+            val repo = OfflineFirstFoodRepository(FakeLocal(), FakeRemote())
+
+            assertThat(repo.getSessionItem(FoodId("missing"))).isNull()
+        }
+
+    @Test
     fun `lookupByBarcode returns local hit without calling remote`() =
         runTest {
             val local = FakeLocal()
