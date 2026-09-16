@@ -112,6 +112,31 @@ class FoodPickerViewModelTest {
         }
 
     @Test
+    fun `recipe without finalWeight shows estimated kcal in picker`() =
+        runTest {
+            val recipe =
+                Recipe(
+                    id = RecipeId("r1"),
+                    name = "Müsli",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = testFood("f1"),
+                                rawWeight = RawWeight(100.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                )
+            fakeRecipeRepository.emitRecipes(listOf(recipe))
+            val vm = createViewModel()
+            val userRecipes = vm.state.value.userRecipes
+            assertThat(userRecipes).hasSize(1)
+            assertThat(userRecipes[0].kcalPer100g).isEqualTo(100.0)
+        }
+
+    @Test
     fun `toggleFavorite on food calls foodRepository`() =
         runTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))

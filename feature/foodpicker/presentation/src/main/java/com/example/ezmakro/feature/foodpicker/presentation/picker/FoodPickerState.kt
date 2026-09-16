@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.foodpicker.presentation.picker
 
+import com.example.ezmakro.core.domain.calculation.estimatedPer100g
 import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
@@ -67,6 +68,6 @@ fun Recipe.toPickerRecipeUi() =
     PickerRecipeUi(
         id = id.value,
         name = name,
-        kcalPer100g = nutritionPer100g()?.kcal ?: 0.0,
+        kcalPer100g = nutritionPer100g()?.kcal ?: estimatedPer100g().kcal,
         isFavorite = isFavorite,
     )
