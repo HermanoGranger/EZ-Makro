@@ -16,311 +16,130 @@
 
 ------------------------------------------------------------------------
 
-## Phase 0 -- Vision & Architektur
+## Statusübersicht
 
-### Ziel
+| Phase | Thema | Status |
+|-------|-------|--------|
+| 0 | Vision & Architektur | ✅ abgeschlossen |
+| 0.5 | Domain Modeling | ✅ abgeschlossen |
+| 1 | Projektsetup | ✅ abgeschlossen |
+| 2 | Core | ✅ abgeschlossen |
+| 3 | Datenbank | ✅ abgeschlossen |
+| 4 | OpenFoodFacts | ✅ abgeschlossen |
+| 5 | Food | ✅ abgeschlossen |
+| 6 | Recipes | ✅ abgeschlossen (Scope angepasst, siehe unten) |
+| 7 | Meal Log | ✅ abgeschlossen |
+| 8 | Dashboard | ✅ in den Tagebuch-Screen integriert (kein eigener Tab) |
+| 9 | Goals | ✅ abgeschlossen (liegt im Diary-Module) |
+| 10 | Weight Tracking | 🔜 offen |
+| 11 | Statistics | 🔜 offen |
+| 12 | Backup | 🔜 offen |
+| 13 | Polish | 🔜 offen |
+| 14 | Release Candidate | 🔜 offen |
 
-Produktvision, Architektur und Standards vollständig festlegen.
-
-#### ToDos
-
--   Git Init (Repo, .gitignore, initiale Struktur -- **ganz am Anfang**, damit auch Phase 0 selbst versioniert ist)
--   Vision
--   Nicht-Ziele
--   Scope
--   Personas
--   User Flows
--   Modulstruktur
--   ADRs
--   Branching
--   Coding Style
--   Definition of Done
-
-#### ADRs (mindestens)
-
--   ADR-001: Clean Architecture + MVI
--   ADR-002: Offline-First-Strategie (Room als Single Source of Truth)
--   ADR-003: Rohgewicht vs. Endgewicht bei Rezeptberechnung (siehe Phase 0.5)
--   ADR-004: Umgang mit nutzerbearbeiteten OpenFoodFacts-Einträgen (Konfliktstrategie, siehe Phase 4)
--   ADR-005: Widget-Technologie -- Glance (Jetpack Compose für App Widgets) --
-    **VERWORFEN**: Widgets aus dem Scope gestrichen, siehe `docs/scope.md`
-    ("Aus dem Scope gestrichen")
--   ADR-006 (optional): Kein CI-Tooling, da privates Einzelentwickler-Projekt -- stattdessen lokale Gradle-Tasks (`./gradlew check`) als manuelles Gate vor jedem Commit
-
-#### Deliverables
-
--   vision.md
--   architecture.md
--   scope.md
--   roadmap.md
--   ADR-001..004 und ADR-006 (ADR-005 verworfen)
-
-#### Checks
-
--   Architektur konsistent
--   Offline-Strategie dokumentiert
--   Keine offenen Kernentscheidungen
-
-#### Tests
-
--   Dokumentenreview
-
-#### Acceptance
-
--   Architektur freigegeben
+Aktuell offene Bug-/Quality-Punkte: `docs/Bugfix_Plan.md`.
+Detaillierte Patterns pro Layer: `.opencode/skills/`.
 
 ------------------------------------------------------------------------
 
-## Phase 0.5 -- Domain Modeling
+## Abgeschlossene Phasen (0–9) — Kurzfassung
 
-### ToDos
+> Frühere Detailplanungen (ToDos, Deliverables, Tests) zu den abgeschlossenen
+> Phasen sind hier entfernt; sie sind umgesetzt und durch Code + Tests belegt.
+> Künftige Phasen behalten ihre Detailplanung bei.
 
--   Domain Models
--   Aggregate Roots
--   Value Objects (Nutrition etc.)
--   IDs
--   Berechnungslogik
--   UML
--   Sequenzdiagramme für Kernflows
+### Phase 0 — Vision & Architektur
 
-#### Wichtige Value Objects / Konzepte
+Vision, Nicht-Ziele, Scope, Personas, User Flows, Modulstruktur, ADRs 001–004
+und 006 (ADR-005 Widgets verworfen), Coding Style, DOD. Dokumente: `vision.md`,
+`architecture.md`, `scope.md`, `roadmap.md`.
 
--   **NutritionValues** (kcal, Protein, Fett, KH, Ballaststoffe -- immer bezogen auf eine definierte Basis, z. B. 100 g oder 1 Portion)
--   **ServingUnit**: Abbildung von Mengenangaben wie "1 Ei", "1 Scheibe", "1 EL" auf ein Gramm-Äquivalent, damit Zutaten nicht ausschließlich über Gramm eingegeben werden müssen
--   **Rezept-Gewichtslogik (klar getrennt!):**
-    -   Summe der Nährwerte aller Zutaten im **Rohzustand** ergibt die **Gesamtnährwerte des Gerichts** (ändert sich nicht durch Kochen)
-    -   Nutzer kann optional das **gemessene Endgewicht** (z. B. nach dem Kochen) eintragen
-    -   "Nährwerte pro 100 g" werden **ausschließlich** aus Gesamtnährwerte ÷ Endgewicht berechnet, niemals aus der Summe der Rohgewichte -- diese Unterscheidung muss im Domain Model erzwungen werden (z. B. durch getrennte Typen `RawWeight` und `FinalWeight`), damit sie später nicht versehentlich vermischt wird
--   **CachedFoodItem-Status**: Konzept für "unverändert / lokal bearbeitet / veraltet gegenüber Original" bereits hier als Enum/Sealed-Class modellieren (Details zur Umsetzung in Phase 4)
+### Phase 0.5 — Domain Modeling
 
-#### Checks
+Domainmodell eingefroren, u. a. `RawWeight`/`FinalWeight`-Trennung im Typsystem
+(ADR-003), `NutritionValues`, `ServingUnit`, `CachedFoodItemStatus`.
 
--   Keine Android-Abhängigkeiten
--   Domäne vollständig
--   Roh-/Endgewicht-Trennung ist im Typsystem abgebildet, nicht nur per Konvention
+### Phase 1 — Projektsetup
 
-#### Tests
+Gradle Multi-Modul, Version Catalog, build-logic Conventions, Compose, Koin
+(DI), Room, Ktor, KSP, Detekt, Ktlint. Glance entfernt (Scope). Clean Build.
 
--   Berechnungstests
--   Edge Cases (z. B. Rezept ohne Endgewicht, Zutat ohne Portionsgröße)
+### Phase 2 — Core
 
-#### Acceptance
+`core-domain`, `core-data`, `core-presentation`, `core-design-system`,
+`core-database` mit Result/Errors, UiText, Theme, HttpClient, DataStore,
+Logging.
 
--   Domainmodell eingefroren
+### Phase 3 — Datenbank
 
-------------------------------------------------------------------------
+Room-Entities, DAOs, Migrationen, Indizes, TypeConverter, FTS4/FTS5 für die
+lokale Volltextsuche. Room produktionsreif.
 
-## Phase 1 -- Projektsetup
+### Phase 4 — OpenFoodFacts
 
-### ToDos
+Offline-First (ADR-002/ADR-004), API-Client mit verpflichtendem User-Agent,
+Barcode-Lookup (CameraX + ML Kit), deferred OFF-Caching
+(`cacheRemoteItem`/`rememberRemoteItem`), 503-Retry mit Backoff. Ein OFF-Sync
+überschreibt `UserModified`-Einträge nie; Zustände Original/UserModified/
+UpdateAvailable. **Hinweis:** Der neuere `UpdateAvailable`-Status ist aktuell
+toter Code (kein Produktions-Aufrufer von `markUpdateAvailable`) — offene
+Feature-Lücke, siehe Bugfix-Plan Abschnitt 8.
 
--   Gradle
--   Version Catalog
--   build-logic
--   Convention Plugins
--   Compose
--   Koin
--   Room
--   Ktor
--   KSP
--   Detekt
--   Ktlint
--   CameraX + ML Kit Barcode Scanning (Dependency-Setup, wird in Phase 4/5 verwendet)
--   Glance (Dependency-Setup) -- **ENTFERNT**: Widgets aus Scope gestrichen
-    (siehe `docs/scope.md`)
+### Phase 5 — Food
 
-#### Checks
+Suche (lokal FTS + OFF), Detail- und Edit-Seite (inkl. Bearbeitungsstatus),
+Barcode, Favoriten, Recent, eigene Lebensmittel. Vollständig nutzbar.
 
--   Build
--   Lint
--   Formatting
+### Phase 6 — Recipes
 
-#### Tests
+Rezepteditor, Zutaten (Food + Rezept-als-Zutat mit Snapshot-Unabhängigkeit),
+Portionen, Endgewicht, 100 g, Kategorien, Duplizieren, Favoriten/Recent
+(`is_favorite`/`last_used_at`).
 
--   ./gradlew build
--   detekt
--   ktlint
+**Scope-Anpassung (Refinement):** Meal Prep, Skalieren und Quick Meals / Kombos
+wurden entfernt (Commit `7d2cb92`) — Rezeptberechnung ist vereinheitlicht
+(nur Raw-/FinalWeight-Modell, ADR-003).
 
-#### Acceptance
+### Phase 7 — Meal Log
 
--   Clean Build
+Tagebuch mit Mahlzeiten-Slots, Add Food/Recipe (FoodPicker + AddToDiary),
+Quick Add (transient), Copy Yesterday, Verlauf, zentrale Datumsnavigation
+(Ephemeride via `CurrentDateProvider`, nicht system-heute), Umlagerung der
+Einträge auf das angezeigte Datum.
 
-------------------------------------------------------------------------
+### Phase 8 — Dashboard
 
-## Phase 2 -- Core
+Kalorien, Makros, Ziele, Restkalorien, Charts umgesetzt, **danach** (Refinement)
+als kollabierender `CollapsingSummaryHeader` in den Tagebuch-Screen integriert —
+der Dashboard-Tab/Bottom-Nav-Eintrag und das Modul `:feature:dashboard` wurden
+entfernt. (Ehemaliges `docs/REFINEMENT_PLAN.md` abgearbeitet und gelöscht.)
 
-### Module
+### Phase 9 — Goals
 
--   core-domain
--   core-data
--   core-presentation
--   core-design-system
--   core-database
+Kalorien, Protein, Fett, KH, Ballaststoffe; liegt im Diary-Module
+(`feature:diary:presentation.goals`), erreichbar über das Ziele-Icon in der
+Tagebuch-TopAppBar.
 
-#### ToDos
+### Refinement-Phasen (Dashboard-Merge, Slot-Buttons, Picker-Konsolidierung)
 
--   Result
--   Errors
--   UiText
--   Theme
--   HttpClient
--   DataStore
--   Logging
+Abgeschlossen und abgearbeitet:
 
-#### Tests
-
--   Unit Tests
--   Serialization
--   Error Mapping
-
-#### Acceptance
-
--   Core stabil
+1. Dashboard-Merge in den Diary-Screen (s. Phase 8)
+2. Per-Slot-"+"-Buttons, fixer Slot im FoodPicker, QuickAdd-Navigation mit Slot
+3. FoodPicker-Konsolidierung: kanonisches `FoodPickerContent` + zwei dünne
+   Wrapper, `BarcodeScanScreen` entfernt
+4. FoodPicker über alle Tabs vereinheitlicht: Tap → Detailseite, "±" 
+   kontextabhängig (DIARY/BROWSE/RECIPE_INGREDIENT), Add-Button auf den
+   Detailseiten, Online-Items als Session-Cache
 
 ------------------------------------------------------------------------
-
-## Phase 3 -- Datenbank
-
-#### ToDos
-
--   Entities
--   DAO
--   Migrationen
--   Indizes
--   TypeConverter
--   Room FTS4/FTS5 für lokale Volltextsuche über Lebensmittelnamen (statt LIKE-Queries) -- Entscheidung hier treffen, da nachträgliches Umbauen aufwendig ist
-
-#### Tests
-
--   CRUD
--   Migration
--   Performance
--   Offline
--   FTS-Suchqualität (Teiltreffer, Umlaute, Groß-/Kleinschreibung)
-
-#### Acceptance
-
--   Room produktionsreif
-
-------------------------------------------------------------------------
-
-## Phase 4 -- OpenFoodFacts
-
-#### ToDos
-
--   API-Client mit **verpflichtendem, aussagekräftigem User-Agent-Header** (App-Name, Version, Kontakt) -- OFF ratelimitet/blockiert sonst
--   DTO
--   Mapper
--   RemoteDataSource
--   Offline Repository
--   Caching
--   Barcode Lookup (CameraX + ML Kit)
--   **Fallback bei Barcode ohne Treffer:** direkte Überleitung in den "Eigenes Lebensmittel anlegen"-Flow, Barcode wird dabei vorausgefüllt
-
-#### Umgang mit nutzerbearbeiteten Einträgen (wichtig)
-
--   Jeder lokal gecachte OFF-Eintrag erhält ein Flag/Status, z. B. `Original`, `UserModified`, `UpdateAvailable`
--   Sobald der Nutzer einen gecachten Eintrag bearbeitet, wird er als `UserModified` markiert -- ein erneuter Sync aus der OFF-API **überschreibt diesen Eintrag nicht automatisch**
--   Die App **kommuniziert das aktiv in der UI** (z. B. Badge/Hinweis "Lokal angepasst") am Lebensmittel-Detail
--   Der Nutzer bekommt zwei explizite Optionen:
-    -   **Zurücksetzen auf Original**: das ursprüngliche, zuerst gecachte OFF-Ergebnis wird wiederhergestellt (dafür muss das Original zusätzlich zur bearbeiteten Version aufbewahrt werden, z. B. in einer separaten Spalte/Snapshot statt Überschreiben)
-    -   **Neu von OFF beziehen**: aktueller API-Stand wird erneut geladen und ersetzt die lokale Version (mit Bestätigungsdialog, da das eigene Anpassungen verwirft)
-
-#### Tests
-
--   Netzwerk
--   Offline
--   Fehlerfälle
--   Retry
--   User-Agent wird korrekt gesetzt
--   Modifikations-Flag-Übergänge (Original → UserModified → Reset/Refetch)
-
-#### Acceptance
-
--   Offline First erfüllt
--   Nutzeränderungen sind nachvollziehbar, kommunizierbar und reversibel
-
-------------------------------------------------------------------------
-
-## Phase 5 -- Food
-
-#### Features
-
--   Suche (lokal via FTS + OpenFoodFacts)
--   Detail (inkl. Anzeige des Bearbeitungsstatus, siehe Phase 4)
--   Barcode
--   Favoriten
--   Recent
--   Eigene Lebensmittel
-
-#### Tests
-
--   VM
--   Repository
--   UI
--   Navigation
-
-#### Acceptance
-
--   Lebensmittel vollständig nutzbar
-
-------------------------------------------------------------------------
-
-## Phase 6 -- Recipes
-
-#### Features
-
--   Rezepteditor
--   Zutaten
--   Portionen
--   Endgewicht (siehe Roh-/Endgewicht-Trennung aus Phase 0.5)
--   100 g
--   Kategorien
--   Meal Prep
--   Skalieren
--   Duplizieren
--   **Quick Meals / Kombos**: einfache Gruppen von Lebensmitteln als Vorlage speichern (z. B. "mein Frühstück"), ohne volle Rezept-Skalierungslogik -- schneller anzulegen als ein echtes Rezept
-
-#### Tests
-
--   Mathematische Genauigkeit
--   Rundung
--   Roh- vs. Endgewicht-Berechnung explizit getestet
--   UI
-
-#### Acceptance
-
--   Berechnungen korrekt
-
-------------------------------------------------------------------------
-
-## Phase 7 -- Meal Log
-
-Features: - Tageslog - Mahlzeiten - Copy Yesterday - Quick Add - Verlauf
-
-Tests: - Tagesberechnung - Historie - UI
-
-Acceptance: - Tagestracking vollständig
-
-------------------------------------------------------------------------
-
-## Phase 8 -- Dashboard
-
-Features: - Kalorien - Makros - Ziele - Charts - Restkalorien
-
-Tests: - Diagramme - Berechnung
-
-Acceptance: - Dashboard vollständig
-
-------------------------------------------------------------------------
-
-## Phase 9 -- Goals
-
-Kalorien, Protein, Fett, KH, Ballaststoffe.
 
 ## Phase 10 -- Weight Tracking
 
 Gewicht, Trend, Charts.
+
+Genauer Umfang wird zu Beginn der Phase definiert (evtl. Integration in das
+Tagebuch/Dashboard, eigene Kachel vs. Screens).
 
 ## Phase 11 -- Statistics
 
@@ -330,7 +149,10 @@ Wochen-, Monats-, Jahresstatistiken.
 
 -   JSON Export/Import
 -   Validierung
--   **Optionale Verschlüsselung** des Exports mit einem Passwort (Ernährungsdaten sind potenziell sensibel), z. B. via AES mit vom Nutzer gewähltem Passwort
+-   **Optionale Verschlüsselung** des Exports mit einem Passwort
+    (Ernährungsdaten sind potenziell sensibel), z. B. via AES mit vom Nutzer
+    gewähltem Passwort
+
 ## Phase 13 -- Polish
 
 Accessibility, Performance, Animationen, Tablets.
@@ -392,3 +214,11 @@ Accessibility, Performance, Animationen, Tablets.
 ### Commit
 
 Erst nach explizitem Befehl: `Commit Phase X`
+
+------------------------------------------------------------------------
+
+## Referenzen
+
+-   Bugfix-Plan (aktuell offene Bugs/Quality-Punkte): `docs/Bugfix_Plan.md`
+-   Roadmap mit Phasen-Status: `docs/roadmap.md`
+-   ADRs: `docs/adr/`
