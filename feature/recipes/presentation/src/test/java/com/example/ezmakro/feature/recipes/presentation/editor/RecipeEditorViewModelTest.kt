@@ -1,6 +1,7 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
 import assertk.assertThat
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
@@ -9,6 +10,7 @@ import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeFoodRepository
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeRecipeRepository
 import kotlinx.coroutines.Dispatchers
@@ -240,6 +242,42 @@ class RecipeEditorViewModelTest {
             assertThat(online.foodId).isEqualTo("online-off-id")
             assertThat(online.foodName).isEqualTo("Alpro Hafer")
             assertThat(online.servingLabel).isEqualTo("200 ml")
+        }
+
+    @Test
+    fun `save rejects ingredient with zero raw weight`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val recipeRepo = FakeRecipeRepository()
+            val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
+            vm.onAction(RecipeEditorAction.OnNameChange("Müsli"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "0"))
+            vm.onAction(RecipeEditorAction.OnSaveClick)
+
+            assertThat(vm.state.value.ingredientError != null).isTrue()
+            assertThat(recipeRepo.saved).isEmpty()
+        }
+
+    @Test
+    fun `save rejects ingredient with zero serving count`() =
+        runTest {
+            val egg =
+                FakeFoodRepository.food("f1", "Ei").copy(
+                    servingUnit = ServingUnit("1 Ei", 50.0),
+                )
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(egg))
+            val recipeRepo = FakeRecipeRepository()
+            val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
+            vm.onAction(RecipeEditorAction.OnNameChange("Eierpfanne"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnIngredientServingCountChange(0, "0"))
+            vm.onAction(RecipeEditorAction.OnSaveClick)
+
+            assertThat(vm.state.value.ingredientError != null).isTrue()
+            assertThat(recipeRepo.saved).isEmpty()
         }
 
     @Test

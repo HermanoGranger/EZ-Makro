@@ -796,6 +796,61 @@ class FoodPickerViewModelTest {
             }
         }
 
+    @Test
+    fun `duplicate barcode within settle window emits only one navigation`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1"))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `duplicate barcode in recipe ingredient context emits only one AddAsIngredient`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1", name = "Milch"))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                assertThat(awaitItem()).isEqualTo(
+                    FoodPickerEvent.AddAsIngredient(
+                        itemId = "f1",
+                        itemName = "Milch",
+                        servingLabel = null,
+                        isRecipe = false,
+                    ),
+                )
+
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                expectNoEvents()
+            }
+        }
+
+    @Test
+    fun `different barcodes are not deduplicated`() =
+        runTest {
+            fakeFoodRepository.lookupResult = Result.Success(testFood("f1"))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f1"))
+
+                fakeFoodRepository.lookupResult = Result.Success(testFood("f2"))
+                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000001"))
+                assertThat(awaitItem()).isEqualTo(FoodPickerEvent.NavigateToFoodDetail(foodId = "f2"))
+            }
+        }
+
     private fun testFood(
         id: String,
         name: String = "Food $id",

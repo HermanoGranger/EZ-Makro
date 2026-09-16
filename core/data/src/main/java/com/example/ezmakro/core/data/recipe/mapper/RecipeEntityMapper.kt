@@ -18,8 +18,7 @@ suspend fun RecipeEntity.toRecipe(
 ): Recipe? {
     val ingredients = ArrayList<RecipeIngredient>(ingredientEntities.size)
     for (ing in ingredientEntities) {
-        val result = resolveIngredient(ing, foodLocalDataSource) ?: return null
-        ingredients += result
+        resolveIngredient(ing, foodLocalDataSource)?.let { ingredients += it }
     }
     if (ingredients.isEmpty()) return null
     return Recipe(
@@ -39,34 +38,40 @@ private suspend fun resolveIngredient(
     ing: RecipeIngredientEntity,
     foodLocalDataSource: FoodLocalDataSource,
 ): RecipeIngredient? {
-    val foodItemId = ing.foodItemId
-    if (foodItemId != null) {
-        val foodResult = foodLocalDataSource.getById(FoodId(foodItemId))
-        val food =
-            when (foodResult) {
-                is Result.Success -> foodResult.data
-                is Result.Error -> null
+    val food =
+        ing.foodItemId
+            ?.let { id ->
+                when (val foodResult = foodLocalDataSource.getById(FoodId(id))) {
+                    is Result.Success -> foodResult.data
+                    is Result.Error -> null
+                }
             }
-        if (food != null) {
-            return RecipeIngredient(
+    val rawWeight = ing.rawWeightGrams?.let { RawWeight(it) }
+    val amountDefined = rawWeight != null || ing.servingCount != null
+    val servingUnitMissing = ing.servingCount != null && rawWeight == null && food?.servingUnit == null
+    val snapshot =
+        if (food == null) {
+            ing.recipeSnapshotJson?.let { JsonConverters.decodeRecipeSnapshot(it) }
+        } else {
+            null
+        }
+    return when {
+        food != null && !servingUnitMissing && amountDefined ->
+            RecipeIngredient(
                 food = food,
                 recipeSnapshot = null,
-                rawWeight = ing.rawWeightGrams?.let { RawWeight(it) },
+                rawWeight = rawWeight,
                 servingCount = ing.servingCount,
             )
-        }
+        snapshot != null && amountDefined ->
+            RecipeIngredient(
+                food = null,
+                recipeSnapshot = snapshot,
+                rawWeight = rawWeight,
+                servingCount = ing.servingCount,
+            )
+        else -> null
     }
-    val snapshotJson = ing.recipeSnapshotJson
-    if (snapshotJson != null) {
-        val snapshot = JsonConverters.decodeRecipeSnapshot(snapshotJson)
-        return RecipeIngredient(
-            food = null,
-            recipeSnapshot = snapshot,
-            rawWeight = ing.rawWeightGrams?.let { RawWeight(it) },
-            servingCount = ing.servingCount,
-        )
-    }
-    return null
 }
 
 fun Recipe.toEntities(): Pair<RecipeEntity, List<RecipeIngredientEntity>> {

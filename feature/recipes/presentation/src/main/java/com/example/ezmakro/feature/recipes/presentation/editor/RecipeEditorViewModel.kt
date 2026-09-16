@@ -8,6 +8,7 @@ import com.example.ezmakro.core.domain.calculation.totalNutrition
 import com.example.ezmakro.core.domain.calculation.totalRawWeight
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
@@ -408,7 +409,9 @@ class RecipeEditorViewModel(
         val recipe = recipes.firstOrNull { it.id.value == draft.recipeId } ?: return null
         val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
         val servingCount = draft.servingCount.parseNonNegativeDouble()
-        if (rawWeight == null && servingCount == null) return null
+        val hasPositiveAmount =
+            (rawWeight != null && rawWeight.grams > 0.0) || (servingCount != null && servingCount > 0.0)
+        if (!hasPositiveAmount) return null
         val snapshot = createSnapshot(recipe)
         return RecipeIngredient(
             food = null,
@@ -425,10 +428,11 @@ class RecipeEditorViewModel(
         val food = foods.firstOrNull { it.id.value == draft.foodId }
         val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
         val servingCount = draft.servingCount.parseNonNegativeDouble()
-        val hasWeight = rawWeight != null || servingCount != null
+        val hasPositiveWeight =
+            (rawWeight != null && rawWeight.grams > 0.0) || (servingCount != null && servingCount > 0.0)
         val needsServingUnit = servingCount != null && rawWeight == null
         val hasServingUnit = !needsServingUnit || food?.servingUnit != null
-        if (food == null || !hasWeight || !hasServingUnit) return null
+        if (food == null || !hasPositiveWeight || !hasServingUnit) return null
         return RecipeIngredient(
             food = food,
             recipeSnapshot = null,
@@ -438,10 +442,15 @@ class RecipeEditorViewModel(
     }
 
     private fun createSnapshot(recipe: Recipe): RecipeSnapshot {
-        val totalWeight = recipe.finalWeight?.grams ?: recipe.totalRawWeight().grams
+        val totalRaw = recipe.totalRawWeight().grams
+        val totalWeight = recipe.finalWeight?.grams ?: totalRaw
         val nutritionPer100g =
             recipe.nutritionPer100g()
-                ?: (recipe.totalNutrition() * (100.0 / recipe.totalRawWeight().grams))
+                ?: if (totalRaw > 0.0) {
+                    recipe.totalNutrition() * (100.0 / totalRaw)
+                } else {
+                    NutritionValues.ZERO
+                }
         val gramsPerPortion = totalWeight / recipe.portions
         return RecipeSnapshot(
             recipeId = recipe.id,

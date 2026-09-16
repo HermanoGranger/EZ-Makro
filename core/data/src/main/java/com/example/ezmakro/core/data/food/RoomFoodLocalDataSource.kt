@@ -3,6 +3,7 @@ package com.example.ezmakro.core.data.food
 import com.example.ezmakro.core.data.food.mapper.toFoodItem
 import com.example.ezmakro.core.data.food.mapper.upsertFood
 import com.example.ezmakro.core.database.dao.FoodItemDao
+import com.example.ezmakro.core.database.dao.FtsQuerySanitizer
 import com.example.ezmakro.core.domain.datasource.FoodLocalDataSource
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
@@ -43,15 +44,18 @@ class RoomFoodLocalDataSource(
             .observeAll()
             .map {
                 val normalized = query.trim().lowercase()
-                if (normalized.isEmpty()) {
+                val sanitized = FtsQuerySanitizer.sanitize(normalized)
+                if (sanitized.isEmpty()) {
                     emptyList()
                 } else {
-                    val rowIds = dao.searchRowIds(ftsQuery(normalized))
-                    if (rowIds.isEmpty()) {
-                        emptyList()
-                    } else {
-                        dao.getByRowIds(rowIds).map { entity -> entity.toFoodItem() }
-                    }
+                    runCatching {
+                        val rowIds = dao.searchRowIds(ftsQuery(sanitized))
+                        if (rowIds.isEmpty()) {
+                            emptyList()
+                        } else {
+                            dao.getByRowIds(rowIds).map { entity -> entity.toFoodItem() }
+                        }
+                    }.getOrDefault(emptyList())
                 }
             }.flowOn(Dispatchers.IO)
 
@@ -100,7 +104,7 @@ class RoomFoodLocalDataSource(
         usedAtEpochMillis: Long,
     ): EmptyResult<DataError.Local> = runCatchingLocal { dao.markUsed(id.value, usedAtEpochMillis) }
 
-    private fun ftsQuery(normalized: String): String = "$normalized*"
+    private fun ftsQuery(sanitized: String): String = "$sanitized*"
 }
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */

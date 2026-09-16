@@ -90,6 +90,23 @@ class FoodItemDaoTest : DatabaseTest() {
         assertThat(results).containsExactlyInAnyOrder("a", "b")
     }
 
+    @Test
+    fun `fts query with special characters is sanitized and does not crash`() {
+        dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Milch"))
+        dao.upsertFood(FoodItemFixtures.food(id = "b", name = "Käse"))
+
+        val query = FtsQuerySanitizer.sanitize("milch\"*)(") + "*"
+        val results = dao.searchRowIds(query).resolve()
+        assertThat(results).containsExactly("a")
+    }
+
+    @Test
+    fun `FtsQuerySanitizer strips FTS metacharacters`() {
+        assertThat(FtsQuerySanitizer.sanitize("\"*()+-:")).isEqualTo("")
+        assertThat(FtsQuerySanitizer.sanitize("Hafer\"flocken")).isEqualTo("Haferflocken")
+        assertThat(FtsQuerySanitizer.sanitize("milch 2%")).isEqualTo("milch 2%")
+    }
+
     // --- ADR-004 status transitions ---
 
     @Test

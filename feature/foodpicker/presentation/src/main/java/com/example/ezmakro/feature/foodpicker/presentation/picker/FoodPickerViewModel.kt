@@ -62,6 +62,8 @@ class FoodPickerViewModel(
 
     private val queryFlow = MutableStateFlow(_state.value.searchQuery)
 
+    private val handledBarcodeAt = HashMap<String, Long>()
+
     init {
         observeRecent()
         observeRecentRecipes()
@@ -294,11 +296,15 @@ class FoodPickerViewModel(
 
     private fun lookupBarcode(barcode: String) {
         if (_state.value.isLookingUpBarcode) return
+        val now = System.currentTimeMillis()
+        val lastHandledAt = handledBarcodeAt[barcode] ?: 0L
+        if (now - lastHandledAt < BARCODE_SETTLE_WINDOW_MS) return
         viewModelScope.launch {
             _state.update { it.copy(isLookingUpBarcode = true, barcodeError = null) }
             when (val result = foodRepository.lookupByBarcode(barcode)) {
                 is Result.Success -> {
                     _state.update { it.copy(isLookingUpBarcode = false) }
+                    handledBarcodeAt[barcode] = now
                     val food = result.data
                     when (_state.value.targetContext) {
                         FoodPickerTarget.DIARY -> {
@@ -455,5 +461,8 @@ class FoodPickerViewModel(
     companion object {
         private const val KEY_TAB = "foodpicker_tab"
         private const val KEY_QUERY = "foodpicker_query"
+
+        /** Max age of a handled barcode-scan result that still suppresses a re-detected scan. */
+        private const val BARCODE_SETTLE_WINDOW_MS = 3_000L
     }
 }

@@ -24,7 +24,10 @@ fun Recipe.nutritionPer100g(): NutritionValues? {
     return totalNutrition() * (100.0 / finalWeight.grams)
 }
 
-fun Recipe.estimatedPer100g(): NutritionValues = totalNutrition() * (100.0 / totalRawWeight().grams)
+fun Recipe.estimatedPer100g(): NutritionValues {
+    val totalRaw = totalRawWeight().grams
+    return if (totalRaw > 0.0) totalNutrition() * (100.0 / totalRaw) else NutritionValues.ZERO
+}
 
 fun Recipe.nutritionPerPortion(): NutritionValues = totalNutrition() * (1.0 / portions)
 
@@ -61,7 +64,7 @@ fun DiaryEntry.consumedNutrition(): NutritionValues {
             ?.let { recipe.nutritionPer100g()!! * (1.0 / 100.0) }
             ?: run {
                 val totalRaw = recipe.totalRawWeight().grams
-                recipe.totalNutrition() * (1.0 / totalRaw)
+                if (totalRaw > 0.0) recipe.totalNutrition() * (1.0 / totalRaw) else NutritionValues.ZERO
             }
     return factor * grams
 }

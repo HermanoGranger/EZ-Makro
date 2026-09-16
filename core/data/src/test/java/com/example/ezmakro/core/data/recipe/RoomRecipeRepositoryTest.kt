@@ -1,7 +1,6 @@
 package com.example.ezmakro.core.data.recipe
 
 import assertk.assertThat
-import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
@@ -22,6 +21,7 @@ import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
@@ -319,7 +319,7 @@ class RoomRecipeRepositoryTest {
         }
 
     @Test
-    fun `ingredient with missing food is dropped on resolution`() =
+    fun `ingredient with missing food is skipped instead of dropping the whole recipe`() =
         runTest {
             val dao = FakeRecipeDao()
             val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1")) }
@@ -339,6 +339,42 @@ class RoomRecipeRepositoryTest {
             )
 
             val resolved = repo.observeAll().first()
-            assertThat(resolved).containsExactly()
+            assertThat(resolved).hasSize(1)
+            val ingredient = resolved.first().ingredients.single()
+            assertThat(ingredient.food?.name).isEqualTo("Food f1")
+        }
+
+    @Test
+    fun `ingredient whose serving unit was removed degrades instead of breaking hydration`() =
+        runTest {
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val dao = FakeRecipeDao()
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+            repo.save(
+                Recipe(
+                    id = RecipeId("r1"),
+                    name = "Eipfanne",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = food("f1").copy(servingUnit = ServingUnit("1 Ei", 50.0)),
+                                rawWeight = null,
+                                servingCount = 2.0,
+                            ),
+                            RecipeIngredient(food = food("f2"), rawWeight = RawWeight(100.0), servingCount = null),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                ),
+            )
+
+            // The food's serving unit is removed afterwards (saveUserEdit / resetToOriginal).
+            // The portion-only ingredient must be skipped, the recipe must still hydrate.
+            foodLocal.store.value = mapOf("f1" to food("f1"), "f2" to food("f2"))
+
+            val resolved = repo.observeAll().first()
+            assertThat(resolved).hasSize(1)
+            val ingredient = resolved.first().ingredients.single()
+            assertThat(ingredient.food?.name).isEqualTo("Food f2")
         }
 }

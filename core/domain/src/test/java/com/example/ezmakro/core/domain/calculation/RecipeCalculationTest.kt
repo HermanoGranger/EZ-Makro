@@ -406,6 +406,43 @@ class RecipeCalculationTest {
     }
 
     @Test
+    fun `estimatedPer100g with zero total raw weight returns ZERO without division by zero`() {
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Leer",
+                ingredients = listOf(ingredient(food(), 0.0)),
+                finalWeight = null,
+                portions = 1,
+            )
+        // total raw weight = 0 g; 0 * Infinity would be NaN -> must degrade to ZERO
+        assertEquals(NutritionValues.ZERO, recipe.estimatedPer100g())
+    }
+
+    @Test
+    fun `diary recipe entry by grams with zero raw weight returns ZERO without crash`() {
+        val recipe =
+            Recipe(
+                id = RecipeId("r1"),
+                name = "Leer",
+                ingredients = listOf(ingredient(food(), 0.0)),
+                finalWeight = null,
+                portions = 1,
+            )
+        val entry =
+            DiaryEntry(
+                id = DiaryEntryId("d1"),
+                slot = MealSlot.DINNER,
+                date = java.time.LocalDate.of(2026, 1, 1),
+                food = null,
+                recipe = recipe,
+                amountGrams = 100.0,
+                portionCount = null,
+            )
+        assertEquals(NutritionValues.ZERO, entry.consumedNutrition())
+    }
+
+    @Test
     fun `ingredient with null nutritionPer100g returns ZERO`() {
         val f = food(per100g = null)
         val ing = ingredient(f, 200.0)
