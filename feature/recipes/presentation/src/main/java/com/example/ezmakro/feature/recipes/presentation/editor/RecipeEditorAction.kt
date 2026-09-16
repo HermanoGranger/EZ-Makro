@@ -19,6 +19,8 @@ sealed interface RecipeEditorAction {
 
     data class OnAddIngredientClick(
         val foodId: String,
+        val foodName: String = "",
+        val servingLabel: String? = null,
     ) : RecipeEditorAction
 
     data class OnAddRecipeIngredientClick(

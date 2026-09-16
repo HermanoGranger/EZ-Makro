@@ -113,7 +113,7 @@ class RecipeEditorViewModel(
                     it.copy(finalWeight = action.value, numberError = null)
                 }
 
-            is RecipeEditorAction.OnAddIngredientClick -> addIngredient(action.foodId)
+            is RecipeEditorAction.OnAddIngredientClick -> addIngredient(action)
 
             is RecipeEditorAction.OnAddRecipeIngredientClick -> addRecipeIngredient(action.recipeId)
 
@@ -175,19 +175,18 @@ class RecipeEditorViewModel(
         _state.update { update(it).copy(saveError = null) }
     }
 
-    private fun addIngredient(foodId: String) {
-        val food =
-            _state.value.availableFoods.firstOrNull { it.id == foodId }
-                ?: _state.value.availableFoods.firstOrNull()
-                ?: return
+    private fun addIngredient(action: RecipeEditorAction.OnAddIngredientClick) {
+        val known = _state.value.availableFoods.firstOrNull { it.id == action.foodId }
+        val foodName = action.foodName.ifBlank { known?.name ?: return }
+        val servingLabel = action.servingLabel ?: known?.servingLabel
         _state.update {
             it.copy(
                 ingredients =
                     it.ingredients +
                         IngredientDraft(
-                            foodId = food.id,
-                            foodName = food.name,
-                            servingLabel = food.servingLabel,
+                            foodId = action.foodId,
+                            foodName = foodName,
+                            servingLabel = servingLabel,
                         ),
                 ingredientError = null,
             )

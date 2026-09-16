@@ -221,4 +221,51 @@ class RecipeEditorViewModelTest {
             assertThat(savedIng.servingCount).isEqualTo(2.0)
             assertThat(savedIng.effectiveRawWeight()).isEqualTo(RawWeight(100.0))
         }
+
+    @Test
+    fun `online ingredient not in availableFoods is added with provided name`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(
+                RecipeEditorAction.OnAddIngredientClick(
+                    foodId = "online-off-id",
+                    foodName = "Alpro Hafer",
+                    servingLabel = "200 ml",
+                ),
+            )
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
+            val online = vm.state.value.ingredients[0]
+            assertThat(online.foodId).isEqualTo("online-off-id")
+            assertThat(online.foodName).isEqualTo("Alpro Hafer")
+            assertThat(online.servingLabel).isEqualTo("200 ml")
+        }
+
+    @Test
+    fun `two different online ingredients add both with correct names`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(emptyList())
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(
+                RecipeEditorAction.OnAddIngredientClick(
+                    foodId = "online-1",
+                    foodName = "Alpro Hafer",
+                    servingLabel = "200 ml",
+                ),
+            )
+            vm.onAction(
+                RecipeEditorAction.OnAddIngredientClick(
+                    foodId = "online-2",
+                    foodName = "Oatly Barista",
+                    servingLabel = "250 ml",
+                ),
+            )
+            assertThat(vm.state.value.ingredients.size).isEqualTo(2)
+            val first = vm.state.value.ingredients[0]
+            val second = vm.state.value.ingredients[1]
+            assertThat(first.foodName).isEqualTo("Alpro Hafer")
+            assertThat(second.foodName).isEqualTo("Oatly Barista")
+        }
 }

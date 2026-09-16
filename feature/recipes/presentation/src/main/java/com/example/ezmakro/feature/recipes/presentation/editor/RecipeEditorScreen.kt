@@ -71,7 +71,13 @@ fun RecipeEditorRoot(
                 if (isRecipe) {
                     viewModel.onAction(RecipeEditorAction.OnAddRecipeIngredientClick(itemId))
                 } else {
-                    viewModel.onAction(RecipeEditorAction.OnAddIngredientClick(itemId))
+                    viewModel.onAction(
+                        RecipeEditorAction.OnAddIngredientClick(
+                            foodId = itemId,
+                            foodName = itemName,
+                            servingLabel = servingLabel,
+                        ),
+                    )
                 }
                 showFoodPicker = false
             },
