@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
 
 @Composable
@@ -98,11 +99,11 @@ private fun IngredientMacroDetail(
     ) {
         val amountText =
             when {
-                rawWeight != null -> "${rawWeight.toInt()} g"
+                rawWeight != null -> "${rawWeight.formatValue()} g"
                 servingCount != null && servingLabel != null && usesGenericServingLabel ->
-                    "$servingCount $servingLabel"
+                    "${servingCount.formatValue()} $servingLabel"
                 servingCount != null && servingLabel != null ->
-                    "$servingCount × $servingLabel"
+                    "${servingCount.formatValue()} × $servingLabel"
                 else -> ""
             }
         if (amountText.isNotEmpty()) {

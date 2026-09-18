@@ -9,6 +9,7 @@ import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.presentation.uitext.toUiText
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.model.toRecipeUi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,21 +51,21 @@ class RecipeDetailViewModel(
                                     val servingLabel = food?.servingUnit?.label
                                     val amountDisplay =
                                         when {
-                                            rawWeight != null -> "${rawWeight.grams.toInt()} g"
+                                            rawWeight != null -> "${rawWeight.grams.formatValue()} g"
                                             servingCount != null && servingLabel != null ->
-                                                "$servingCount × $servingLabel"
+                                                "${servingCount.formatValue()} × $servingLabel"
                                             servingCount != null && ing.recipeSnapshot != null ->
-                                                "$servingCount Portionen"
+                                                "${servingCount.formatValue()} Portionen"
                                             else -> ""
                                         }
                                     IngredientDetailUi(
                                         name = ing.food?.name ?: ing.recipeSnapshot?.recipeName.orEmpty(),
                                         amountDisplay = amountDisplay,
-                                        kcal = nutrition.kcal,
-                                        proteinG = nutrition.proteinG,
-                                        fatG = nutrition.fatG,
-                                        carbsG = nutrition.carbsG,
-                                        fiberG = nutrition.fiberG,
+                                        kcal = nutrition.kcal.formatValue(),
+                                        proteinG = nutrition.proteinG.formatValue(),
+                                        fatG = nutrition.fatG.formatValue(),
+                                        carbsG = nutrition.carbsG.formatValue(),
+                                        fiberG = nutrition.fiberG.formatValue(),
                                     )
                                 }.orEmpty(),
                         isLoading = false,

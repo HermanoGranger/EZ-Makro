@@ -136,7 +136,7 @@ class RecipeEditorViewModelTest {
                 vm.state.value.ingredients
                     .first()
                     .rawWeight,
-            ).isEqualTo("200.0")
+            ).isEqualTo("200")
         }
 
     @Test
@@ -371,7 +371,7 @@ class RecipeEditorViewModelTest {
             assertThat(vm.state.value.ingredients.size).isEqualTo(1)
             val draft = vm.state.value.ingredients[0]
             assertThat(draft.recipeId).isEqualTo("r2")
-            assertThat(draft.rawWeight).isEqualTo("150.0")
+            assertThat(draft.rawWeight).isEqualTo("150")
 
             recipeRepo.delete(RecipeId("r2"))
 

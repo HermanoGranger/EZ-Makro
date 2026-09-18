@@ -27,12 +27,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.R
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerAction
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerState
 import com.example.ezmakro.feature.foodpicker.presentation.picker.PickerFoodUi
 import com.example.ezmakro.feature.foodpicker.presentation.picker.PickerRecipeUi
-import java.util.Locale
 
 @Composable
 fun SearchTab(
@@ -194,7 +194,7 @@ private fun FoodRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(text = "${formatKcal(food.kcalPer100g)} kcal / 100 g")
+            Text(text = "${food.kcalPer100g.formatValue()} kcal / 100 g")
         }
         IconButton(onClick = { onAddClick(food.id) }) {
             Icon(
@@ -241,7 +241,7 @@ private fun RecipeRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(text = "${formatKcal(recipe.kcalPer100g)} kcal / 100 g")
+            Text(text = "${recipe.kcalPer100g.formatValue()} kcal / 100 g")
         }
         IconButton(onClick = { onAddRecipeClick(recipe.id) }) {
             Icon(
@@ -281,6 +281,3 @@ private fun EmptyRow(text: String) {
         modifier = Modifier.fillMaxWidth().padding(16.dp),
     )
 }
-
-private fun formatKcal(value: Double): String =
-    if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.US, "%.1f", value)

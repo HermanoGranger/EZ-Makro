@@ -44,9 +44,9 @@ import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.presentation.diary.CollapsibleMealSlot
 import com.example.ezmakro.core.presentation.diary.DiaryEntryDetailData
 import com.example.ezmakro.core.presentation.diary.EditPortionDialog
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.model.DiaryEntryUi
-import com.example.ezmakro.feature.diary.presentation.model.formatMacro
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
@@ -380,11 +380,11 @@ private fun mealSlotSection(
         onEditEntry = onEditEntry,
         onRequestDelete = { entryId -> onRequestDelete(entryId, slot) },
         onRequestAdd = { onRequestAdd(slot) },
-        summaryKcal = summary.kcal.formatMacro(),
-        summaryProtein = summary.proteinG.formatMacro(),
-        summaryFat = summary.fatG.formatMacro(),
-        summaryCarbs = summary.carbsG.formatMacro(),
-        summaryFiber = summary.fiberG.formatMacro(),
+        summaryKcal = summary.kcal.formatValue(),
+        summaryProtein = summary.proteinG.formatValue(),
+        summaryFat = summary.fatG.formatValue(),
+        summaryCarbs = summary.carbsG.formatValue(),
+        summaryFiber = summary.fiberG.formatValue(),
     )
 }
 

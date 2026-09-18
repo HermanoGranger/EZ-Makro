@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
@@ -171,7 +172,7 @@ private fun EditorForm(
             item {
                 val label = stringResource(R.string.recipe_editor_grams_per_portion)
                 Text(
-                    text = "~ ${gramsPerPortion.toInt()} g / $label",
+                    text = "~ ${gramsPerPortion.formatValue()} g / $label",
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                 )
             }

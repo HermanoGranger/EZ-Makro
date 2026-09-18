@@ -125,7 +125,7 @@ class FoodEditViewModelTest {
             dispatcher.scheduler.runCurrent()
 
             assertEquals("Apple", viewModel.state.value.name)
-            assertEquals("52.0", viewModel.state.value.kcal)
+            assertEquals("52", viewModel.state.value.kcal)
             assertEquals(true, viewModel.state.value.isEditingExisting)
         }
 
@@ -219,11 +219,11 @@ class FoodEditViewModelTest {
 
             assertEquals("OFF Milk", viewModel.state.value.name)
             assertEquals("999", viewModel.state.value.barcode)
-            assertEquals("42.0", viewModel.state.value.kcal)
+            assertEquals("42", viewModel.state.value.kcal)
             assertEquals("3.3", viewModel.state.value.protein)
-            assertEquals("1.0", viewModel.state.value.fat)
-            assertEquals("5.0", viewModel.state.value.carbs)
-            assertEquals("0.0", viewModel.state.value.fiber)
+            assertEquals("1", viewModel.state.value.fat)
+            assertEquals("5", viewModel.state.value.carbs)
+            assertEquals("0", viewModel.state.value.fiber)
             assertEquals(true, viewModel.state.value.isEditingExisting)
         }
 

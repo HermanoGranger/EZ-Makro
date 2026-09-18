@@ -6,7 +6,7 @@ import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.LocalDateRange
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
-import com.example.ezmakro.feature.diary.presentation.model.formatMacro
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.diary.presentation.model.sumNutrition
 import com.example.ezmakro.feature.diary.presentation.model.toDiaryEntryUi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,7 +60,7 @@ class HistoryViewModel(
                 val total = list.map { it.toDiaryEntryUi() }.sumNutrition()
                 HistoryDayUi(
                     date = date.format(fmt),
-                    kcal = total.kcal.formatMacro(),
+                    kcal = total.kcal.formatValue(),
                     entryCount = list.size,
                 )
             }

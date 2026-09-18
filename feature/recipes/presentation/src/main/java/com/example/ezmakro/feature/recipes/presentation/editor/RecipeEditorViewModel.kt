@@ -19,6 +19,7 @@ import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -226,7 +227,7 @@ class RecipeEditorViewModel(
                         finalWeight =
                             recipe.finalWeight
                                 ?.grams
-                                ?.toString()
+                                ?.formatValue()
                                 .orEmpty(),
                         isFavorite = recipe.isFavorite,
                         ingredients =
@@ -244,9 +245,9 @@ class RecipeEditorViewModel(
                                     rawWeight =
                                         ing.rawWeight
                                             ?.grams
-                                            ?.toString()
+                                            ?.formatValue()
                                             .orEmpty(),
-                                    servingCount = ing.servingCount?.toString().orEmpty(),
+                                    servingCount = ing.servingCount?.formatValue().orEmpty(),
                                     recipeId = ing.recipeSnapshot?.recipeId?.value,
                                     originalLastModifiedAt = ing.recipeSnapshot?.originalLastModifiedAt,
                                     recipeSnapshot = ing.recipeSnapshot,

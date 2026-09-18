@@ -6,6 +6,7 @@ import com.example.ezmakro.core.domain.calculation.nutritionPerPortion
 import com.example.ezmakro.core.domain.calculation.totalNutrition
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
+import com.example.ezmakro.core.presentation.util.formatValue
 
 /**
  * Presentation model for a [Recipe] in lists and detail. Nutrition values are
@@ -26,22 +27,15 @@ data class RecipeUi(
     val isFavorite: Boolean = false,
 )
 
-private const val MACRO_DECIMAL_PLACES = 10.0
-
-private fun Double.formatMacro(): String {
-    val rounded = Math.round(this * MACRO_DECIMAL_PLACES) / MACRO_DECIMAL_PLACES
-    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
-}
-
 fun Recipe.toRecipeUi(): RecipeUi {
     val total = totalNutrition()
     val perPortion = nutritionPerPortion()
     val per100g = nutritionPer100g()
     val per100gKcal =
         if (per100g != null) {
-            per100g.kcal.formatMacro()
+            per100g.kcal.formatValue()
         } else if (finalWeight == null) {
-            estimatedPer100g().kcal.formatMacro()
+            estimatedPer100g().kcal.formatValue()
         } else {
             null
         }
@@ -51,8 +45,8 @@ fun Recipe.toRecipeUi(): RecipeUi {
         category = category,
         portions = portions,
         ingredientCount = ingredients.size,
-        totalKcal = total.kcal.formatMacro(),
-        perPortionKcal = perPortion.kcal.formatMacro(),
+        totalKcal = total.kcal.formatValue(),
+        perPortionKcal = perPortion.kcal.formatValue(),
         per100gKcal = per100gKcal,
         isEstimated = finalWeight == null,
         isFavorite = isFavorite,

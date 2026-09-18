@@ -28,7 +28,9 @@ dependencies {
 
     implementation(libs.findLibrary("kotlinx-coroutines-android").get())
 
-    testImplementation(libs.findLibrary("kotlinx-coroutines-test").get())
-    testImplementation(libs.findLibrary("androidx-junit").get())
+    testImplementation(libs.findLibrary("junit5-jupiter-aggregator").get())
     testImplementation(libs.findLibrary("assertk").get())
+    testImplementation(libs.findLibrary("kotlinx-coroutines-test").get())
+    testRuntimeOnly(libs.findLibrary("junit5-jupiter-engine").get())
+    testRuntimeOnly(libs.findLibrary("junit5-platform-launcher").get())
 }

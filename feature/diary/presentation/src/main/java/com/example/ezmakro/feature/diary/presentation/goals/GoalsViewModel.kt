@@ -6,6 +6,7 @@ import com.example.ezmakro.core.domain.model.DefaultNutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.repository.GoalRepository
 import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.diary.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,11 +35,11 @@ class GoalsViewModel(
             val goal = repository.observeGoal().first()
             _state.update {
                 it.copy(
-                    kcal = goal.kcal.trimZeros(),
-                    protein = goal.proteinG.trimZeros(),
-                    fat = goal.fatG.trimZeros(),
-                    carbs = goal.carbsG.trimZeros(),
-                    fiber = goal.fiberG.trimZeros(),
+                    kcal = goal.kcal.formatValue(),
+                    protein = goal.proteinG.formatValue(),
+                    fat = goal.fatG.formatValue(),
+                    carbs = goal.carbsG.formatValue(),
+                    fiber = goal.fiberG.formatValue(),
                 )
             }
         }
@@ -111,8 +112,6 @@ class GoalsViewModel(
         require(value >= 0.0)
         return value
     }
-
-    private fun Double.trimZeros(): String = if (this % 1.0 == 0.0) toInt().toString() else toString()
 
     private fun emit(event: GoalsEvent) {
         viewModelScope.launch { _events.send(event) }

@@ -13,6 +13,7 @@ import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.food.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -90,12 +91,12 @@ class FoodEditViewModel(
                 it.copy(
                     name = it.name.ifEmpty { food.name },
                     barcode = it.barcode.ifEmpty { food.barcode.orEmpty() },
-                    kcal = food.nutritionPer100g?.kcal?.toString() ?: "",
-                    protein = food.nutritionPer100g?.proteinG?.toString() ?: "",
-                    fat = food.nutritionPer100g?.fatG?.toString() ?: "",
-                    carbs = food.nutritionPer100g?.carbsG?.toString() ?: "",
-                    fiber = food.nutritionPer100g?.fiberG?.toString() ?: "",
-                    portionGrams = food.servingUnit?.gramsEquivalent?.toString() ?: "",
+                    kcal = food.nutritionPer100g?.kcal?.formatValue() ?: "",
+                    protein = food.nutritionPer100g?.proteinG?.formatValue() ?: "",
+                    fat = food.nutritionPer100g?.fatG?.formatValue() ?: "",
+                    carbs = food.nutritionPer100g?.carbsG?.formatValue() ?: "",
+                    fiber = food.nutritionPer100g?.fiberG?.formatValue() ?: "",
+                    portionGrams = food.servingUnit?.gramsEquivalent?.formatValue() ?: "",
                     isFavorite = food.isFavorite,
                 )
             }
@@ -198,9 +199,7 @@ class FoodEditViewModel(
         if (gramsText.isBlank()) return null
         val grams = gramsText.replace(',', '.').toDoubleOrNull() ?: return null
         return if (grams > 0.0) {
-            val label = "1 Portion (${
-                if (grams % 1.0 == 0.0) grams.toInt().toString() else grams.toString()
-            } g)"
+            val label = "1 Portion (${grams.formatValue()} g)"
             ServingUnit(label = label, gramsEquivalent = grams)
         } else {
             null

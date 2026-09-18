@@ -5,11 +5,11 @@ import com.example.ezmakro.core.presentation.uitext.UiText
 data class IngredientDetailUi(
     val name: String,
     val amountDisplay: String,
-    val kcal: Double,
-    val proteinG: Double,
-    val fatG: Double,
-    val carbsG: Double,
-    val fiberG: Double,
+    val kcal: String,
+    val proteinG: String,
+    val fatG: String,
+    val carbsG: String,
+    val fiberG: String,
 )
 
 data class RecipeDetailState(

@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.ezmakro.core.presentation.R
+import com.example.ezmakro.core.presentation.util.formatValue
 
 private enum class EditAmountMode { PORTIONS, GRAMS }
 
@@ -43,11 +44,9 @@ fun EditPortionDialog(
     val initialIsPortions = initialPortionCount != null
     val initialValue =
         if (initialIsPortions) {
-            initialPortionCount?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() }
-                ?: "1"
+            initialPortionCount?.formatValue() ?: "1"
         } else {
-            initialAmountGrams?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else it.toString() }
-                ?: "100"
+            initialAmountGrams?.formatValue() ?: "100"
         }
 
     var amountText by remember { mutableStateOf(initialValue) }

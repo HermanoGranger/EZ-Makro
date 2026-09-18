@@ -5,6 +5,7 @@ import com.example.ezmakro.core.domain.calculation.dayNutrition
 import com.example.ezmakro.core.domain.calculation.progress
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.NutritionGoal
+import com.example.ezmakro.core.presentation.util.formatValue
 
 /**
  * Pre-formatted, presentation-ready summary figures for a diary day. All numbers
@@ -43,8 +44,8 @@ fun buildDiarySummary(
 
     return DiarySummaryUi(
         remainingKcal = formatSigned(remaining.kcal),
-        consumedKcal = day.consumed.kcal.formatMacro(),
-        goalKcal = goal.kcal.formatMacro(),
+        consumedKcal = day.consumed.kcal.formatValue(),
+        goalKcal = goal.kcal.formatValue(),
         kcalProgress = day.progress()[Macro.KCAL] ?: 0f,
         isOverGoal = overGoal,
         macros =
@@ -52,29 +53,29 @@ fun buildDiarySummary(
                 MacroRowUi(
                     macro = Macro.PROTEIN,
                     label = macroLabels(Macro.PROTEIN),
-                    consumed = day.consumed.proteinG.formatMacro(),
-                    goal = goal.proteinG.formatMacro(),
+                    consumed = day.consumed.proteinG.formatValue(),
+                    goal = goal.proteinG.formatValue(),
                     progress = day.progress()[Macro.PROTEIN] ?: 0f,
                 ),
                 MacroRowUi(
                     macro = Macro.FAT,
                     label = macroLabels(Macro.FAT),
-                    consumed = day.consumed.fatG.formatMacro(),
-                    goal = goal.fatG.formatMacro(),
+                    consumed = day.consumed.fatG.formatValue(),
+                    goal = goal.fatG.formatValue(),
                     progress = day.progress()[Macro.FAT] ?: 0f,
                 ),
                 MacroRowUi(
                     macro = Macro.CARBS,
                     label = macroLabels(Macro.CARBS),
-                    consumed = day.consumed.carbsG.formatMacro(),
-                    goal = goal.carbsG.formatMacro(),
+                    consumed = day.consumed.carbsG.formatValue(),
+                    goal = goal.carbsG.formatValue(),
                     progress = day.progress()[Macro.CARBS] ?: 0f,
                 ),
                 MacroRowUi(
                     macro = Macro.FIBER,
                     label = macroLabels(Macro.FIBER),
-                    consumed = day.consumed.fiberG.formatMacro(),
-                    goal = goal.fiberG.formatMacro(),
+                    consumed = day.consumed.fiberG.formatValue(),
+                    goal = goal.fiberG.formatValue(),
                     progress = day.progress()[Macro.FIBER] ?: 0f,
                 ),
             ),
@@ -83,6 +84,6 @@ fun buildDiarySummary(
 
 /** Format remaining kcal with an explicit leading "+" when still budget remains. */
 private fun formatSigned(value: Double): String {
-    val base = value.formatMacro()
+    val base = value.formatValue()
     return if (value < 0) base else "+$base"
 }

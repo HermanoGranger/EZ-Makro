@@ -4,6 +4,7 @@ import com.example.ezmakro.core.domain.calculation.consumedNutrition
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.presentation.util.formatValue
 
 /**
  * Presentation model for a single diary entry. Nutrition is pre-computed from
@@ -39,24 +40,17 @@ data class SlotSummaryUi(
     val fiber: String,
 )
 
-internal const val MACRO_DECIMAL_PLACES = 10.0
-
-internal fun Double.formatMacro(): String {
-    val rounded = Math.round(this * MACRO_DECIMAL_PLACES) / MACRO_DECIMAL_PLACES
-    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
-}
-
-fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
+internal fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
     val nutrition = consumedNutrition()
     val name = food?.name ?: recipe?.name ?: ""
     val detail =
         if (food != null) {
-            portionCount?.let { "${it.formatMacro()} Portionen" }
-                ?: amountGrams?.let { "${it.formatMacro()} g" } ?: ""
+            portionCount?.let { "${it.formatValue()} Portionen" }
+                ?: amountGrams?.let { "${it.formatValue()} g" } ?: ""
         } else {
             recipe?.let { r ->
-                portionCount?.let { "${it.formatMacro()} Portionen" }
-                    ?: amountGrams?.let { "${it.formatMacro()} g" } ?: ""
+                portionCount?.let { "${it.formatValue()} Portionen" }
+                    ?: amountGrams?.let { "${it.formatValue()} g" } ?: ""
             } ?: ""
         }
     return DiaryEntryUi(
@@ -68,11 +62,11 @@ fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
         amountGrams = amountGrams,
         portionCount = portionCount,
         hasServingUnit = food?.servingUnit != null,
-        kcal = nutrition.kcal.formatMacro(),
-        protein = nutrition.proteinG.formatMacro(),
-        fat = nutrition.fatG.formatMacro(),
-        carbs = nutrition.carbsG.formatMacro(),
-        fiber = nutrition.fiberG.formatMacro(),
+        kcal = nutrition.kcal.formatValue(),
+        protein = nutrition.proteinG.formatValue(),
+        fat = nutrition.fatG.formatValue(),
+        carbs = nutrition.carbsG.formatValue(),
+        fiber = nutrition.fiberG.formatValue(),
     )
 }
 

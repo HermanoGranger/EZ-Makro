@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.food.presentation.model
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.ServingUnit
+import com.example.ezmakro.core.presentation.util.formatValue
 
 /**
  * Presentation model for a [FoodItem] in lists and detail. Nutrition values are
@@ -41,15 +42,7 @@ enum class FoodEditStatusUi {
     UpdateAvailable,
 }
 
-private const val MACRO_DECIMAL_PLACES = 10.0
 private const val DASH = "\u2013"
-
-private fun Double.formatMacro(): String {
-    val rounded = Math.round(this * MACRO_DECIMAL_PLACES) / MACRO_DECIMAL_PLACES
-    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
-}
-
-private fun Double?.formatOrDash(): String = this?.formatMacro() ?: DASH
 
 fun FoodItem.toFoodUi(): FoodUi {
     val nutrition = nutritionPer100g
@@ -58,11 +51,11 @@ fun FoodItem.toFoodUi(): FoodUi {
         id = id.value,
         name = name,
         barcode = barcode,
-        kcalPer100g = nutrition?.kcal.formatOrDash(),
-        proteinPer100g = nutrition?.proteinG.formatOrDash(),
-        fatPer100g = nutrition?.fatG.formatOrDash(),
-        carbsPer100g = nutrition?.carbsG.formatOrDash(),
-        fiberPer100g = nutrition?.fiberG.formatOrDash(),
+        kcalPer100g = nutrition?.kcal?.formatValue() ?: DASH,
+        proteinPer100g = nutrition?.proteinG?.formatValue() ?: DASH,
+        fatPer100g = nutrition?.fatG?.formatValue() ?: DASH,
+        carbsPer100g = nutrition?.carbsG?.formatValue() ?: DASH,
+        fiberPer100g = nutrition?.fiberG?.formatValue() ?: DASH,
         servingLabel = serving?.label,
         servingGrams = serving?.gramsEquivalent,
         servingAmount = serving?.servingAmountLabel(),
@@ -91,7 +84,7 @@ private fun perServing(
     serving: ServingUnit?,
 ): String {
     if (serving == null) return DASH
-    return (value?.times(serving.gramsEquivalent / 100.0)).formatOrDash()
+    return (value?.times(serving.gramsEquivalent / 100.0))?.formatValue() ?: DASH
 }
 
 /**
@@ -108,7 +101,7 @@ private fun ServingUnit.servingAmountLabel(): String {
             ?.get(1)
             ?.trim()
     if (amount != null) return amount
-    if (label.equals("1 Portion", ignoreCase = true)) return "${gramsEquivalent.formatMacro()} g"
+    if (label.equals("1 Portion", ignoreCase = true)) return "${gramsEquivalent.formatValue()} g"
     return label
 }
 
