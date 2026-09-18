@@ -31,13 +31,17 @@
 | 7 | Meal Log | ✅ abgeschlossen |
 | 8 | Dashboard | ✅ in den Tagebuch-Screen integriert (kein eigener Tab) |
 | 9 | Goals | ✅ abgeschlossen (liegt im Diary-Module) |
+| B1 | Bugfix Crashes (P1) | ✅ abgeschlossen |
+| B2 | Bugfix Datenintegrität (P2) | ✅ abgeschlossen |
+| B3 | Bugfix Robustheit/UX (P3) | ✅ abgeschlossen |
 | 10 | Weight Tracking | 🔜 offen |
 | 11 | Statistics | 🔜 offen |
 | 12 | Backup | 🔜 offen |
 | 13 | Polish | 🔜 offen |
 | 14 | Release Candidate | 🔜 offen |
 
-Aktuell offene Bug-/Quality-Punkte: `docs/Bugfix_Plan.md`.
+Aktuell offener Qualitäts-Backlog (Bugfix-Archiv inkl. abgeschlossener P1–P3):
+`docs/Bugfix_Plan.md`.
 Detaillierte Patterns pro Layer: `.opencode/skills/`.
 
 ------------------------------------------------------------------------
@@ -83,7 +87,7 @@ Barcode-Lookup (CameraX + ML Kit), deferred OFF-Caching
 überschreibt `UserModified`-Einträge nie; Zustände Original/UserModified/
 UpdateAvailable. **Hinweis:** Der neuere `UpdateAvailable`-Status ist aktuell
 toter Code (kein Produktions-Aufrufer von `markUpdateAvailable`) — offene
-Feature-Lücke, siehe Bugfix-Plan Abschnitt 8.
+Feature-Lücke, siehe Bugfix-Plan (Backlog).
 
 ### Phase 5 — Food
 
@@ -219,6 +223,6 @@ Erst nach explizitem Befehl: `Commit Phase X`
 
 ## Referenzen
 
--   Bugfix-Plan (aktuell offene Bugs/Quality-Punkte): `docs/Bugfix_Plan.md`
+-   Bugfix-Archiv + Qualitäts-Backlog: `docs/Bugfix_Plan.md`
 -   Roadmap mit Phasen-Status: `docs/roadmap.md`
 -   ADRs: `docs/adr/`

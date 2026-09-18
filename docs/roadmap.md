@@ -24,7 +24,7 @@ Acceptance → Commit nur nach Freigabe).
 | **14** | Release Candidate | 🔜 | Alle Tests grün, Release Build, crashfrei |
 
 Details zu umgesetzten Phasen und geplanten Inhalten: `docs/Vollstaendiger_Implementierungsplan.md`.
-Aktuell offene Bug-/Quality-Punkte: `docs/Bugfix_Plan.md`.
+Bugfix-Archiv (P1–P3 abgeschlossen) + Qualitäts-Backlog: `docs/Bugfix_Plan.md`.
 
 ## Personas
 
