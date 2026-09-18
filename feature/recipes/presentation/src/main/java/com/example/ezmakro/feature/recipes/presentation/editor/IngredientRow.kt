@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
 
@@ -23,6 +24,7 @@ import com.example.ezmakro.feature.recipes.presentation.R
 fun IngredientRow(
     ingredient: IngredientDraft,
     isExpanded: Boolean,
+    nutrition: NutritionValues?,
     onRawWeightChange: (String) -> Unit,
     onServingCountChange: (String) -> Unit,
     onRemove: () -> Unit,
@@ -32,20 +34,11 @@ fun IngredientRow(
     val servingCountVal = ingredient.servingCount.parseNonNegativeDouble()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(text = ingredient.foodName, modifier = Modifier.weight(1f).padding(end = 8.dp))
-            if (ingredient.snapshotChanged) {
-                Text(
-                    text = stringResource(R.string.recipe_editor_recipe_snapshot_changed),
-                    fontStyle = FontStyle.Italic,
-                )
-            }
-            IconButton(onClick = onRemove) { Text("✕") }
-        }
+        IngredientHeaderRow(
+            ingredient = ingredient,
+            onClick = onClick,
+            onRemove = onRemove,
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -74,16 +67,53 @@ fun IngredientRow(
                 )
             }
         }
+        if (!isExpanded) {
+            IngredientKcalLine(nutrition = nutrition)
+        }
         if (isExpanded) {
             IngredientMacroDetail(
                 rawWeight = rawWeight,
                 servingCount = servingCountVal,
                 servingLabel = ingredient.servingLabel,
                 usesGenericServingLabel = ingredient.recipeId != null,
+                nutrition = nutrition,
             )
         }
     }
     HorizontalDivider()
+}
+
+@Composable
+private fun IngredientHeaderRow(
+    ingredient: IngredientDraft,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = ingredient.foodName, modifier = Modifier.weight(1f).padding(end = 8.dp))
+        if (ingredient.snapshotChanged) {
+            Text(
+                text = stringResource(R.string.recipe_editor_recipe_snapshot_changed),
+                fontStyle = FontStyle.Italic,
+            )
+        }
+        IconButton(onClick = onRemove) { Text("✕") }
+    }
+}
+
+@Composable
+private fun IngredientKcalLine(nutrition: NutritionValues?) {
+    if (nutrition != null) {
+        Text(
+            text = "${nutrition.kcal.formatValue()} kcal",
+            modifier = Modifier.padding(start = 16.dp),
+            fontStyle = FontStyle.Italic,
+        )
+    }
 }
 
 @Composable
@@ -92,6 +122,7 @@ private fun IngredientMacroDetail(
     servingCount: Double?,
     servingLabel: String?,
     usesGenericServingLabel: Boolean,
+    nutrition: NutritionValues?,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
@@ -109,6 +140,16 @@ private fun IngredientMacroDetail(
         if (amountText.isNotEmpty()) {
             Text(text = "Menge: $amountText", fontStyle = FontStyle.Italic)
         }
-        Text(text = stringResource(R.string.recipe_editor_ingredient_macros_hint), fontStyle = FontStyle.Italic)
+        nutrition?.let {
+            Text(
+                text =
+                    "kcal ${it.kcal.formatValue()} · " +
+                        "P ${it.proteinG.formatValue()} g · " +
+                        "KH ${it.carbsG.formatValue()} g · " +
+                        "F ${it.fatG.formatValue()} g · " +
+                        "B ${it.fiberG.formatValue()} g",
+                fontStyle = FontStyle.Italic,
+            )
+        }
     }
 }

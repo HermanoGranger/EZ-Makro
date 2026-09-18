@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.calculation.nutrition
 import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.calculation.totalNutrition
 import com.example.ezmakro.core.domain.calculation.totalRawWeight
@@ -74,6 +75,7 @@ class RecipeEditorViewModel(
                             },
                     )
                 }
+                recomputeNutrition()
             }.launchIn(viewModelScope)
 
         recipeRepository
@@ -92,6 +94,7 @@ class RecipeEditorViewModel(
                     )
                 }
                 checkSnapshotChanges()
+                recomputeNutrition()
             }.launchIn(viewModelScope)
 
         if (recipeId != null) loadExisting(recipeId)
@@ -119,7 +122,7 @@ class RecipeEditorViewModel(
 
             is RecipeEditorAction.OnAddRecipeIngredientClick -> addRecipeIngredient(action.recipeId)
 
-            is RecipeEditorAction.OnIngredientRawWeightChange ->
+            is RecipeEditorAction.OnIngredientRawWeightChange -> {
                 _state.update {
                     it.copy(
                         ingredients =
@@ -129,8 +132,10 @@ class RecipeEditorViewModel(
                         ingredientError = null,
                     )
                 }
+                recomputeNutrition()
+            }
 
-            is RecipeEditorAction.OnIngredientServingCountChange ->
+            is RecipeEditorAction.OnIngredientServingCountChange -> {
                 _state.update {
                     it.copy(
                         ingredients =
@@ -140,14 +145,18 @@ class RecipeEditorViewModel(
                         ingredientError = null,
                     )
                 }
+                recomputeNutrition()
+            }
 
-            is RecipeEditorAction.OnRemoveIngredientClick ->
+            is RecipeEditorAction.OnRemoveIngredientClick -> {
                 _state.update {
                     it.copy(
                         ingredients = it.ingredients.filterIndexed { i, _ -> i != action.index },
                         expandedIngredientIndex = null,
                     )
                 }
+                recomputeNutrition()
+            }
 
             is RecipeEditorAction.OnIngredientClick ->
                 _state.update {
@@ -193,6 +202,7 @@ class RecipeEditorViewModel(
                 ingredientError = null,
             )
         }
+        recomputeNutrition()
         viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
@@ -211,6 +221,7 @@ class RecipeEditorViewModel(
                 ingredientError = null,
             )
         }
+        recomputeNutrition()
         viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
@@ -256,7 +267,31 @@ class RecipeEditorViewModel(
                     )
                 }
                 checkSnapshotChanges()
+                recomputeNutrition()
             }.launchIn(viewModelScope)
+    }
+
+    private fun recomputeNutrition() {
+        val foods = foodsState.value
+        val recipes = recipesState.value
+        val ingredientNutrition =
+            _state.value.ingredients.map { draft ->
+                val ingredient =
+                    if (draft.recipeId != null) {
+                        resolveRecipeIngredient(draft, recipes)
+                    } else {
+                        resolveFoodIngredient(draft, foods)
+                    }
+                ingredient?.nutrition() ?: NutritionValues.ZERO
+            }
+        val total =
+            ingredientNutrition.fold(NutritionValues.ZERO) { acc, value -> acc + value }
+        _state.update {
+            it.copy(
+                ingredientNutrition = ingredientNutrition,
+                totalNutrition = total,
+            )
+        }
     }
 
     private fun checkSnapshotChanges() {

@@ -35,7 +35,6 @@
     <string name="recipe_editor_add_ingredient">Zutat hinzufügen</string>
     <string name="recipe_editor_ingredient_raw_weight">Rohgewicht (g)</string>
     <string name="recipe_editor_ingredient_serving_count">Anzahl (%1$s)</string>
-    <string name="recipe_editor_ingredient_macros_hint">Klicken für Makros</string>
     <string name="recipe_editor_save">Speichern</string>
     <string name="recipe_editor_error_name_blank">Name darf nicht leer sein</string>
     <string name="recipe_editor_error_invalid_number">Ungültiger Wert</string>

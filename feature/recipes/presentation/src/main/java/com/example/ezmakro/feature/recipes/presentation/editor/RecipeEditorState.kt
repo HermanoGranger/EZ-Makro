@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.presentation.uitext.UiText
 import java.util.UUID
@@ -25,6 +26,8 @@ data class RecipeEditorState(
     val portions: String = "1",
     val finalWeight: String = "",
     val ingredients: List<IngredientDraft> = emptyList(),
+    val ingredientNutrition: List<NutritionValues> = emptyList(),
+    val totalNutrition: NutritionValues = NutritionValues.ZERO,
     val availableFoods: List<FoodPickerItem> = emptyList(),
     val availableRecipes: List<RecipePickerItem> = emptyList(),
     val expandedIngredientIndex: Int? = null,

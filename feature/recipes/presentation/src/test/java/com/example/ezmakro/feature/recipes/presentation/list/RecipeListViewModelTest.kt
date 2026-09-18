@@ -69,7 +69,8 @@ class RecipeListViewModelTest {
                 vm.state.value
                     .recipes
                     .first()
-                    .per100gKcal,
+                    .per100gMacros
+                    ?.kcal,
             ).isEqualTo("26")
         }
 

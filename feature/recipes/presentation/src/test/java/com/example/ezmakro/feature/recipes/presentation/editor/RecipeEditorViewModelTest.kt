@@ -7,6 +7,7 @@ import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.FinalWeight
+import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
@@ -311,6 +312,77 @@ class RecipeEditorViewModelTest {
             val second = vm.state.value.ingredients[1]
             assertThat(first.foodName).isEqualTo("Alpro Hafer")
             assertThat(second.foodName).isEqualTo("Oatly Barista")
+        }
+
+    private fun appleFood(): FoodItem =
+        FakeFoodRepository.food("f1", "Apple").copy(
+            nutritionPer100g = NutritionValues(100.0, 10.0, 5.0, 20.0, 2.0),
+        )
+
+    private fun bananaFood(): FoodItem =
+        FakeFoodRepository.food("f2", "Banane").copy(
+            nutritionPer100g = NutritionValues(200.0, 5.0, 1.0, 40.0, 3.0),
+        )
+
+    @Test
+    fun `ingredientNutrition is computed for 100g ingredient`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(appleFood()))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+
+            assertThat(vm.state.value.ingredientNutrition.size).isEqualTo(1)
+            assertThat(vm.state.value.ingredientNutrition[0])
+                .isEqualTo(NutritionValues(100.0, 10.0, 5.0, 20.0, 2.0))
+        }
+
+    @Test
+    fun `ingredientNutrition is zero when no amount is set`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(appleFood()))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+
+            assertThat(vm.state.value.ingredientNutrition)
+                .isEqualTo(listOf(NutritionValues.ZERO))
+            assertThat(vm.state.value.totalNutrition).isEqualTo(NutritionValues.ZERO)
+        }
+
+    @Test
+    fun `totalNutrition sums multiple ingredients`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(appleFood(), bananaFood()))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(1, "50"))
+
+            assertThat(vm.state.value.totalNutrition)
+                .isEqualTo(NutritionValues(200.0, 12.5, 5.5, 40.0, 3.5))
+        }
+
+    @Test
+    fun `ingredientNutrition collapses indices after removal`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(appleFood(), bananaFood()))
+            val vm = viewModel(foodRepo = foodRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(1, "50"))
+
+            vm.onAction(RecipeEditorAction.OnRemoveIngredientClick(0))
+
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
+            assertThat(vm.state.value.ingredientNutrition.size).isEqualTo(1)
+            assertThat(vm.state.value.ingredientNutrition[0])
+                .isEqualTo(NutritionValues(100.0, 2.5, 0.5, 20.0, 1.5))
         }
 
     private fun snapshotOf(

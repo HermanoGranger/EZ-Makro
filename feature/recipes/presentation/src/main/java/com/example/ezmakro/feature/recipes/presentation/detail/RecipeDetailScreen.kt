@@ -34,6 +34,7 @@ import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.recipes.presentation.R
+import com.example.ezmakro.feature.recipes.presentation.model.RecipeNutritionUi
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
 
@@ -170,23 +171,27 @@ fun RecipeDetailScreen(
             recipe.category?.let { Text(stringResource(R.string.recipe_detail_category, it)) }
             Text(stringResource(R.string.recipe_detail_portions, recipe.portions))
 
-            NutritionRow(label = stringResource(R.string.recipe_detail_total), value = "${recipe.totalKcal} kcal")
-            NutritionRow(
+            RecipeMacroSummary(
+                label = stringResource(R.string.recipe_detail_total),
+                nutrition = recipe.totalMacros,
+            )
+            RecipeMacroSummary(
                 label = stringResource(R.string.recipe_detail_per_portion),
-                value = "${recipe.perPortionKcal} kcal",
+                nutrition = recipe.perPortionMacros,
             )
-            val per100gDisplay =
-                if (recipe.isEstimated && recipe.per100gKcal != null) {
-                    "~ ${recipe.per100gKcal} kcal"
-                } else if (recipe.per100gKcal != null) {
-                    "${recipe.per100gKcal} kcal"
-                } else {
-                    stringResource(R.string.recipe_detail_no_final_weight)
-                }
-            NutritionRow(
-                label = stringResource(R.string.recipe_detail_per_100g),
-                value = per100gDisplay,
-            )
+            val per100g = recipe.per100gMacros
+            if (per100g != null) {
+                RecipeMacroSummary(
+                    label = stringResource(R.string.recipe_detail_per_100g),
+                    nutrition = per100g,
+                    isEstimated = recipe.isEstimated,
+                )
+            } else {
+                NutritionRow(
+                    label = stringResource(R.string.recipe_detail_per_100g),
+                    value = stringResource(R.string.recipe_detail_no_final_weight),
+                )
+            }
 
             Text(
                 text = stringResource(R.string.recipe_detail_ingredients),
@@ -248,6 +253,38 @@ private fun IngredientDetailRow(
         }
     }
     HorizontalDivider()
+}
+
+@Composable
+private fun RecipeMacroSummary(
+    label: String,
+    nutrition: RecipeNutritionUi,
+    isEstimated: Boolean = false,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(text = label)
+            val kcalText =
+                if (isEstimated) {
+                    "~ ${nutrition.kcal} kcal"
+                } else {
+                    "${nutrition.kcal} kcal"
+                }
+            Text(text = kcalText)
+        }
+        Text(
+            text =
+                "P ${nutrition.proteinG} g · " +
+                    "KH ${nutrition.carbsG} g · " +
+                    "F ${nutrition.fatG} g · " +
+                    "B ${nutrition.fiberG} g",
+            fontStyle = FontStyle.Italic,
+        )
+        HorizontalDivider()
+    }
 }
 
 @Composable

@@ -7,6 +7,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.feature.recipes.presentation.model.RecipeNutritionUi
+import com.example.ezmakro.feature.recipes.presentation.model.RecipeUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -16,18 +18,26 @@ class RecipeDetailScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private fun macros(
+        kcal: String,
+        protein: String = "10",
+        fat: String = "5",
+        carbs: String = "20",
+        fiber: String = "2",
+    ): RecipeNutritionUi = RecipeNutritionUi(kcal, protein, fat, carbs, fiber)
+
     private fun recipeUi(
         name: String = "Pfannkuchen",
-        per100gKcal: String? = "100",
-    ) = com.example.ezmakro.feature.recipes.presentation.model.RecipeUi(
+        per100g: RecipeNutritionUi? = macros("100"),
+    ) = RecipeUi(
         id = "r1",
         name = name,
         category = "Backen",
         portions = 2,
         ingredientCount = 1,
-        totalKcal = "200",
-        perPortionKcal = "100",
-        per100gKcal = per100gKcal,
+        totalMacros = macros("200"),
+        perPortionMacros = macros("100"),
+        per100gMacros = per100g,
     )
 
     @Test
@@ -48,7 +58,7 @@ class RecipeDetailScreenTest {
     fun showsHint_whenNoFinalWeight() {
         composeTestRule.setContent {
             RecipeDetailScreen(
-                state = RecipeDetailState(recipe = recipeUi(per100gKcal = null)),
+                state = RecipeDetailState(recipe = recipeUi(per100g = null)),
                 onAction = {},
                 onRequestDelete = {},
             )

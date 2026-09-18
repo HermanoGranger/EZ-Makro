@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
@@ -178,6 +179,8 @@ private fun EditorForm(
             }
         }
 
+        item { TotalNutritionSummary(totalNutrition = state.totalNutrition) }
+
         item {
             Button(onClick = onOpenPicker, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.recipe_editor_add_ingredient))
@@ -189,6 +192,7 @@ private fun EditorForm(
             IngredientRow(
                 ingredient = ingredient,
                 isExpanded = state.expandedIngredientIndex == index,
+                nutrition = state.ingredientNutrition.getOrNull(index),
                 onRawWeightChange = { onAction(RecipeEditorAction.OnIngredientRawWeightChange(index, it)) },
                 onServingCountChange = { onAction(RecipeEditorAction.OnIngredientServingCountChange(index, it)) },
                 onRemove = { onAction(RecipeEditorAction.OnRemoveIngredientClick(index)) },
@@ -205,6 +209,21 @@ private fun EditorForm(
             state.saveError?.let { Text(text = it.asString()) }
         }
     }
+}
+
+@Composable
+private fun TotalNutritionSummary(totalNutrition: NutritionValues) {
+    val totalLabel = stringResource(R.string.recipe_detail_total)
+    Text(
+        text =
+            "$totalLabel: ${totalNutrition.kcal.formatValue()} kcal · " +
+                "P ${totalNutrition.proteinG.formatValue()} g · " +
+                "KH ${totalNutrition.carbsG.formatValue()} g · " +
+                "F ${totalNutrition.fatG.formatValue()} g · " +
+                "B ${totalNutrition.fiberG.formatValue()} g",
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+    )
 }
 
 @Composable

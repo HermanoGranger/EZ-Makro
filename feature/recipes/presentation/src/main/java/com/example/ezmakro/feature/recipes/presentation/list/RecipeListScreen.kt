@@ -118,7 +118,7 @@ private fun RecipeRow(
             Text(text = recipe.name, maxLines = 1)
             val label = stringResource(R.string.recipe_list_per_portion)
             Text(
-                text = "${recipe.totalKcal} kcal · ${recipe.perPortionKcal} / $label",
+                text = "${recipe.totalMacros.kcal} kcal · ${recipe.perPortionMacros.kcal} / $label",
             )
         }
         val starTint: androidx.compose.ui.graphics.Color =
