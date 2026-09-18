@@ -278,10 +278,11 @@ class RecipeEditorViewModel(
         if (!validateForSave(s)) return
         _state.update { it.copy(isSaving = true, saveError = null) }
 
-        viewModelScope.launch { executeSave(s) }
+        viewModelScope.launch { executeSave() }
     }
 
-    private suspend fun executeSave(s: RecipeEditorState) {
+    private suspend fun executeSave() {
+        val s = _state.value
         try {
             val parsed = parseSaveInput(s) ?: return
             val ingredients = buildIngredients(s.ingredients)

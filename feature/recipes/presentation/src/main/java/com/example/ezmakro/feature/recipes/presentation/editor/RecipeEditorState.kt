@@ -2,8 +2,10 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 
 import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.presentation.uitext.UiText
+import java.util.UUID
 
 data class IngredientDraft(
+    val id: String = UUID.randomUUID().toString(),
     val foodId: String,
     val foodName: String,
     val servingLabel: String?,

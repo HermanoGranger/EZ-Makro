@@ -184,7 +184,7 @@ private fun EditorForm(
             state.ingredientError?.let { Text(text = it.asString()) }
         }
 
-        itemsIndexed(state.ingredients, key = { index, _ -> index }) { index, ingredient ->
+        itemsIndexed(state.ingredients, key = { _, ingredient -> ingredient.id }) { index, ingredient ->
             IngredientRow(
                 ingredient = ingredient,
                 isExpanded = state.expandedIngredientIndex == index,

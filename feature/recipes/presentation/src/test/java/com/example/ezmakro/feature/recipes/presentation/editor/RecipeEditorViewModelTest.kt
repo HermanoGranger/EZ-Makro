@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.recipes.presentation.editor
 import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.FinalWeight
@@ -15,8 +16,11 @@ import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeFoodRepository
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeRecipeRepository
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -441,5 +445,78 @@ class RecipeEditorViewModelTest {
             val draft = vm.state.value.ingredients[0]
             assertThat(draft.recipeId).isEqualTo("r2")
             assertThat(draft.servingLabel).isEqualTo("Portionen")
+        }
+
+    @Test
+    fun `ingredient drafts have unique and stable ids`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(
+                Recipe(
+                    id = RecipeId("r2"),
+                    name = "Unter",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = FakeFoodRepository.food("f1", "Apple"),
+                                rawWeight = RawWeight(50.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 2,
+                ),
+            )
+            val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            vm.onAction(RecipeEditorAction.OnAddRecipeIngredientClick("r2"))
+
+            assertThat(vm.state.value.ingredients.size).isEqualTo(2)
+            val firstId =
+                vm.state.value.ingredients[0]
+                    .id
+            val secondId =
+                vm.state.value.ingredients[1]
+                    .id
+            assertThat(firstId).isNotEqualTo(secondId)
+
+            vm.onAction(RecipeEditorAction.OnRemoveIngredientClick(0))
+
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
+            assertThat(
+                vm.state.value.ingredients[0]
+                    .id,
+            ).isEqualTo(secondId)
+        }
+
+    @Test
+    fun `save reflects name edits made before executeSave runs`() =
+        runTest {
+            val standardDispatcher = StandardTestDispatcher(testScheduler)
+            Dispatchers.setMain(standardDispatcher)
+            try {
+                val foodRepo = FakeFoodRepository()
+                foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+                val recipeRepo = FakeRecipeRepository()
+                val vm = viewModel(foodRepo = foodRepo, recipeRepo = recipeRepo)
+                testScheduler.runCurrent()
+
+                vm.onAction(RecipeEditorAction.OnNameChange("Müsli"))
+                vm.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+                vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+
+                vm.onAction(RecipeEditorAction.OnSaveClick)
+                CoroutineScope(standardDispatcher).launch {
+                    vm.onAction(RecipeEditorAction.OnNameChange("Müsli Neu"))
+                }
+                testScheduler.runCurrent()
+
+                assertThat(recipeRepo.saved.size).isEqualTo(1)
+                assertThat(recipeRepo.saved.first().name).isEqualTo("Müsli Neu")
+            } finally {
+                Dispatchers.setMain(testDispatcher)
+            }
         }
 }

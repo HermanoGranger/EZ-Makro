@@ -60,7 +60,7 @@ class RoomRecipeRepository(
                 portions = source.portions,
                 category = source.category,
                 isFavorite = source.isFavorite,
-                lastUsedAt = source.lastUsedAt,
+                lastModifiedAt = System.currentTimeMillis(),
             )
         return when (val saved = local.upsertRecipeWithIngredients(copy)) {
             is Result.Error -> saved

@@ -30,6 +30,10 @@ class FakeFoodRepository : FoodRepository {
     var lookupCallsCount = 0
         private set
 
+    var shouldFailResetToOriginal = false
+
+    var shouldFailRefetch = false
+
     fun emitFoods(foods: List<FoodItem>) {
         items.value = foods
     }
@@ -55,9 +59,19 @@ class FakeFoodRepository : FoodRepository {
         return Result.Success(Unit)
     }
 
-    override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> = Result.Success(Unit)
+    override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> =
+        if (shouldFailResetToOriginal) {
+            Result.Error(DataError.Local.UNKNOWN)
+        } else {
+            Result.Success(Unit)
+        }
 
-    override suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError> = Result.Success(null)
+    override suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError> =
+        if (shouldFailRefetch) {
+            Result.Error(DataError.Local.NOT_FOUND)
+        } else {
+            Result.Success(null)
+        }
 
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
         lastToggledFavorite = id

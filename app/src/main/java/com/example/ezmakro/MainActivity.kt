@@ -42,6 +42,7 @@ import com.example.ezmakro.feature.diary.presentation.goals.navigation.goalsGrap
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
+import com.example.ezmakro.feature.food.presentation.navigation.encodeRouteParam
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
 import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES
 import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
@@ -144,7 +145,7 @@ class MainActivity : ComponentActivity() {
             val onNavigateToFoodCreate: (barcode: String?) -> Unit = { barcode ->
                 val route =
                     if (barcode != null) {
-                        "food_edit/_none_?prefillBarcode=$barcode"
+                        "food_edit/_none_?prefillBarcode=${encodeRouteParam(barcode)}"
                     } else {
                         "food_edit/_none_"
                     }
@@ -156,7 +157,7 @@ class MainActivity : ComponentActivity() {
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
                 onNavigateToGoals = { navController.navigate(Goals) },
                 onNavigateToFoodDetail = { foodId, slot, date ->
-                    navController.navigate("food_detail/$foodId?slot=${slot.name}&date=$date")
+                    navController.navigate("food_detail/${encodeRouteParam(foodId)}?slot=${slot.name}&date=$date")
                 },
                 onNavigateToRecipeDetail = { recipeId, slot, date ->
                     navController.navigate("recipe_detail/$recipeId?slot=${slot.name}&date=$date")
@@ -166,7 +167,9 @@ class MainActivity : ComponentActivity() {
                 navController = navController,
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addFoodToDiary,
-                onNavigateToFoodDetail = { foodId -> navController.navigate("food_detail/$foodId") },
+                onNavigateToFoodDetail = { foodId ->
+                    navController.navigate("food_detail/${encodeRouteParam(foodId)}")
+                },
                 onNavigateToRecipeDetail = { recipeId -> navController.navigate("recipe_detail/$recipeId") },
             )
             recipeGraph(
@@ -174,7 +177,9 @@ class MainActivity : ComponentActivity() {
                 onNavigateBack = onNavigateBack,
                 onAddToDiary = addRecipeToDiary,
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
-                onNavigateToFoodDetail = { foodId -> navController.navigate("food_detail/$foodId") },
+                onNavigateToFoodDetail = { foodId ->
+                    navController.navigate("food_detail/${encodeRouteParam(foodId)}")
+                },
                 onNavigateToRecipeDetail = { recipeId -> navController.navigate("recipe_detail/$recipeId") },
             )
             goalsGraph(onNavigateBack = onNavigateBack)

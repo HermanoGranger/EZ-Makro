@@ -108,20 +108,21 @@ class OfflineFirstFoodRepository(
         }
     }
 
-    override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
-        val current =
-            when (val result = local.getById(id)) {
-                is Result.Success -> result.data
-                is Result.Error -> return Result.Error(result.error)
-            }
-        if (current == null) {
-            // Online item viewed via session cache: favoriting is an explicit
-            // use, so persist it permanently first.
-            val remembered = sessionItems[id] ?: return Result.Error(DataError.Local.NOT_FOUND)
-            cacheRemoteItem(remembered)
+    override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> =
+        when (val result = local.getById(id)) {
+            is Result.Error -> Result.Error(result.error)
+            is Result.Success ->
+                result.data?.let { local.setFavorite(id, !it.isFavorite) }
+                    ?: sessionItems[id]?.let { remembered ->
+                        // Online item viewed via session cache: favoriting is an
+                        // explicit use, so persist it permanently first.
+                        when (val cached = cacheRemoteItem(remembered)) {
+                            is Result.Error -> cached
+                            is Result.Success -> local.setFavorite(id, true)
+                        }
+                    }
+                    ?: Result.Error(DataError.Local.NOT_FOUND)
         }
-        return local.setFavorite(id, !(current?.isFavorite ?: false))
-    }
 
     override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = local.markUsed(id, now())
 

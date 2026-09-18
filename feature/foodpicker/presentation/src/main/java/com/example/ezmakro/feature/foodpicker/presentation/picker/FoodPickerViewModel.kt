@@ -83,13 +83,7 @@ class FoodPickerViewModel(
                 _state.update { it.copy(activeTab = action.tab) }
             }
 
-            is FoodPickerAction.OnSearchQueryChange -> {
-                savedStateHandle[KEY_QUERY] = action.query
-                queryFlow.value = action.query
-                _state.update {
-                    it.copy(searchQuery = action.query, onlineError = null, selectionError = null)
-                }
-            }
+            is FoodPickerAction.OnSearchQueryChange -> onSearchQueryChange(action.query)
 
             FoodPickerAction.OnSearchOnlineClick -> searchOnline()
 
@@ -149,6 +143,20 @@ class FoodPickerViewModel(
                     }
                 }
             }
+        }
+    }
+
+    private fun onSearchQueryChange(query: String) {
+        savedStateHandle[KEY_QUERY] = query
+        queryFlow.value = query
+        _state.update {
+            it.copy(
+                searchQuery = query,
+                onlineError = null,
+                selectionError = null,
+                onlineSearchResults = emptyList(),
+                onlineFoodItems = emptyList(),
+            )
         }
     }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
@@ -230,6 +231,44 @@ class FoodPickerViewModelTest {
 
             assertThat(vm.state.value.onlineSearchResults).hasSize(1)
             assertThat(vm.state.value.onlineFoodItems).hasSize(1)
+        }
+
+    @Test
+    fun `online search results are cleared when the query changes`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel()
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+            assertThat(vm.state.value.onlineSearchResults).hasSize(1)
+            assertThat(vm.state.value.onlineFoodItems).hasSize(1)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("kaese"))
+
+            assertThat(vm.state.value.onlineSearchResults).isEmpty()
+            assertThat(vm.state.value.onlineFoodItems).isEmpty()
+        }
+
+    @Test
+    fun `stale online search result is not resolvable after query change`() =
+        runTest {
+            fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
+            vm.onAction(FoodPickerAction.OnSearchOnlineClick)
+            assertThat(vm.state.value.onlineFoodItems).hasSize(1)
+
+            vm.onAction(FoodPickerAction.OnSearchQueryChange("kaese"))
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnAddClick("f1"))
+
+                assertThat(fakeFoodRepository.lastCachedItem).isNull()
+                assertThat(fakeFoodRepository.lastMarkedUsed).isNull()
+                expectNoEvents()
+            }
         }
 
     @Test

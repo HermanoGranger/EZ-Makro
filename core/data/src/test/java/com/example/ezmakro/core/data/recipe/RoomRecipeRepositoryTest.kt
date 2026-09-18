@@ -305,6 +305,25 @@ class RoomRecipeRepositoryTest {
         }
 
     @Test
+    fun `duplicate assigns a fresh lastModifiedAt and does not copy lastUsedAt`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal().apply { store.value = mapOf("f1" to food("f1"), "f2" to food("f2")) }
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+            repo.save(recipe().copy(lastModifiedAt = 111L, lastUsedAt = 222L))
+
+            val result = repo.duplicate(RecipeId("r1"))
+            val copyId = (result as Result.Success).data
+            val copy = dao.recipes.value[copyId.value]
+
+            assertThat(copy).isNotNull()
+            assertThat(copy!!.lastModifiedAt > 0L).isEqualTo(true)
+            assertThat(copy.lastModifiedAt >= 111L).isEqualTo(true)
+            assertThat(copy.lastUsedAt).isNull()
+            assertThat(copy.name).isEqualTo("Pfannkuchen (Kopie)")
+        }
+
+    @Test
     fun `delete removes recipe and ingredients`() =
         runTest {
             val dao = FakeRecipeDao()

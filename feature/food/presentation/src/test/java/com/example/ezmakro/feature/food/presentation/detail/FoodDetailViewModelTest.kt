@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -92,5 +93,31 @@ class FoodDetailViewModelTest {
             dispatcher.scheduler.runCurrent()
             assertEquals(false, viewModel.state.value.showRefetchConfirm)
             assertEquals(false, viewModel.state.value.isRefetching)
+        }
+
+    @Test
+    fun resetToOriginal_failureEmitsShowMessage() =
+        runTest {
+            repository.shouldFailResetToOriginal = true
+
+            viewModel.events.test {
+                viewModel.onAction(FoodDetailAction.OnResetToOriginalClick)
+                dispatcher.scheduler.advanceUntilIdle()
+
+                assertTrue(awaitItem() is FoodDetailEvent.ShowMessage)
+            }
+        }
+
+    @Test
+    fun refetch_failureEmitsShowMessage() =
+        runTest {
+            repository.shouldFailRefetch = true
+
+            viewModel.events.test {
+                viewModel.onAction(FoodDetailAction.OnRefetchConfirm)
+                dispatcher.scheduler.advanceUntilIdle()
+
+                assertTrue(awaitItem() is FoodDetailEvent.ShowMessage)
+            }
         }
 }

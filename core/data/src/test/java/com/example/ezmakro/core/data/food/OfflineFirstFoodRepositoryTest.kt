@@ -47,6 +47,8 @@ private fun food(
 private class FakeLocal : FoodLocalDataSource {
     val store = MutableStateFlow<Map<String, FoodItem>>(emptyMap())
 
+    var shouldFailUpsert = false
+
     override fun observeAll(): Flow<List<FoodItem>> = store.map { it.values.toList() }
 
     override fun observeFavorites(): Flow<List<FoodItem>> = store.map { m -> m.values.filter { it.isFavorite } }
@@ -68,6 +70,7 @@ private class FakeLocal : FoodLocalDataSource {
         store.map { m -> m.values.filter { it.name.contains(query, ignoreCase = true) } }
 
     override suspend fun upsert(foodItem: FoodItem): EmptyResult<DataError.Local> {
+        if (shouldFailUpsert) return Result.Error(DataError.Local.UNKNOWN)
         store.value = store.value + (foodItem.id.value to foodItem)
         return Result.Success(Unit)
     }
@@ -217,6 +220,20 @@ class OfflineFirstFoodRepositoryTest {
 
             assertThat(local.store.value["1"]?.name).isEqualTo("Alpro")
             assertThat(local.store.value["1"]?.isFavorite).isEqualTo(true)
+        }
+
+    @Test
+    fun `toggleFavorite on session item returns error when caching fails`() =
+        runTest {
+            val local = FakeLocal()
+            local.shouldFailUpsert = true
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            repo.rememberRemoteItem(food("1", "Alpro", hasSnapshot = false))
+
+            val result = repo.toggleFavorite(FoodId("1"))
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Local.UNKNOWN))
+            assertThat(local.store.value["1"]).isNull()
         }
 
     @Test
