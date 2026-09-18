@@ -27,6 +27,8 @@ data class FoodPickerState(
     val isCameraPermissionGranted: Boolean = false,
     val isLookingUpBarcode: Boolean = false,
     val barcodeError: UiText? = null,
+    val detailFood: FoodItem? = null,
+    val detailRecipe: Recipe? = null,
     val selectedItemReady: Boolean = false,
     val selectedItemId: String? = null,
     val selectedItemIsRecipe: Boolean = false,

@@ -125,6 +125,19 @@ fun FoodPickerContent(
         )
     }
 
+    if (state.detailFood != null || state.detailRecipe != null) {
+        FoodPickerDetailPanel(
+            food = state.detailFood,
+            recipe = state.detailRecipe,
+            onDismiss = { onAction(FoodPickerAction.OnDismissDetail) },
+            onToggleFavorite = { id -> onAction(FoodPickerAction.OnToggleFavorite(id)) },
+            onAddClick = { onAction(FoodPickerAction.OnDetailAddClick) },
+            onOpenFullscreen = { onAction(FoodPickerAction.OnDetailFullscreenClick) },
+            modifier = modifier,
+        )
+        return
+    }
+
     Column(modifier = modifier) {
         if (state.targetContext == FoodPickerTarget.DIARY) {
             Row(

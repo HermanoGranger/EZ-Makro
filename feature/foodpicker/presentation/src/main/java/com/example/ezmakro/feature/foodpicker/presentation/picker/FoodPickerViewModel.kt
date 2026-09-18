@@ -105,6 +105,13 @@ class FoodPickerViewModel(
                     )
                 }
 
+            FoodPickerAction.OnDismissDetail ->
+                _state.update { it.copy(detailFood = null, detailRecipe = null) }
+
+            FoodPickerAction.OnDetailAddClick -> onDetailAddClick()
+
+            FoodPickerAction.OnDetailFullscreenClick -> openDetailFullscreen()
+
             is FoodPickerAction.OnConfirmAddToDiary -> confirmAddToDiary(action)
 
             FoodPickerAction.OnMyFoodsToggle ->
@@ -170,26 +177,60 @@ class FoodPickerViewModel(
 
     private fun onFoodClick(foodId: String) {
         val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
-        if (onlineItem == null) {
-            viewModelScope.launch { foodRepository.markUsed(FoodId(foodId)) }
+        if (onlineItem != null) {
+            _state.update { it.copy(selectionError = null) }
             viewModelScope.launch {
-                _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
+                foodRepository.rememberRemoteItem(onlineItem)
+                _state.update { it.copy(detailFood = onlineItem, detailRecipe = null) }
             }
             return
         }
-        _state.update { it.copy(selectionError = null) }
         viewModelScope.launch {
-            foodRepository.rememberRemoteItem(onlineItem)
-            _events.send(FoodPickerEvent.NavigateToFoodDetail(foodId))
+            foodRepository.markUsed(FoodId(foodId))
+            val food =
+                when (val result = foodRepository.getById(FoodId(foodId))) {
+                    is Result.Success -> result.data
+                    is Result.Error -> null
+                } ?: foodRepository.getSessionItem(FoodId(foodId))
+            if (food != null) {
+                _state.update { it.copy(detailFood = food, detailRecipe = null) }
+            }
         }
     }
 
     private fun onRecipeClick(recipeId: String) {
         viewModelScope.launch {
             recipeRepository.markUsed(RecipeId(recipeId))
+            val recipe =
+                when (val result = recipeRepository.getById(RecipeId(recipeId))) {
+                    is Result.Success -> result.data
+                    is Result.Error -> null
+                }
+            if (recipe != null) {
+                _state.update { it.copy(detailRecipe = recipe, detailFood = null) }
+            }
         }
-        viewModelScope.launch {
-            _events.send(FoodPickerEvent.NavigateToRecipeDetail(recipeId))
+    }
+
+    private fun onDetailAddClick() {
+        val s = _state.value
+        when {
+            s.detailFood != null -> onAddClick(s.detailFood.id.value)
+            s.detailRecipe != null -> onAddRecipeClick(s.detailRecipe.id.value)
+        }
+    }
+
+    private fun openDetailFullscreen() {
+        val s = _state.value
+        when {
+            s.detailFood != null ->
+                viewModelScope.launch {
+                    _events.send(FoodPickerEvent.NavigateToFoodDetail(s.detailFood.id.value))
+                }
+            s.detailRecipe != null ->
+                viewModelScope.launch {
+                    _events.send(FoodPickerEvent.NavigateToRecipeDetail(s.detailRecipe.id.value))
+                }
         }
     }
 

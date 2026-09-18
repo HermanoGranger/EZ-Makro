@@ -31,6 +31,12 @@ sealed interface FoodPickerAction {
 
     data object OnDismissSelection : FoodPickerAction
 
+    data object OnDismissDetail : FoodPickerAction
+
+    data object OnDetailAddClick : FoodPickerAction
+
+    data object OnDetailFullscreenClick : FoodPickerAction
+
     data class OnConfirmAddToDiary(
         val slot: MealSlot,
         val amount: Double,

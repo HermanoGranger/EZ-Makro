@@ -22,4 +22,13 @@
     <string name="foodpicker_toggle_foods">Lebensmittel</string>
     <string name="foodpicker_toggle_recipes">Rezepte</string>
     <string name="foodpicker_quick_add">Schnelleingabe</string>
+    <string name="foodpicker_detail_back">Zurück</string>
+    <string name="foodpicker_detail_per_100g">Nährwerte pro 100 g</string>
+    <string name="foodpicker_detail_kcal">Kalorien</string>
+    <string name="foodpicker_detail_protein">Protein</string>
+    <string name="foodpicker_detail_fat">Fett</string>
+    <string name="foodpicker_detail_carbs">Kohlenhydrate</string>
+    <string name="foodpicker_detail_fiber">Ballaststoffe</string>
+    <string name="foodpicker_detail_add">+ Hinzufügen</string>
+    <string name="foodpicker_detail_open_fullscreen">Vollbild öffnen</string>
 </resources>
