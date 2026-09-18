@@ -81,7 +81,11 @@ class FoodEditViewModel(
 
     private fun loadExisting(id: String) {
         viewModelScope.launch {
-            val food = repository.observeAll().first().firstOrNull { it.id.value == id } ?: return@launch
+            val foodId = FoodId(id)
+            val food =
+                repository.observeAll().first().firstOrNull { it.id.value == id }
+                    ?: repository.getSessionItem(foodId)
+                    ?: return@launch
             _state.update {
                 it.copy(
                     name = it.name.ifEmpty { food.name },
@@ -129,18 +133,21 @@ class FoodEditViewModel(
                         servingUnit = servingUnit,
                         isFavorite = isFavorite,
                     )
+                } else if (foodId != null) {
+                    val sessionItem = repository.getSessionItem(FoodId(foodId))
+                    if (sessionItem != null) {
+                        sessionItem.copy(
+                            name = name,
+                            barcode = barcode,
+                            nutritionPer100g = nutrition,
+                            servingUnit = servingUnit,
+                            isFavorite = isFavorite,
+                        )
+                    } else {
+                        newFood(id, name, barcode, nutrition, servingUnit, isFavorite)
+                    }
                 } else {
-                    FoodItem(
-                        id = FoodId(id),
-                        name = name,
-                        barcode = barcode,
-                        nutritionPer100g = nutrition,
-                        servingUnit = servingUnit,
-                        isFavorite = isFavorite,
-                        isUserCreated = true,
-                        cachedStatus = CachedFoodItemStatus.Original,
-                        originalSnapshot = null,
-                    )
+                    newFood(id, name, barcode, nutrition, servingUnit, isFavorite)
                 }
             repository
                 .saveUserEdit(item)
@@ -213,6 +220,25 @@ class FoodEditViewModel(
             .replace(',', '.')
             .ifBlank { "0" }
             .toDouble()
+
+    private fun newFood(
+        id: String,
+        name: String,
+        barcode: String?,
+        nutrition: NutritionValues?,
+        servingUnit: ServingUnit?,
+        isFavorite: Boolean,
+    ) = FoodItem(
+        id = FoodId(id),
+        name = name,
+        barcode = barcode,
+        nutritionPer100g = nutrition,
+        servingUnit = servingUnit,
+        isFavorite = isFavorite,
+        isUserCreated = true,
+        cachedStatus = CachedFoodItemStatus.Original,
+        originalSnapshot = null,
+    )
 
     private companion object {
         const val KEY_NAME = "food_edit_name"

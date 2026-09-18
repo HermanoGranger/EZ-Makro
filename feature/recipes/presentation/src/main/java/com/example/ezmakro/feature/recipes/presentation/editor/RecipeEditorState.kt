@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
+import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.presentation.uitext.UiText
 
 data class IngredientDraft(
@@ -11,6 +12,7 @@ data class IngredientDraft(
     val recipeId: String? = null,
     val originalLastModifiedAt: Long? = null,
     val snapshotChanged: Boolean = false,
+    val recipeSnapshot: RecipeSnapshot? = null,
 )
 
 data class RecipeEditorState(

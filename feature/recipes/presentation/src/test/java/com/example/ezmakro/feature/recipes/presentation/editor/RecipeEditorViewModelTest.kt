@@ -6,10 +6,12 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.FinalWeight
+import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
+import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeFoodRepository
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeRecipeRepository
@@ -305,5 +307,139 @@ class RecipeEditorViewModelTest {
             val second = vm.state.value.ingredients[1]
             assertThat(first.foodName).isEqualTo("Alpro Hafer")
             assertThat(second.foodName).isEqualTo("Oatly Barista")
+        }
+
+    private fun snapshotOf(
+        id: String = "r2",
+        name: String = "Unter",
+        lastModifiedAt: Long = 1_234L,
+    ): RecipeSnapshot =
+        RecipeSnapshot(
+            recipeId = RecipeId(id),
+            recipeName = name,
+            nutritionPer100g = NutritionValues(100.0, 10.0, 5.0, 20.0, 2.0),
+            originalLastModifiedAt = lastModifiedAt,
+            portions = 2,
+            gramsPerPortion = 100.0,
+        )
+
+    @Test
+    fun `saving parent with deleted sub-recipe ingredient uses the snapshot`() =
+        runTest {
+            val snapshot = snapshotOf()
+            val subRecipe =
+                Recipe(
+                    id = RecipeId("r2"),
+                    name = "Unter",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = FakeFoodRepository.food("f1", "Hafer"),
+                                rawWeight = RawWeight(50.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 2,
+                    lastModifiedAt = snapshot.originalLastModifiedAt!!,
+                )
+            val parent =
+                Recipe(
+                    id = RecipeId("r1"),
+                    name = "Parent",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = null,
+                                recipeSnapshot = snapshot,
+                                rawWeight = RawWeight(150.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                )
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(subRecipe)
+            recipeRepo.emitRecipe(parent)
+            val vm = viewModel(recipeId = "r1", recipeRepo = recipeRepo)
+
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
+            val draft = vm.state.value.ingredients[0]
+            assertThat(draft.recipeId).isEqualTo("r2")
+            assertThat(draft.rawWeight).isEqualTo("150.0")
+
+            recipeRepo.delete(RecipeId("r2"))
+
+            assertThat(
+                vm.state.value.ingredients[0]
+                    .snapshotChanged,
+            ).isTrue()
+            vm.onAction(RecipeEditorAction.OnSaveClick)
+
+            assertThat(recipeRepo.saved.size).isEqualTo(1)
+            val savedIngredient = recipeRepo.saved[0].ingredients[0]
+            assertThat(savedIngredient.recipeSnapshot).isEqualTo(snapshot)
+            assertThat(savedIngredient.rawWeight).isEqualTo(RawWeight(150.0))
+        }
+
+    @Test
+    fun `saving parent with deleted sub-recipe and no snapshot shows error`() =
+        runTest {
+            val subRecipe =
+                Recipe(
+                    id = RecipeId("r2"),
+                    name = "Unter",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = FakeFoodRepository.food("f1", "Hafer"),
+                                rawWeight = RawWeight(50.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 2,
+                )
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(subRecipe)
+            val vm = viewModel(recipeId = null, recipeRepo = recipeRepo)
+            vm.onAction(RecipeEditorAction.OnNameChange("Neu"))
+            vm.onAction(RecipeEditorAction.OnAddRecipeIngredientClick("r2"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+
+            recipeRepo.delete(RecipeId("r2"))
+            vm.onAction(RecipeEditorAction.OnSaveClick)
+
+            assertThat(recipeRepo.saved).isEmpty()
+            assertThat(vm.state.value.ingredientError != null).isTrue()
+        }
+
+    @Test
+    fun `snapshot ingredient gets generic serving label`() =
+        runTest {
+            val parent =
+                Recipe(
+                    id = RecipeId("r1"),
+                    name = "Parent",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = null,
+                                recipeSnapshot = snapshotOf(),
+                                rawWeight = RawWeight(150.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                )
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(parent)
+            val vm = viewModel(recipeId = "r1", recipeRepo = recipeRepo)
+
+            val draft = vm.state.value.ingredients[0]
+            assertThat(draft.recipeId).isEqualTo("r2")
+            assertThat(draft.servingLabel).isEqualTo("Portionen")
         }
 }

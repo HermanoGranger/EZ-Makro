@@ -199,6 +199,72 @@ class FoodEditViewModelTest {
             }
         }
 
+    @Test
+    fun editingSessionItem_loadsFoodIntoFields() =
+        runTest {
+            val snapshot =
+                FoodItem(
+                    id = FoodId("off-1"),
+                    name = "OFF Milk",
+                    barcode = "999",
+                    nutritionPer100g = NutritionValues(42.0, 3.3, 1.0, 5.0, 0.0),
+                    servingUnit = null,
+                    isUserCreated = false,
+                    cachedStatus = CachedFoodItemStatus.Original,
+                    originalSnapshot = null,
+                )
+            repository.rememberSessionItem(snapshot)
+            val viewModel = newViewModel(foodId = "off-1")
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals("OFF Milk", viewModel.state.value.name)
+            assertEquals("999", viewModel.state.value.barcode)
+            assertEquals("42.0", viewModel.state.value.kcal)
+            assertEquals("3.3", viewModel.state.value.protein)
+            assertEquals("1.0", viewModel.state.value.fat)
+            assertEquals("5.0", viewModel.state.value.carbs)
+            assertEquals("0.0", viewModel.state.value.fiber)
+            assertEquals(true, viewModel.state.value.isEditingExisting)
+        }
+
+    @Test
+    fun editingSessionItem_save_emitsSavedEvent_withCorrectFlags() =
+        runTest {
+            val snapshot =
+                FoodItem(
+                    id = FoodId("off-1"),
+                    name = "OFF Milk",
+                    barcode = "999",
+                    nutritionPer100g = NutritionValues(42.0, 3.3, 1.0, 5.0, 0.0),
+                    servingUnit = null,
+                    isUserCreated = false,
+                    cachedStatus = CachedFoodItemStatus.Original,
+                    originalSnapshot = null,
+                )
+            val sessionItem = snapshot.copy(originalSnapshot = snapshot)
+            repository.rememberSessionItem(sessionItem)
+            val viewModel = newViewModel(foodId = "off-1")
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(FoodEditAction.OnNameChange("My Milk"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.events.test {
+                val event = awaitItem()
+                assertTrue(event is FoodEditEvent.Saved)
+                assertEquals("off-1", (event as FoodEditEvent.Saved).foodId)
+            }
+
+            val saved = repository.savedEdits.single()
+            assertEquals("off-1", saved.id.value)
+            assertEquals("My Milk", saved.name)
+            assertEquals("999", saved.barcode)
+            assertFalse(saved.isUserCreated)
+            assertEquals(CachedFoodItemStatus.Original, saved.cachedStatus)
+            assertEquals(snapshot, saved.originalSnapshot)
+        }
+
     private fun newViewModel(foodId: String?): FoodEditViewModel =
         FoodEditViewModel(
             foodId = foodId,

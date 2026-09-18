@@ -78,6 +78,7 @@ fun IngredientRow(
                 rawWeight = rawWeight,
                 servingCount = servingCountVal,
                 servingLabel = ingredient.servingLabel,
+                usesGenericServingLabel = ingredient.recipeId != null,
             )
         }
     }
@@ -89,6 +90,7 @@ private fun IngredientMacroDetail(
     rawWeight: Double?,
     servingCount: Double?,
     servingLabel: String?,
+    usesGenericServingLabel: Boolean,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
@@ -97,6 +99,8 @@ private fun IngredientMacroDetail(
         val amountText =
             when {
                 rawWeight != null -> "${rawWeight.toInt()} g"
+                servingCount != null && servingLabel != null && usesGenericServingLabel ->
+                    "$servingCount $servingLabel"
                 servingCount != null && servingLabel != null ->
                     "$servingCount × $servingLabel"
                 else -> ""

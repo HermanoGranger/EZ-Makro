@@ -238,7 +238,9 @@ class RecipeEditorViewModel(
                                             ?.value
                                             .orEmpty(),
                                     foodName = ing.food?.name ?: ing.recipeSnapshot?.recipeName.orEmpty(),
-                                    servingLabel = ing.food?.servingUnit?.label,
+                                    servingLabel =
+                                        ing.food?.servingUnit?.label
+                                            ?: if (ing.recipeSnapshot != null) GENERIC_SERVING_LABEL else null,
                                     rawWeight =
                                         ing.rawWeight
                                             ?.grams
@@ -247,6 +249,7 @@ class RecipeEditorViewModel(
                                     servingCount = ing.servingCount?.toString().orEmpty(),
                                     recipeId = ing.recipeSnapshot?.recipeId?.value,
                                     originalLastModifiedAt = ing.recipeSnapshot?.originalLastModifiedAt,
+                                    recipeSnapshot = ing.recipeSnapshot,
                                 )
                             },
                     )
@@ -406,13 +409,15 @@ class RecipeEditorViewModel(
         draft: IngredientDraft,
         recipes: List<Recipe>,
     ): RecipeIngredient? {
-        val recipe = recipes.firstOrNull { it.id.value == draft.recipeId } ?: return null
+        val recipe = recipes.firstOrNull { it.id.value == draft.recipeId }
         val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
         val servingCount = draft.servingCount.parseNonNegativeDouble()
         val hasPositiveAmount =
             (rawWeight != null && rawWeight.grams > 0.0) || (servingCount != null && servingCount > 0.0)
         if (!hasPositiveAmount) return null
-        val snapshot = createSnapshot(recipe)
+        // A deleted sub-recipe still keeps its stored snapshot in the parent
+        // recipe; fall back to it so a mere save does not fail.
+        val snapshot = recipe?.let { createSnapshot(it) } ?: draft.recipeSnapshot ?: return null
         return RecipeIngredient(
             food = null,
             recipeSnapshot = snapshot,
@@ -472,5 +477,7 @@ class RecipeEditorViewModel(
         const val KEY_CATEGORY = "recipe_edit_category"
         const val KEY_PORTIONS = "recipe_edit_portions"
         const val KEY_FINAL_WEIGHT = "recipe_edit_final_weight"
+
+        const val GENERIC_SERVING_LABEL = "Portionen"
     }
 }

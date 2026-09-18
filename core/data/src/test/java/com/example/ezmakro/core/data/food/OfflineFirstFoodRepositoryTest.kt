@@ -391,6 +391,25 @@ class OfflineFirstFoodRepositoryTest {
         }
 
     @Test
+    fun `saveUserEdit on session item without local entry sets UserModified and snapshot`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            val sessionItem = food("1", "Alpro", hasSnapshot = false)
+            repo.rememberRemoteItem(sessionItem)
+            assertThat(local.store.value["1"]).isNull()
+
+            repo.saveUserEdit(sessionItem.copy(name = "Edited"))
+
+            val stored = local.store.value["1"]
+            assertThat(stored?.name).isEqualTo("Edited")
+            assertThat(stored?.cachedStatus).isEqualTo(CachedFoodItemStatus.UserModified)
+            assertThat(stored?.originalSnapshot).isNotNull()
+            assertThat(stored?.originalSnapshot?.name).isEqualTo("Alpro")
+            assertThat(stored?.originalSnapshot?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
     fun `cacheWithoutOverwritingUserEdits stores snapshot for reset to original`() =
         runTest {
             val local = FakeLocal()

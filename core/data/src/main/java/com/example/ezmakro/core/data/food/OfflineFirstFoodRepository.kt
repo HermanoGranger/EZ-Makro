@@ -61,17 +61,20 @@ class OfflineFirstFoodRepository(
         }
         // ADR-004: preserve the untouched OFF snapshot across edits so
         // "reset to original" always restores the first cached version, never a
-        // previously edited one.
+        // previously edited one. For session-only items the session cache holds
+        // the untouched OFF data and serves as snapshot source.
         val existingSnapshot =
             (local.getById(foodItem.id) as? Result.Success)
                 ?.data
                 ?.originalSnapshot
+                ?: sessionItems[foodItem.id]?.originalSnapshot
         // On first edit of a freshly cached OFF entry there is no snapshot yet
         // (cacheWithoutOverwritingUserEdits stores the OFF response as-is with
         // originalSnapshot = null). In that case snapshot the current state so
         // "reset to original" restores what the user saw before their first edit.
         val snapshot =
             existingSnapshot
+                ?: sessionItems[foodItem.id]
                 ?: foodItem.originalSnapshot
                 ?: foodItem.copy(cachedStatus = CachedFoodItemStatus.Original)
         val edited =
