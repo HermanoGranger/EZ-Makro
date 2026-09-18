@@ -112,7 +112,7 @@ class DiaryDayViewModel(
     private fun updateDate(newDate: LocalDate) {
         currentDateProvider.setDate(newDate)
         savedStateHandle[ARG_DATE] = newDate.toString()
-        _state.update { it.copy(date = newDate, expandedSlots = emptySet()) }
+        _state.update { it.copy(date = newDate, expandedSlots = MealSlot.entries.toSet()) }
     }
 
     private fun copyYesterday() {

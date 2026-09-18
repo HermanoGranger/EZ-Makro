@@ -124,32 +124,18 @@ class DiaryDayScreenTest {
     }
 
     @Test
-    fun collapsedSummaryHeader_showsExpandChevronAndBars() {
+    fun summaryHeader_showsCalorieRingAndAllFourMacroRings() {
         composeTestRule.setContent {
-            CollapsingSummaryHeaderContent(
-                summary = sampleSummary(),
-                fraction = 1f,
-                onToggleCollapse = {},
-            )
+            DiarySummaryHeader(summary = sampleSummary())
         }
 
-        composeTestRule.onNodeWithContentDescription("Ausklappen").assertIsDisplayed()
+        composeTestRule.onNodeWithText("+1700").assertIsDisplayed()
+        composeTestRule.onNodeWithText("300 / 2000 kcal").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Restkalorien").assertIsDisplayed()
         composeTestRule.onNodeWithText("Protein").assertIsDisplayed()
-    }
-
-    @Test
-    fun summaryHeader_chevronToggleInvokesCallback() {
-        var toggled = false
-        composeTestRule.setContent {
-            CollapsingSummaryHeaderContent(
-                summary = sampleSummary(),
-                fraction = 0f,
-                onToggleCollapse = { toggled = true },
-            )
-        }
-
-        composeTestRule.onNodeWithContentDescription("Zusammenklappen").performClick()
-        assertEquals(true, toggled)
+        composeTestRule.onNodeWithText("Fett").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kohlenhydrate").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ballaststoffe").assertIsDisplayed()
     }
 
     private fun sampleSummary(

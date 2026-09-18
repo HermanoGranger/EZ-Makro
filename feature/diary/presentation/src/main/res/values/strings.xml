@@ -21,10 +21,7 @@
     <string name="diary_next_day">Nächster Tag</string>
     <string name="diary_today">Heute</string>
     <string name="diary_configure_goals">Ziele anpassen</string>
-    <string name="diary_collapse_header">Zusammenklappen</string>
-    <string name="diary_expand_header">Ausklappen</string>
     <string name="diary_summary_remaining_kcal">Restkalorien</string>
-    <string name="diary_summary_consumed_kcal">Verbraucht</string>
 
     <string name="goals_title">Tagesziele</string>
     <string name="goals_kcal">Kalorien (kcal)</string>

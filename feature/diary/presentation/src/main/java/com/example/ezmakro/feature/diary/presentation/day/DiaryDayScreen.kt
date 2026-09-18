@@ -284,9 +284,8 @@ fun DiaryDayScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             state.summary?.let { summary ->
-                CollapsingSummaryHeader(
+                DiarySummaryHeader(
                     summary = summary,
-                    listState = listState,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }

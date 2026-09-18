@@ -8,6 +8,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
@@ -157,23 +158,28 @@ class DiaryDayViewModelTest {
         }
 
     @Test
-    fun `OnToggleSlot toggles the slot in expandedSlots`() =
+    fun `OnToggleSlot removes then re-adds a slot around the default-expanded set`() =
         runTest {
-            viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
-            assertThat(viewModel.state.value.expandedSlots).isEqualTo(setOf(MealSlot.BREAKFAST))
+            val allSlots = MealSlot.entries.toSet()
+            assertThat(viewModel.state.value.expandedSlots).isEqualTo(allSlots)
 
             viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
-            assertThat(viewModel.state.value.expandedSlots).isEqualTo(emptySet())
+            assertThat(viewModel.state.value.expandedSlots).isEqualTo(allSlots - MealSlot.BREAKFAST)
+
+            viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
+            assertThat(viewModel.state.value.expandedSlots).isEqualTo(allSlots)
         }
 
     @Test
-    fun `OnToggleSlot can expand multiple slots`() =
+    fun `OnToggleSlot can collapse multiple slots`() =
         runTest {
             viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
             viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.LUNCH))
 
             assertThat(viewModel.state.value.expandedSlots)
-                .isEqualTo(setOf(MealSlot.BREAKFAST, MealSlot.LUNCH))
+                .isEqualTo(
+                    MealSlot.entries.toSet() - MealSlot.BREAKFAST - MealSlot.LUNCH,
+                )
         }
 
     @Test
@@ -256,6 +262,19 @@ class DiaryDayViewModelTest {
             val target = LocalDate.of(2026, 8, 1)
             viewModel.onAction(DiaryDayAction.OnGoToDate(target))
             assertThat(viewModel.state.value.date).isEqualTo(target)
+        }
+
+    @Test
+    fun `expandedSlots reset to all slots on date change`() =
+        runTest {
+            viewModel.onAction(DiaryDayAction.OnToggleSlot(MealSlot.BREAKFAST))
+            assertThat(viewModel.state.value.expandedSlots)
+                .isNotEqualTo(MealSlot.entries.toSet())
+
+            viewModel.onAction(DiaryDayAction.OnPreviousDay)
+
+            assertThat(viewModel.state.value.expandedSlots)
+                .isEqualTo(MealSlot.entries.toSet())
         }
 
     @Test
