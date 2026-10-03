@@ -3,6 +3,7 @@ package com.example.ezmakro.core.data.diary
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
@@ -27,10 +28,13 @@ import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -99,13 +103,15 @@ class RoomDiaryRepositoryTest {
         override fun observeByDate(date: String): Flow<List<DiaryEntryEntity>> =
             store.map { m -> m.values.filter { it.date == date }.sortedBy { it.slot } }
 
-        override fun getByDateRange(
+        override fun observeByDateRange(
             from: String,
             to: String,
-        ): List<DiaryEntryEntity> =
-            store.value.values
-                .filter { it.date >= from && it.date <= to }
-                .sortedWith(compareBy({ it.date }, { it.slot }))
+        ): Flow<List<DiaryEntryEntity>> =
+            store.map { m ->
+                m.values
+                    .filter { it.date >= from && it.date <= to }
+                    .sortedWith(compareBy({ it.date }, { it.slot }))
+            }
     }
 
     private fun repoWith(dao: FakeDiaryDao) = RoomDiaryRepository(RoomDiaryLocalDataSource(dao))
@@ -215,19 +221,42 @@ class RoomDiaryRepositoryTest {
         }
 
     @Test
-    fun `getHistory returns entries within range newest first`() =
+    fun `observeByDateRange returns entries within range ordered by date and slot`() =
         runTest {
             val dao = FakeDiaryDao()
-            repoWith(dao).save(foodEntry("d1", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 19), "f1", 100.0))
-            repoWith(dao).save(foodEntry("d2", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 18), "f1", 100.0))
+            repoWith(dao).save(foodEntry("d1", MealSlot.LUNCH, LocalDate.of(2026, 7, 19), "f1", 100.0))
+            repoWith(dao).save(foodEntry("d2", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 19), "f1", 100.0))
+            repoWith(dao).save(foodEntry("d3", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 18), "f1", 100.0))
+            repoWith(dao).save(foodEntry("d4", MealSlot.BREAKFAST, LocalDate.of(2026, 6, 30), "f1", 100.0))
 
-            val history = repoWith(dao).getHistory(LocalDateRange(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 19)))
-            assertThat(history).isInstanceOf(Result.Success::class)
-            val ids =
-                when (history) {
-                    is Result.Success -> history.data.map { it.id.value }
-                    is Result.Error -> emptyList()
+            val range = LocalDateRange(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 19))
+            val history = repoWith(dao).observeByDateRange(range).first()
+
+            assertThat(history.map { it.id.value }).containsExactly("d3", "d2", "d1")
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `observeByDateRange re-emits after save and delete`() =
+        runTest {
+            val dao = FakeDiaryDao()
+            val repo = repoWith(dao)
+            val range = LocalDateRange(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 19))
+            val emissions = mutableListOf<List<String>>()
+            val job =
+                launch(UnconfinedTestDispatcher(testScheduler)) {
+                    repo.observeByDateRange(range).collect { list -> emissions += list.map { it.id.value } }
                 }
-            assertThat(ids).containsExactly("d2", "d1")
+
+            repo.save(foodEntry("d1", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 19), "f1", 100.0))
+            repo.save(foodEntry("d2", MealSlot.BREAKFAST, LocalDate.of(2026, 7, 18), "f1", 100.0))
+            repo.delete(DiaryEntryId("d1"))
+            job.cancel()
+
+            assertThat(emissions).hasSize(4)
+            assertThat(emissions.first()).isEmpty()
+            assertThat(emissions[1]).containsExactly("d1")
+            assertThat(emissions[2]).containsExactly("d2", "d1")
+            assertThat(emissions.last()).containsExactly("d2")
         }
 }

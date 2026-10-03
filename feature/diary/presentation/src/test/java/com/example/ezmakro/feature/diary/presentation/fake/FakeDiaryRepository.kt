@@ -44,10 +44,10 @@ class FakeDiaryRepository : DiaryRepository {
         return Result.Success(Unit)
     }
 
-    override suspend fun getHistory(range: LocalDateRange): Result<List<DiaryEntry>, DataError.Local> =
-        Result.Success(
-            entries.value
+    override fun observeByDateRange(range: LocalDateRange): Flow<List<DiaryEntry>> =
+        entries.map { list ->
+            list
                 .filter { !it.date.isBefore(range.from) && !it.date.isAfter(range.to) }
-                .sortedWith(compareBy({ it.date }, { it.slot })),
-        )
+                .sortedWith(compareBy({ it.date }, { it.slot }))
+        }
 }

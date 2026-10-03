@@ -2,7 +2,7 @@ package com.example.ezmakro.core.database.dao
 
 import app.cash.turbine.test
 import assertk.assertThat
-import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
@@ -62,17 +62,36 @@ class DiaryEntryDaoTest : DatabaseTest() {
         }
 
     @Test
-    fun `getByDateRange returns inclusive range`() {
-        seedFoods()
-        runBlocking {
+    fun `observeByDateRange emits only the inclusive range ordered by date and slot`() =
+        runTest {
+            seedFoods()
             dao.upsert(entry(id = "d1", date = "2026-07-16"))
-            dao.upsert(entry(id = "d2", date = "2026-07-17"))
-            dao.upsert(entry(id = "d3", date = "2026-07-18"))
+            dao.upsert(entry(id = "d2", date = "2026-07-17", slot = "LUNCH"))
+            dao.upsert(entry(id = "d3", date = "2026-07-17", slot = "BREAKFAST"))
+            dao.upsert(entry(id = "d4", date = "2026-07-18"))
+            dao.upsert(entry(id = "d5", date = "2026-07-19"))
 
-            val range = dao.getByDateRange("2026-07-17", "2026-07-18")
-            assertThat(range.map { it.id }).containsExactlyInAnyOrder("d2", "d3")
+            dao.observeByDateRange("2026-07-17", "2026-07-18").test {
+                assertThat(awaitItem().map { it.id }).containsExactly("d3", "d2", "d4")
+            }
         }
-    }
+
+    @Test
+    fun `observeByDateRange re-emits after upsert and delete`() =
+        runTest {
+            seedFoods()
+            dao.observeByDateRange("2026-07-17", "2026-07-18").test {
+                assertThat(awaitItem()).hasSize(0)
+
+                dao.upsert(entry(id = "d1", date = "2026-07-17"))
+                assertThat(awaitItem().map { it.id }).containsExactly("d1")
+
+                dao.deleteById("d1")
+                assertThat(awaitItem()).hasSize(0)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 
     @Test
     fun `diary entry survives food deletion with SET NULL foreign key`() {

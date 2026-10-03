@@ -28,6 +28,6 @@ class RoomDiaryRepository(
 
     override suspend fun delete(id: DiaryEntryId): EmptyResult<DataError.Local> = local.deleteById(id)
 
-    override suspend fun getHistory(range: LocalDateRange): Result<List<DiaryEntry>, DataError.Local> =
-        local.getByDateRange(range.from, range.to)
+    override fun observeByDateRange(range: LocalDateRange): Flow<List<DiaryEntry>> =
+        local.observeByDateRange(range.from, range.to)
 }

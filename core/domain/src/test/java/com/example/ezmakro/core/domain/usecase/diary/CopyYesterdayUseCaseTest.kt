@@ -75,12 +75,14 @@ class CopyYesterdayUseCaseTest {
             return Result.Success(Unit)
         }
 
-        override suspend fun getHistory(range: LocalDateRange): Result<List<DiaryEntry>, DataError.Local> =
-            Result.Success(
-                entries
-                    .filter { !it.date.isBefore(range.from) && !it.date.isAfter(range.to) }
-                    .sortedWith(compareBy({ it.date }, { it.slot })),
-            )
+        override fun observeByDateRange(range: LocalDateRange): kotlinx.coroutines.flow.Flow<List<DiaryEntry>> =
+            kotlinx.coroutines.flow.flow {
+                emit(
+                    entries
+                        .filter { !it.date.isBefore(range.from) && !it.date.isAfter(range.to) }
+                        .sortedWith(compareBy({ it.date }, { it.slot })),
+                )
+            }
     }
 
     @Test

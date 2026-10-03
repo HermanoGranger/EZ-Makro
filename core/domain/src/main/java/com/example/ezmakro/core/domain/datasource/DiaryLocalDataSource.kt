@@ -28,9 +28,9 @@ interface DiaryLocalDataSource {
     /** Delete a diary entry by id. */
     suspend fun deleteById(id: DiaryEntryId): EmptyResult<DataError.Local>
 
-    /** Get all entries whose date falls in [from]..[to] (inclusive), for history. */
-    suspend fun getByDateRange(
+    /** Observe all entries whose date falls in [from]..[to] (inclusive), for history. */
+    fun observeByDateRange(
         from: LocalDate,
         to: LocalDate,
-    ): Result<List<DiaryEntry>, DataError.Local>
+    ): Flow<List<DiaryEntry>>
 }

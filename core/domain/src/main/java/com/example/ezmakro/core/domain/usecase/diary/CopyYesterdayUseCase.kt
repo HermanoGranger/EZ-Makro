@@ -2,10 +2,10 @@ package com.example.ezmakro.core.domain.usecase.diary
 
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.DiaryEntryId
-import com.example.ezmakro.core.domain.model.LocalDateRange
 import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.util.UUID
 
@@ -20,11 +20,9 @@ class CopyYesterdayUseCase(
 ) {
     suspend operator fun invoke(targetDate: LocalDate): Result<Int, DataError.Local> {
         val sourceDate = targetDate.minusDays(1)
-        val source =
-            when (val result = repository.getHistory(LocalDateRange(sourceDate, sourceDate))) {
-                is Result.Success -> result.data
-                is Result.Error -> return Result.Error(result.error)
-            }
+        // A one-shot snapshot is enough here (unlike the history screen), so the
+        // single-day flow is read once instead of keeping a second range API alive.
+        val source = repository.observeByDate(sourceDate).first()
         var copied = 0
         source.forEach { original ->
             val copy =

@@ -27,6 +27,10 @@ interface DiaryRepository {
     /** Delete a diary entry. */
     suspend fun delete(id: DiaryEntryId): EmptyResult<DataError.Local>
 
-    /** Get all entries within [range] (inclusive), newest first, for history. */
-    suspend fun getHistory(range: LocalDateRange): Result<List<DiaryEntry>, DataError.Local>
+    /**
+     * Observe all entries within [range] (inclusive) for history. A flow (not a
+     * one-shot read) so a screen that stays on the back stack reflects diary
+     * changes made elsewhere.
+     */
+    fun observeByDateRange(range: LocalDateRange): Flow<List<DiaryEntry>>
 }

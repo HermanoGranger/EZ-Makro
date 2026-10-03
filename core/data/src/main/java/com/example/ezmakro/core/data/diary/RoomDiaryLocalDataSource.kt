@@ -54,15 +54,13 @@ class RoomDiaryLocalDataSource(
     override suspend fun deleteById(id: DiaryEntryId): EmptyResult<DataError.Local> =
         runCatchingLocal { dao.deleteById(id.value) }
 
-    override suspend fun getByDateRange(
+    override fun observeByDateRange(
         from: LocalDate,
         to: LocalDate,
-    ): Result<List<DiaryEntry>, DataError.Local> =
-        runCatchingLocal {
-            dao
-                .getByDateRange(from.toString(), to.toString())
-                .map { it.toDiaryEntry() }
-        }
+    ): Flow<List<DiaryEntry>> =
+        dao
+            .observeByDateRange(from.toString(), to.toString())
+            .map { list -> list.map { it.toDiaryEntry() } }
 }
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */

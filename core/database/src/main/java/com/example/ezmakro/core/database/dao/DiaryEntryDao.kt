@@ -27,9 +27,10 @@ interface DiaryEntryDao {
     @Query("SELECT * FROM diary_entries WHERE date = :date ORDER BY slot")
     fun observeByDate(date: String): Flow<List<DiaryEntryEntity>>
 
+    /** Observe all entries whose date falls in [from]..[to] (inclusive), date and slot ordered. */
     @Query("SELECT * FROM diary_entries WHERE date >= :from AND date <= :to ORDER BY date, slot")
-    fun getByDateRange(
+    fun observeByDateRange(
         from: String,
         to: String,
-    ): List<DiaryEntryEntity>
+    ): Flow<List<DiaryEntryEntity>>
 }

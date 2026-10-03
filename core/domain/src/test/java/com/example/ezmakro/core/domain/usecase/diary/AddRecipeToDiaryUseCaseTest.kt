@@ -70,8 +70,7 @@ class AddRecipeToDiaryUseCaseTest {
 
         override suspend fun delete(id: DiaryEntryId): EmptyResult<DataError.Local> = Result.Success(Unit)
 
-        override suspend fun getHistory(range: LocalDateRange): Result<List<DiaryEntry>, DataError.Local> =
-            Result.Success(emptyList())
+        override fun observeByDateRange(range: LocalDateRange): Flow<List<DiaryEntry>> = flow { emit(emptyList()) }
     }
 
     @Test
