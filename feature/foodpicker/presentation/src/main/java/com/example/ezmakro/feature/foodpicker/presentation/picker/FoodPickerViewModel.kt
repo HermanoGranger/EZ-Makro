@@ -196,19 +196,22 @@ class FoodPickerViewModel(
     }
 
     private fun onFoodClick(foodId: String) {
-        val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
-        if (onlineItem != null) {
-            _state.update { it.copy(selectionError = null, detailFoodId = foodId, detailRecipeId = null) }
-            sessionFoods[foodId] = onlineItem
-            viewModelScope.launch {
-                foodRepository.rememberRemoteItem(onlineItem)
-                refreshDetail()
-            }
-            return
-        }
+        val isLocal = localFoods.any { it.id.value == foodId }
+        val isRemoteOnly = isRemoteOnlyFood(foodId)
+        val resolved = resolveFood(foodId)
+        _state.update { it.copy(selectionError = null, detailFoodId = foodId, detailRecipeId = null) }
         viewModelScope.launch {
-            foodRepository.markUsed(FoodId(foodId))
-            _state.update { it.copy(detailFoodId = foodId, detailRecipeId = null) }
+            when {
+                // A locally stored row is authoritative (it may be user-modified), only bump its usage.
+                isLocal -> foodRepository.markUsed(FoodId(foodId))
+                // A pure search hit has to be remembered so its id stays resolvable off the search result.
+                isRemoteOnly && resolved != null -> {
+                    sessionFoods[foodId] = resolved
+                    foodRepository.rememberRemoteItem(resolved)
+                }
+                // Session-only: already remembered, nothing local to update and nothing to persist.
+                else -> Unit
+            }
             refreshDetail()
         }
     }
@@ -229,6 +232,14 @@ class FoodPickerViewModel(
         localFoods.firstOrNull { it.id.value == id }
             ?: sessionFoods[id]
             ?: _state.value.onlineFoodItems.firstOrNull { it.id.value == id }
+
+    /**
+     * True while [id] exists only as a frozen search snapshot: neither a stored
+     * row nor a session entry. Such an item is not durable and must be cached
+     * before the diary can reference it.
+     */
+    private fun isRemoteOnlyFood(id: String): Boolean =
+        localFoods.none { it.id.value == id } && !sessionFoods.containsKey(id)
 
     private fun resolveRecipe(id: String): Recipe? = localRecipes.firstOrNull { it.id.value == id }
 
@@ -346,8 +357,10 @@ class FoodPickerViewModel(
 
     private fun confirmAddToDiary(action: FoodPickerAction.OnConfirmAddToDiary) {
         val s = _state.value
-        val itemId = s.selectedItemId ?: return
+        val selectedId = s.selectedItemId ?: return
         val date = s.targetDate ?: LocalDate.now().toString()
+        val isRecipe = s.selectedItemIsRecipe
+        val slot = s.slot ?: action.slot
         _state.update {
             it.copy(
                 selectedItemReady = false,
@@ -357,9 +370,13 @@ class FoodPickerViewModel(
             )
         }
         viewModelScope.launch {
-            val onlineItem = s.onlineFoodItems.firstOrNull { it.id.value == itemId }
-            if (onlineItem != null) {
-                when (val result = foodRepository.cacheRemoteItem(onlineItem)) {
+            // Resolve at use time, never from the snapshot captured before this launch:
+            // a locally edited row must win over the online search result.
+            val resolved = if (isRecipe) null else resolveFood(selectedId)
+            // Only a not-yet-persisted remote hit needs caching; a stored row is
+            // already durable and must not be overwritten (ADR-004).
+            if (isRemoteOnlyFood(selectedId) && resolved != null) {
+                when (val result = foodRepository.cacheRemoteItem(resolved)) {
                     is Result.Error -> {
                         _state.update { it.copy(selectionError = result.error.toUiText()) }
                         return@launch
@@ -369,10 +386,10 @@ class FoodPickerViewModel(
             }
             _events.send(
                 FoodPickerEvent.AddToDiary(
-                    foodId = itemId,
-                    isRecipe = s.selectedItemIsRecipe,
+                    foodId = resolved?.id?.value ?: selectedId,
+                    isRecipe = isRecipe,
                     date = date,
-                    slot = s.slot ?: action.slot,
+                    slot = slot,
                     amount = action.amount,
                     isGrams = action.isGrams,
                 ),

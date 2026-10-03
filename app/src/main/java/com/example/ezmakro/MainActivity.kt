@@ -206,14 +206,19 @@ class MainActivity : ComponentActivity() {
                 } else {
                     val foodRepository = get<FoodRepository>()
                     val addUseCase = get<AddFoodToDiaryUseCase>()
-                    foodRepository.getById(FoodId(foodId)).onSuccess { food ->
-                        food?.let {
-                            if (isGrams) {
-                                addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
-                            } else {
-                                addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
-                            }
-                        }
+                    val food =
+                        when (val result = foodRepository.getById(FoodId(foodId))) {
+                            is Result.Success -> result.data
+                            is Result.Error -> null
+                        } ?: foodRepository.getSessionItem(FoodId(foodId))
+                    if (food == null) return@launch
+                    // Session-only online items are not stored yet; persist them before
+                    // the diary references them, otherwise the entry is silently dropped.
+                    foodRepository.cacheRemoteItem(food)
+                    if (isGrams) {
+                        addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
+                    } else {
+                        addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
                     }
                 }
             }
@@ -231,18 +236,19 @@ class MainActivity : ComponentActivity() {
                         is Result.Success -> result.data
                         is Result.Error -> null
                     } ?: foodRepository.getSessionItem(FoodId(foodId))
-                food?.let {
-                    // Persist online items that were only session-cached for the
-                    // detail view once they are actually used in the diary.
-                    foodRepository.cacheRemoteItem(food)
-                    if (isGrams) {
-                        addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
-                    } else {
-                        addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
-                    }
+                // Unresolved id: stay on this screen instead of navigating to the diary
+                // as if the entry had been added.
+                if (food == null) return@launch
+                // Persist online items that were only session-cached for the
+                // detail view once they are actually used in the diary.
+                foodRepository.cacheRemoteItem(food)
+                if (isGrams) {
+                    addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
+                } else {
+                    addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
                 }
+                navController.popBackStack(ROUTE_DIARY, inclusive = false)
             }
-            navController.popBackStack(ROUTE_DIARY, inclusive = false)
         }
 
     private fun makeAddRecipeToDiary(
