@@ -385,6 +385,59 @@ class RecipeEditorViewModelTest {
                 .isEqualTo(NutritionValues(100.0, 2.5, 0.5, 20.0, 1.5))
         }
 
+    @Test
+    fun `ingredient added via picker survives a recipes table emission`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Mehl"), FakeFoodRepository.food("f2", "Banane")))
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(brotRecipe())
+            val vm = viewModel(recipeId = "r1", foodRepo = foodRepo, recipeRepo = recipeRepo)
+            assertThat(vm.state.value.ingredients.size).isEqualTo(1)
+
+            vm.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+            vm.onAction(RecipeEditorAction.OnIngredientRawWeightChange(1, "120"))
+            assertThat(vm.state.value.ingredients.size).isEqualTo(2)
+
+            recipeRepo.markUsed(RecipeId("r1"))
+
+            assertThat(vm.state.value.ingredients.size).isEqualTo(2)
+            val added = vm.state.value.ingredients[1]
+            assertThat(added.foodName).isEqualTo("Banane")
+            assertThat(added.rawWeight).isEqualTo("120")
+        }
+
+    @Test
+    fun `typed portions are not reset by a recipes table emission`() =
+        runTest {
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(brotRecipe())
+            val vm = viewModel(recipeId = "r1", recipeRepo = recipeRepo)
+            assertThat(vm.state.value.portions).isEqualTo("3")
+
+            vm.onAction(RecipeEditorAction.OnPortionsChange("6"))
+            recipeRepo.markUsed(RecipeId("r1"))
+
+            assertThat(vm.state.value.portions).isEqualTo("6")
+        }
+
+    private fun brotRecipe(): Recipe =
+        Recipe(
+            id = RecipeId("r1"),
+            name = "Brot",
+            ingredients =
+                listOf(
+                    RecipeIngredient(
+                        food = FakeFoodRepository.food("f1", "Mehl"),
+                        rawWeight = RawWeight(200.0),
+                        servingCount = null,
+                    ),
+                ),
+            finalWeight = FinalWeight(300.0),
+            portions = 3,
+            category = "Backen",
+        )
+
     private fun snapshotOf(
         id: String = "r2",
         name: String = "Unter",

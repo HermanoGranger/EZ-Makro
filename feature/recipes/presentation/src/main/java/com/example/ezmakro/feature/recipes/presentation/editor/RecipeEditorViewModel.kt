@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -225,9 +226,20 @@ class RecipeEditorViewModel(
         viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
+    /**
+     * Seed the form from the stored recipe **once**. `observeById` is backed by
+     * the whole `recipes` table, so a long-lived collector would overwrite the
+     * draft on every unrelated write — `markUsed` from the ingredient picker,
+     * `toggleFavorite`, saving this very recipe — and added ingredients or typed
+     * values would vanish. Later table emissions stay with the
+     * `recipeRepository.observeAll()` collector from `init`, which keeps
+     * `availableRecipes`, [checkSnapshotChanges] and [recomputeNutrition] live
+     * without touching the form.
+     */
     private fun loadExisting(id: String) {
         recipeRepository
             .observeById(RecipeId(id))
+            .take(1)
             .onEach { recipe ->
                 if (recipe == null) return@onEach
                 _state.update {
