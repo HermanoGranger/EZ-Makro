@@ -38,6 +38,8 @@ class OfflineFirstFoodRepository(
 
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = local.getById(id)
 
+    override fun observeById(id: FoodId): Flow<FoodItem?> = local.observeById(id)
+
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
         remote.searchByName(query)
 

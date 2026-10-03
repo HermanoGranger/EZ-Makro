@@ -10,6 +10,7 @@ import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
 class FakeFoodRepository : FoodRepository {
@@ -38,6 +39,14 @@ class FakeFoodRepository : FoodRepository {
         items.value = foods
     }
 
+    /** Simulate a favorite change made elsewhere (e.g. on the detail screen). */
+    fun setFavorite(
+        id: String,
+        favorite: Boolean,
+    ) {
+        items.value = items.value.map { if (it.id.value == id) it.copy(isFavorite = favorite) else it }
+    }
+
     override fun observeAll(): Flow<List<FoodItem>> = items
 
     override fun observeFavorites(): Flow<List<FoodItem>> = items
@@ -49,6 +58,8 @@ class FakeFoodRepository : FoodRepository {
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
         Result.Success(items.value.firstOrNull { it.id == id })
 
+    override fun observeById(id: FoodId): Flow<FoodItem?> = items.map { list -> list.firstOrNull { it.id == id } }
+
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
         Result.Success(emptyList())
 
@@ -56,6 +67,7 @@ class FakeFoodRepository : FoodRepository {
 
     override suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local> {
         savedEdits += foodItem
+        items.value = items.value.filter { it.id != foodItem.id } + foodItem
         return Result.Success(Unit)
     }
 
@@ -75,6 +87,7 @@ class FakeFoodRepository : FoodRepository {
 
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
         lastToggledFavorite = id
+        items.value = items.value.map { if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it }
         return Result.Success(Unit)
     }
 

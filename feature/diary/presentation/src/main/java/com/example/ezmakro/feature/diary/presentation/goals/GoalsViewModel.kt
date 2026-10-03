@@ -11,7 +11,8 @@ import com.example.ezmakro.feature.diary.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,41 +32,54 @@ class GoalsViewModel(
     val events = _events.receiveAsFlow()
 
     init {
-        viewModelScope.launch {
-            val goal = repository.observeGoal().first()
-            _state.update {
-                it.copy(
-                    kcal = goal.kcal.formatValue(),
-                    protein = goal.proteinG.formatValue(),
-                    fat = goal.fatG.formatValue(),
-                    carbs = goal.carbsG.formatValue(),
-                    fiber = goal.fiberG.formatValue(),
-                )
-            }
-        }
+        observeGoal()
+    }
+
+    /**
+     * Observe the persisted goal instead of reading it once. A pristine form
+     * always mirrors the stored goal; once the user typed anything
+     * ([GoalsState.isDirty]) the draft is left alone.
+     */
+    private fun observeGoal() {
+        repository
+            .observeGoal()
+            .onEach { goal ->
+                _state.update { state ->
+                    if (state.isDirty) {
+                        state
+                    } else {
+                        state.copy(
+                            kcal = goal.kcal.formatValue(),
+                            protein = goal.proteinG.formatValue(),
+                            fat = goal.fatG.formatValue(),
+                            carbs = goal.carbsG.formatValue(),
+                            fiber = goal.fiberG.formatValue(),
+                        )
+                    }
+                }
+            }.launchIn(viewModelScope)
     }
 
     fun onAction(action: GoalsAction) {
         when (action) {
-            is GoalsAction.OnKcalChange ->
-                _state.update { it.copy(kcal = action.value, numberError = null) }
+            is GoalsAction.OnKcalChange -> onUserInput { copy(kcal = action.value, numberError = null) }
 
-            is GoalsAction.OnProteinChange ->
-                _state.update { it.copy(protein = action.value, numberError = null) }
+            is GoalsAction.OnProteinChange -> onUserInput { copy(protein = action.value, numberError = null) }
 
-            is GoalsAction.OnFatChange ->
-                _state.update { it.copy(fat = action.value, numberError = null) }
+            is GoalsAction.OnFatChange -> onUserInput { copy(fat = action.value, numberError = null) }
 
-            is GoalsAction.OnCarbsChange ->
-                _state.update { it.copy(carbs = action.value, numberError = null) }
+            is GoalsAction.OnCarbsChange -> onUserInput { copy(carbs = action.value, numberError = null) }
 
-            is GoalsAction.OnFiberChange ->
-                _state.update { it.copy(fiber = action.value, numberError = null) }
+            is GoalsAction.OnFiberChange -> onUserInput { copy(fiber = action.value, numberError = null) }
 
             GoalsAction.OnSaveClick -> save()
             GoalsAction.OnResetToDefaultClick -> resetToDefault()
             GoalsAction.OnBackClick -> emit(GoalsEvent.NavigateBack)
         }
+    }
+
+    private fun onUserInput(update: GoalsState.() -> GoalsState) {
+        _state.update { it.copy(isDirty = true).update() }
     }
 
     private fun save() {

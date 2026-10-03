@@ -69,6 +69,8 @@ class QuickAddUseCaseTest {
 
         override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = Result.Success(null)
 
+        override fun observeById(id: FoodId): Flow<FoodItem?> = flow { emit(null) }
+
         override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
             Result.Success(emptyList())
 

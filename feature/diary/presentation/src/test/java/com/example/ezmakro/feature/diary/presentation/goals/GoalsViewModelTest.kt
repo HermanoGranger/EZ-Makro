@@ -89,6 +89,48 @@ class GoalsViewModelTest {
         }
 
     @Test
+    fun `a later goal emission fills a pristine form`() =
+        runTest {
+            repository.setGoal(
+                NutritionGoal(
+                    kcal = 1800.0,
+                    proteinG = 120.0,
+                    fatG = 60.0,
+                    carbsG = 200.0,
+                    fiberG = 25.0,
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertThat(state.kcal).isEqualTo("1800")
+            assertThat(state.protein).isEqualTo("120")
+            assertThat(state.fat).isEqualTo("60")
+            assertThat(state.carbs).isEqualTo("200")
+            assertThat(state.fiber).isEqualTo("25")
+        }
+
+    @Test
+    fun `typing is not clobbered by a goal emission`() =
+        runTest {
+            viewModel.onAction(GoalsAction.OnKcalChange("1234"))
+
+            repository.setGoal(
+                NutritionGoal(
+                    kcal = 1800.0,
+                    proteinG = 120.0,
+                    fatG = 60.0,
+                    carbsG = 200.0,
+                    fiberG = 25.0,
+                ),
+            )
+
+            val state = viewModel.state.value
+            assertThat(state.kcal).isEqualTo("1234")
+            // Draft ownership: once the user typed, no field of the draft is overwritten.
+            assertThat(state.protein).isEqualTo("150")
+        }
+
+    @Test
     fun `OnResetToDefaultClick persists default and navigates back`() =
         runTest {
             viewModel.events.test {

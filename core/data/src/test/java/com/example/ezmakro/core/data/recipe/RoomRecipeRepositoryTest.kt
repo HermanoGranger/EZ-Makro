@@ -132,6 +132,8 @@ private class FakeFoodLocal : FoodLocalDataSource {
 
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = Result.Success(store.value[id.value])
 
+    override fun observeById(id: FoodId): Flow<FoodItem?> = store.map { it[id.value] }
+
     override suspend fun getByBarcode(barcode: String): Result<FoodItem?, DataError.Local> =
         Result.Success(store.value.values.firstOrNull { it.barcode == barcode })
 

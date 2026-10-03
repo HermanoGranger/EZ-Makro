@@ -18,11 +18,34 @@ import com.example.ezmakro.feature.food.presentation.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
+
+/**
+ * Draft ownership: the form fields are seeded from the first emission and are never
+ * overwritten afterwards (see [FoodEditState.isDirty]). The server-owned
+ * [FoodEditState.isFavorite] and [FoodEditState.cachedStatus] are refreshed on every
+ * emission.
+ */
+private fun FoodEditState.mergedWith(food: FoodItem): FoodEditState =
+    copy(
+        name = if (isDirty) name else food.name,
+        barcode = if (isDirty) barcode else food.barcode.orEmpty(),
+        kcal = if (isDirty) kcal else food.nutritionPer100g?.kcal?.formatValue() ?: "",
+        protein = if (isDirty) protein else food.nutritionPer100g?.proteinG?.formatValue() ?: "",
+        fat = if (isDirty) fat else food.nutritionPer100g?.fatG?.formatValue() ?: "",
+        carbs = if (isDirty) carbs else food.nutritionPer100g?.carbsG?.formatValue() ?: "",
+        fiber = if (isDirty) fiber else food.nutritionPer100g?.fiberG?.formatValue() ?: "",
+        portionGrams = if (isDirty) portionGrams else food.servingUnit?.gramsEquivalent?.formatValue() ?: "",
+        isFavorite = food.isFavorite,
+        cachedStatus = food.cachedStatus,
+    )
 
 /**
  * Edits an existing food ([foodId] non-null) or creates a new user food
@@ -42,6 +65,9 @@ class FoodEditViewModel(
                 isEditingExisting = foodId != null,
                 barcode = savedStateHandle[KEY_BARCODE] ?: prefillBarcode.orEmpty(),
                 name = savedStateHandle[KEY_NAME] ?: "",
+                // A restored draft (process death) is user input and must survive the
+                // first emission, so it claims ownership of the form fields.
+                isDirty = hasRestoredDraft,
             ),
         )
     val state = _state.asStateFlow()
@@ -50,29 +76,35 @@ class FoodEditViewModel(
     val events = _events.receiveAsFlow()
 
     init {
-        if (foodId != null) loadExisting(foodId)
+        if (foodId != null) observeExisting(FoodId(foodId))
     }
+
+    private val hasRestoredDraft: Boolean
+        get() =
+            savedStateHandle.contains(KEY_DIRTY) ||
+                savedStateHandle.contains(KEY_NAME) ||
+                savedStateHandle.contains(KEY_BARCODE)
 
     fun onAction(action: FoodEditAction) {
         when (action) {
             is FoodEditAction.OnNameChange -> {
                 savedStateHandle[KEY_NAME] = action.value
-                _state.update { it.copy(name = action.value, nameError = null) }
+                onUserInput { copy(name = action.value, nameError = null) }
             }
 
             is FoodEditAction.OnBarcodeChange -> {
                 savedStateHandle[KEY_BARCODE] = action.value
-                _state.update { it.copy(barcode = action.value) }
+                onUserInput { copy(barcode = action.value) }
             }
 
-            is FoodEditAction.OnKcalChange -> _state.update { it.copy(kcal = action.value, numberError = null) }
-            is FoodEditAction.OnProteinChange -> _state.update { it.copy(protein = action.value, numberError = null) }
-            is FoodEditAction.OnFatChange -> _state.update { it.copy(fat = action.value, numberError = null) }
-            is FoodEditAction.OnCarbsChange -> _state.update { it.copy(carbs = action.value, numberError = null) }
-            is FoodEditAction.OnFiberChange -> _state.update { it.copy(fiber = action.value, numberError = null) }
-            is FoodEditAction.OnPortionGramsChange -> _state.update { it.copy(portionGrams = action.value) }
+            is FoodEditAction.OnKcalChange -> onUserInput { copy(kcal = action.value, numberError = null) }
+            is FoodEditAction.OnProteinChange -> onUserInput { copy(protein = action.value, numberError = null) }
+            is FoodEditAction.OnFatChange -> onUserInput { copy(fat = action.value, numberError = null) }
+            is FoodEditAction.OnCarbsChange -> onUserInput { copy(carbs = action.value, numberError = null) }
+            is FoodEditAction.OnFiberChange -> onUserInput { copy(fiber = action.value, numberError = null) }
+            is FoodEditAction.OnPortionGramsChange -> onUserInput { copy(portionGrams = action.value) }
 
-            FoodEditAction.OnToggleFavorite -> _state.update { it.copy(isFavorite = !it.isFavorite) }
+            FoodEditAction.OnToggleFavorite -> toggleFavorite()
 
             FoodEditAction.OnSaveClick -> save()
             FoodEditAction.OnBackClick ->
@@ -80,27 +112,40 @@ class FoodEditViewModel(
         }
     }
 
-    private fun loadExisting(id: String) {
-        viewModelScope.launch {
-            val foodId = FoodId(id)
-            val food =
-                repository.observeAll().first().firstOrNull { it.id.value == id }
-                    ?: repository.getSessionItem(foodId)
-                    ?: return@launch
-            _state.update {
-                it.copy(
-                    name = it.name.ifEmpty { food.name },
-                    barcode = it.barcode.ifEmpty { food.barcode.orEmpty() },
-                    kcal = food.nutritionPer100g?.kcal?.formatValue() ?: "",
-                    protein = food.nutritionPer100g?.proteinG?.formatValue() ?: "",
-                    fat = food.nutritionPer100g?.fatG?.formatValue() ?: "",
-                    carbs = food.nutritionPer100g?.carbsG?.formatValue() ?: "",
-                    fiber = food.nutritionPer100g?.fiberG?.formatValue() ?: "",
-                    portionGrams = food.servingUnit?.gramsEquivalent?.formatValue() ?: "",
-                    isFavorite = food.isFavorite,
-                )
-            }
+    /**
+     * Observe the edited food instead of reading it once, so changes made
+     * elsewhere (e.g. a favorite toggled on the detail screen) are mirrored
+     * while the editor stays open. A session-only food (not in Room) falls back
+     * to the session cache.
+     */
+    private fun observeExisting(id: FoodId) {
+        repository
+            .observeById(id)
+            .transform { roomFood -> emit(roomFood ?: repository.getSessionItem(id)) }
+            .filterNotNull()
+            .onEach { food -> _state.update { state -> state.mergedWith(food) } }
+            .launchIn(viewModelScope)
+    }
+
+    /** Marks the form as user-owned so later emissions no longer seed the fields. */
+    private fun onUserInput(update: FoodEditState.() -> FoodEditState) {
+        savedStateHandle[KEY_DIRTY] = true
+        _state.update { it.copy(isDirty = true).update() }
+    }
+
+    /**
+     * Persists the favorite immediately instead of only flipping local state: the
+     * observed flow is the Single Source of Truth for
+     * [FoodEditState.isFavorite]. A new (not yet persisted) food has no id, so
+     * only its draft flag is flipped.
+     */
+    private fun toggleFavorite() {
+        val id = foodId
+        if (id == null) {
+            onUserInput { copy(isFavorite = !isFavorite) }
+            return
         }
+        viewModelScope.launch { repository.toggleFavorite(FoodId(id)) }
     }
 
     private fun save() {
@@ -124,7 +169,10 @@ class FoodEditViewModel(
                 } else {
                     null
                 }
-            val isFavorite = _state.value.isFavorite
+            // The favorite flag is owned by [toggleFavorite] and mirrored into the
+            // state via the observed flow. Writing the (possibly stale) draft value
+            // back here would revert a favorite toggled elsewhere in the meantime.
+            val draftFavorite = _state.value.isFavorite
             val item =
                 if (existingFood != null) {
                     existingFood.copy(
@@ -132,7 +180,6 @@ class FoodEditViewModel(
                         barcode = barcode,
                         nutritionPer100g = nutrition,
                         servingUnit = servingUnit,
-                        isFavorite = isFavorite,
                     )
                 } else if (foodId != null) {
                     val sessionItem = repository.getSessionItem(FoodId(foodId))
@@ -142,13 +189,12 @@ class FoodEditViewModel(
                             barcode = barcode,
                             nutritionPer100g = nutrition,
                             servingUnit = servingUnit,
-                            isFavorite = isFavorite,
                         )
                     } else {
-                        newFood(id, name, barcode, nutrition, servingUnit, isFavorite)
+                        newFood(id, name, barcode, nutrition, servingUnit, draftFavorite)
                     }
                 } else {
-                    newFood(id, name, barcode, nutrition, servingUnit, isFavorite)
+                    newFood(id, name, barcode, nutrition, servingUnit, draftFavorite)
                 }
             repository
                 .saveUserEdit(item)
@@ -242,5 +288,6 @@ class FoodEditViewModel(
     private companion object {
         const val KEY_NAME = "food_edit_name"
         const val KEY_BARCODE = "food_edit_barcode"
+        const val KEY_DIRTY = "food_edit_dirty"
     }
 }

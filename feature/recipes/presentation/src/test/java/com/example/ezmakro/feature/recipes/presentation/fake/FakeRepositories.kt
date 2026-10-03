@@ -34,6 +34,8 @@ class FakeFoodRepository : FoodRepository {
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
         Result.Success(items.value.firstOrNull { it.id == id })
 
+    override fun observeById(id: FoodId): Flow<FoodItem?> = items.map { list -> list.firstOrNull { it.id == id } }
+
     override suspend fun searchRemote(query: String): Result<List<FoodItem>, DataError.Network> =
         Result.Success(emptyList())
 

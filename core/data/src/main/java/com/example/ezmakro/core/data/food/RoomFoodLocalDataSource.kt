@@ -36,6 +36,8 @@ class RoomFoodLocalDataSource(
     override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
         runCatchingLocal { dao.getById(id.value)?.toFoodItem() }
 
+    override fun observeById(id: FoodId): Flow<FoodItem?> = dao.observeById(id.value).map { it?.toFoodItem() }
+
     override suspend fun getByBarcode(barcode: String): Result<FoodItem?, DataError.Local> =
         runCatchingLocal { dao.getByBarcode(barcode)?.toFoodItem() }
 

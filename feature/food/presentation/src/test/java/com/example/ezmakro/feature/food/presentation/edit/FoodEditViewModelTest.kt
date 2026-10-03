@@ -265,6 +265,117 @@ class FoodEditViewModelTest {
             assertEquals(snapshot, saved.originalSnapshot)
         }
 
+    @Test
+    fun favoriteToggledElsewhere_isReflectedInTheForm() =
+        runTest {
+            repository.emitFoods(listOf(FakeFoodRepository.food(id = "1", isFavorite = false)))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+            assertFalse(viewModel.state.value.isFavorite)
+
+            repository.setFavorite("1", favorite = true)
+            dispatcher.scheduler.runCurrent()
+
+            assertTrue(viewModel.state.value.isFavorite)
+        }
+
+    @Test
+    fun cachedStatusChangedElsewhere_isReflectedInTheForm() =
+        runTest {
+            val apple = FakeFoodRepository.food(id = "1")
+            repository.emitFoods(listOf(apple))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+            assertEquals(CachedFoodItemStatus.Original, viewModel.state.value.cachedStatus)
+
+            // ADR-004: a locally edited OFF entry keeps its original snapshot.
+            val edited =
+                apple.copy(
+                    cachedStatus = CachedFoodItemStatus.UserModified,
+                    originalSnapshot = apple,
+                )
+            repository.emitFoods(listOf(edited))
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals(CachedFoodItemStatus.UserModified, viewModel.state.value.cachedStatus)
+        }
+
+    @Test
+    fun typedValues_areNotOverwrittenByALaterEmission() =
+        runTest {
+            repository.emitFoods(listOf(FakeFoodRepository.food(id = "1", name = "Apple", kcal = 52.0)))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+            viewModel.onAction(FoodEditAction.OnNameChange("My Apple"))
+            viewModel.onAction(FoodEditAction.OnKcalChange("99"))
+
+            repository.setFavorite("1", favorite = true)
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals("My Apple", viewModel.state.value.name)
+            assertEquals("99", viewModel.state.value.kcal)
+            // server-owned fields still track the flow
+            assertTrue(viewModel.state.value.isFavorite)
+        }
+
+    @Test
+    fun onToggleFavorite_persistsImmediately() =
+        runTest {
+            repository.emitFoods(listOf(FakeFoodRepository.food(id = "1")))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(FoodEditAction.OnToggleFavorite)
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals(FoodId("1"), repository.lastToggledFavorite)
+            assertTrue(viewModel.state.value.isFavorite)
+        }
+
+    @Test
+    fun onToggleFavorite_forNewFood_flipsTheDraftWithoutPersisting() =
+        runTest {
+            val viewModel = newViewModel(foodId = null)
+
+            viewModel.onAction(FoodEditAction.OnToggleFavorite)
+            dispatcher.scheduler.runCurrent()
+
+            assertTrue(viewModel.state.value.isFavorite)
+            assertEquals(null, repository.lastToggledFavorite)
+        }
+
+    @Test
+    fun save_doesNotOverwriteTheFavoriteFlagOfAnExistingFood() =
+        runTest {
+            repository.emitFoods(listOf(FakeFoodRepository.food(id = "1", name = "Apple", isFavorite = true)))
+            val viewModel = newViewModel(foodId = "1")
+            dispatcher.scheduler.runCurrent()
+
+            // The favorite is toggled off on the detail screen while the editor is open.
+            repository.setFavorite("1", favorite = false)
+            dispatcher.scheduler.runCurrent()
+
+            viewModel.onAction(FoodEditAction.OnKcalChange("60"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            val saved = repository.savedEdits.single()
+            assertEquals(60.0, saved.nutritionPer100g!!.kcal, 0.0)
+            assertFalse(saved.isFavorite)
+        }
+
+    @Test
+    fun newFood_saveKeepsTheDraftedFavoriteFlag() =
+        runTest {
+            val viewModel = newViewModel(foodId = null)
+            viewModel.onAction(FoodEditAction.OnNameChange("Banana"))
+            viewModel.onAction(FoodEditAction.OnToggleFavorite)
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            assertTrue(repository.savedEdits.single().isFavorite)
+        }
+
     private fun newViewModel(foodId: String?): FoodEditViewModel =
         FoodEditViewModel(
             foodId = foodId,

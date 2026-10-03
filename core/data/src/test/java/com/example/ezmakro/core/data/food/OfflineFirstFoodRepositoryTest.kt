@@ -14,10 +14,13 @@ import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 
@@ -62,6 +65,8 @@ private class FakeLocal : FoodLocalDataSource {
         }
 
     override suspend fun getById(id: FoodId) = Result.Success(store.value[id.value])
+
+    override fun observeById(id: FoodId): Flow<FoodItem?> = store.map { it[id.value] }
 
     override suspend fun getByBarcode(barcode: String): Result.Success<FoodItem?> =
         Result.Success(store.value.values.firstOrNull { it.barcode == barcode })
@@ -384,6 +389,30 @@ class OfflineFirstFoodRepositoryTest {
             val favorites = repo.observeFavorites().first()
 
             assertThat(favorites.map { it.id.value }).isEqualTo(listOf("2"))
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `observeById delegates to the local flow and re-emits on every change`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            val emissions = mutableListOf<Boolean?>()
+
+            val job =
+                launch(UnconfinedTestDispatcher(testScheduler)) {
+                    repo.observeById(FoodId("1")).collect { emissions += it?.isFavorite }
+                }
+
+            assertThat(emissions).isEqualTo(listOf(null))
+            repo.toggleFavorite(FoodId("1")) // unknown id -> no local row, still no emission
+            local.upsert(food("1", "Apfel"))
+            assertThat(emissions.last()).isEqualTo(false)
+            repo.toggleFavorite(FoodId("1"))
+            assertThat(emissions.last()).isEqualTo(true)
+            job.cancel()
+
+            assertThat(local.observeById(FoodId("nope")).first()).isNull()
         }
 
     @Test

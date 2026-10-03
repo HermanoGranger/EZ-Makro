@@ -37,6 +37,13 @@ interface FoodRepository {
     suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local>
 
     /**
+     * Observe a single food by [id], emitting null when it does not exist. The
+     * editor uses this instead of a one-shot read so external changes (e.g. a
+     * favorite toggled on the detail screen) are mirrored while it stays open.
+     */
+    fun observeById(id: FoodId): Flow<FoodItem?>
+
+    /**
      * Search OFF and persist the results into the local cache. Existing
      * UserModified entries are preserved (never overwritten). Returns the
      * freshly fetched items on success.

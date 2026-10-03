@@ -99,6 +99,14 @@ interface FoodItemDao {
     @Query("SELECT * FROM food_items WHERE id = :id")
     fun getById(id: String): FoodItemEntity?
 
+    /**
+     * Observe a single food by its stable id. Emits null while the row does not
+     * exist (including for a session-only food), so editors can mirror external
+     * changes without a one-shot read.
+     */
+    @Query("SELECT * FROM food_items WHERE id = :id")
+    fun observeById(id: String): Flow<FoodItemEntity?>
+
     @Query("SELECT * FROM food_items WHERE barcode = :barcode LIMIT 1")
     fun getByBarcode(barcode: String): FoodItemEntity?
 

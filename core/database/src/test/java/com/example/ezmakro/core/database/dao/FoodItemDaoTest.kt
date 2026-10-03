@@ -182,6 +182,28 @@ class FoodItemDaoTest : DatabaseTest() {
         }
 
     @Test
+    fun `observeById emits the row and re-emits on upsert, favorite change and delete`() =
+        runTest {
+            dao.observeById("a").test {
+                assertThat(awaitItem()).isNull()
+
+                dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
+                assertThat(awaitItem()?.name).isEqualTo("Apfel")
+
+                dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel neu"))
+                assertThat(awaitItem()?.name).isEqualTo("Apfel neu")
+
+                dao.setFavorite("a", true)
+                assertThat(awaitItem()?.isFavorite).isEqualTo(true)
+
+                dao.deleteById("a")
+                assertThat(awaitItem()).isNull()
+
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
     fun `upsert does not clobber an existing favorite flag`() {
         dao.upsertFood(FoodItemFixtures.food(id = "a", name = "Apfel"))
         dao.setFavorite("a", true)

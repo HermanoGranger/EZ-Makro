@@ -26,6 +26,9 @@ interface FoodLocalDataSource {
 
     suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local>
 
+    /** Observe a single food by [id], emitting null when it does not exist. */
+    fun observeById(id: FoodId): Flow<FoodItem?>
+
     suspend fun getByBarcode(barcode: String): Result<FoodItem?, DataError.Local>
 
     fun searchByName(query: String): Flow<List<FoodItem>>

@@ -12,6 +12,11 @@ data class GoalsState(
     val fat: String = "",
     val carbs: String = "",
     val fiber: String = "",
+    /**
+     * True once the user typed in a field. From then on goal emissions do not
+     * overwrite the draft any more.
+     */
+    val isDirty: Boolean = false,
     val numberError: UiText? = null,
     val isSaving: Boolean = false,
 )
