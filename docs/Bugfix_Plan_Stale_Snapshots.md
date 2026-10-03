@@ -213,6 +213,19 @@ danach anhand dieses Moments.
 - `null`-Ergebnis darf nicht stillschweigend den Drop verursachen (der
   `navController.popBackStack(ROUTE_DIARY, ...)` läuft aktuell in jedem Fall).
 
+**Praxis-Detail zum `popBackStack`:** der liegt nicht in
+`makeAddToDiaryFromPicker`, sondern in den beiden Geschwistern
+`makeAddFoodToDiary` und `makeAddRecipeToDiary` — dort sprang er auch dann ins
+Tagebuch, wenn die ID nicht auflösbar war. P4.2 zieht ihn in **beiden**
+Funktionen hinter das `addUseCase` und bricht bei `null` per `return@launch`
+ab, damit der Screen stehen bleibt, statt als ob der Eintrag existierte zu
+springen. Beim Food-Pfad ist der Fall real (session-only Items, die weder in
+Room noch in der Session liegen), beim Rezept-Pfad praktisch nur über ein
+Delete-Race erreichbar (die IDs stammen aus Room-Flows, Rezepte haben keinen
+Session-/Remote-Pfad) — die Änderung wird trotzdem symmetrisch durchgezogen.
+Ein Test ist für beide Lambdas nicht möglich: `MainActivity` hat keine
+Test-Infrastruktur.
+
 **ADR-004-Hinweis:** `cacheRemoteItem` überschreibt eine `UserModified`-Zeile
 nicht (`OfflineFirstFoodRepository.kt:130-133`). Das bleibt bei P4.2 gültig.
 

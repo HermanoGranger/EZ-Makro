@@ -29,7 +29,6 @@ import androidx.navigation.navOptions
 import com.example.ezmakro.core.designsystem.theme.EZMakroTheme
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.MealSlot
-import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
@@ -258,19 +257,21 @@ class MainActivity : ComponentActivity() {
             lifecycleScope.launch {
                 val recipeRepository = get<RecipeRepository>()
                 val addUseCase = get<AddRecipeToDiaryUseCase>()
-                recipeRepository
-                    .getById(RecipeId(recipeId))
-                    .onSuccess { recipe: Recipe? ->
-                        recipe?.let {
-                            if (isGrams) {
-                                addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
-                            } else {
-                                addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
-                            }
-                        }
+                val recipe =
+                    when (val result = recipeRepository.getById(RecipeId(recipeId))) {
+                        is Result.Success -> result.data
+                        is Result.Error -> null
                     }
+                // Unresolved id: stay on this screen instead of navigating to the diary
+                // as if the entry had been added.
+                if (recipe == null) return@launch
+                if (isGrams) {
+                    addUseCase(recipe, slot, LocalDate.parse(date), amountGrams = amount)
+                } else {
+                    addUseCase(recipe, slot, LocalDate.parse(date), portionCount = amount)
+                }
+                navController.popBackStack(ROUTE_DIARY, inclusive = false)
             }
-            navController.popBackStack(ROUTE_DIARY, inclusive = false)
         }
 }
 
