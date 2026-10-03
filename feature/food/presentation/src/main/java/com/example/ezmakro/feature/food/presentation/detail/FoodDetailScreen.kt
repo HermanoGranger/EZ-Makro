@@ -15,7 +15,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +45,7 @@ import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.presentation.diary.AddToDiarySheet
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.food.presentation.R
+import com.example.ezmakro.feature.food.presentation.components.EditStatusBadge
 import com.example.ezmakro.feature.food.presentation.model.FoodEditStatusUi
 import com.example.ezmakro.feature.food.presentation.model.FoodUi
 import kotlinx.coroutines.launch
@@ -258,19 +258,6 @@ private fun FoodDetailContent(
                 ) { Text(stringResource(R.string.food_action_refetch)) }
             }
         }
-    }
-}
-
-@Composable
-private fun EditStatusBadge(status: FoodEditStatusUi) {
-    val label =
-        when (status) {
-            FoodEditStatusUi.UserModified -> stringResource(R.string.food_badge_user_modified)
-            FoodEditStatusUi.UpdateAvailable -> stringResource(R.string.food_badge_update_available)
-            else -> null
-        }
-    if (label != null) {
-        AssistChip(onClick = {}, label = { Text(label) })
     }
 }
 

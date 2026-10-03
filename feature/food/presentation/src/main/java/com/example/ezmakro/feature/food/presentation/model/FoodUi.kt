@@ -44,6 +44,19 @@ enum class FoodEditStatusUi {
 
 private const val DASH = "\u2013"
 
+/**
+ * UI-facing projection of a (possibly unknown, e.g. not yet loaded) ADR-004 status.
+ * A user-created food is always [FoodEditStatusUi.None] because it never has an OFF
+ * edit lifecycle; see [toFoodUi]. Callers that only see a status can use this
+ * mapping directly.
+ */
+fun CachedFoodItemStatus?.toFoodEditStatusUi(): FoodEditStatusUi =
+    when (this) {
+        CachedFoodItemStatus.UserModified -> FoodEditStatusUi.UserModified
+        CachedFoodItemStatus.UpdateAvailable -> FoodEditStatusUi.UpdateAvailable
+        CachedFoodItemStatus.Original, null -> FoodEditStatusUi.Original
+    }
+
 fun FoodItem.toFoodUi(): FoodUi {
     val nutrition = nutritionPer100g
     val serving = servingUnit
@@ -67,14 +80,10 @@ fun FoodItem.toFoodUi(): FoodUi {
         isUserCreated = isUserCreated,
         isFavorite = isFavorite,
         editStatus =
-            when {
-                isUserCreated -> FoodEditStatusUi.None
-                else ->
-                    when (cachedStatus) {
-                        CachedFoodItemStatus.Original -> FoodEditStatusUi.Original
-                        CachedFoodItemStatus.UserModified -> FoodEditStatusUi.UserModified
-                        CachedFoodItemStatus.UpdateAvailable -> FoodEditStatusUi.UpdateAvailable
-                    }
+            if (isUserCreated) {
+                FoodEditStatusUi.None
+            } else {
+                cachedStatus.toFoodEditStatusUi()
             },
     )
 }

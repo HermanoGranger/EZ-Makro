@@ -1,11 +1,13 @@
 package com.example.ezmakro.feature.food.presentation.edit
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.feature.food.presentation.R
 import org.junit.Assert.assertEquals
@@ -84,5 +86,42 @@ class FoodEditScreenTest {
         }
 
         composeTestRule.onNodeWithText("Speichern").assertIsNotEnabled()
+    }
+
+    @Test
+    fun showsUserModifiedBadge_whenCachedStatusIsUserModified() {
+        composeTestRule.setContent {
+            FoodEditScreen(
+                state = FoodEditState(cachedStatus = CachedFoodItemStatus.UserModified),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithText("Lokal angepasst").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsUpdateAvailableBadge_whenCachedStatusIsUpdateAvailable() {
+        composeTestRule.setContent {
+            FoodEditScreen(
+                state = FoodEditState(cachedStatus = CachedFoodItemStatus.UpdateAvailable),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithText("Update verfügbar").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsNoBadge_forAnUnmodifiedOrNotYetLoadedFood() {
+        composeTestRule.setContent {
+            FoodEditScreen(
+                state = FoodEditState(cachedStatus = CachedFoodItemStatus.Original),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithText("Lokal angepasst").assertIsNotDisplayed()
+        composeTestRule.onNodeWithText("Update verfügbar").assertIsNotDisplayed()
     }
 }

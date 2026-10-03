@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.feature.food.presentation.R
+import com.example.ezmakro.feature.food.presentation.components.EditStatusBadge
+import com.example.ezmakro.feature.food.presentation.model.toFoodEditStatusUi
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -114,6 +116,9 @@ private fun FoodEditForm(
                 .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // ADR-004: the edit status is server-owned and mirrored into the state, so it
+        // stays visible while the user edits.
+        EditStatusBadge(status = state.cachedStatus.toFoodEditStatusUi())
         OutlinedTextField(
             value = state.name,
             onValueChange = { onAction(FoodEditAction.OnNameChange(it)) },
