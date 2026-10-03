@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
@@ -64,6 +65,14 @@ class FoodPickerViewModel(
 
     private val handledBarcodeAt = HashMap<String, Long>()
 
+    /** Raw rows behind the observed lists; the single resolution source for the open detail panel. */
+    private var localFoods: List<FoodItem> = emptyList()
+
+    private var localRecipes: List<Recipe> = emptyList()
+
+    /** Remote items remembered for this session only (never persisted), mirrored from `rememberRemoteItem`. */
+    private val sessionFoods = mutableMapOf<String, FoodItem>()
+
     init {
         observeRecent()
         observeRecentRecipes()
@@ -105,8 +114,7 @@ class FoodPickerViewModel(
                     )
                 }
 
-            FoodPickerAction.OnDismissDetail ->
-                _state.update { it.copy(detailFood = null, detailRecipe = null) }
+            FoodPickerAction.OnDismissDetail -> dismissDetail()
 
             FoodPickerAction.OnDetailAddClick -> onDetailAddClick()
 
@@ -153,6 +161,18 @@ class FoodPickerViewModel(
         }
     }
 
+    /** Close the inline detail panel: the ids are the source of truth, the projections go with them. */
+    private fun dismissDetail() {
+        _state.update {
+            it.copy(
+                detailFoodId = null,
+                detailRecipeId = null,
+                detailFood = null,
+                detailRecipe = null,
+            )
+        }
+    }
+
     private fun onSearchQueryChange(query: String) {
         savedStateHandle[KEY_QUERY] = query
         queryFlow.value = query
@@ -178,37 +198,54 @@ class FoodPickerViewModel(
     private fun onFoodClick(foodId: String) {
         val onlineItem = _state.value.onlineFoodItems.firstOrNull { it.id.value == foodId }
         if (onlineItem != null) {
-            _state.update { it.copy(selectionError = null) }
+            _state.update { it.copy(selectionError = null, detailFoodId = foodId, detailRecipeId = null) }
+            sessionFoods[foodId] = onlineItem
             viewModelScope.launch {
                 foodRepository.rememberRemoteItem(onlineItem)
-                _state.update { it.copy(detailFood = onlineItem, detailRecipe = null) }
+                refreshDetail()
             }
             return
         }
         viewModelScope.launch {
             foodRepository.markUsed(FoodId(foodId))
-            val food =
-                when (val result = foodRepository.getById(FoodId(foodId))) {
-                    is Result.Success -> result.data
-                    is Result.Error -> null
-                } ?: foodRepository.getSessionItem(FoodId(foodId))
-            if (food != null) {
-                _state.update { it.copy(detailFood = food, detailRecipe = null) }
-            }
+            _state.update { it.copy(detailFoodId = foodId, detailRecipeId = null) }
+            refreshDetail()
         }
     }
 
     private fun onRecipeClick(recipeId: String) {
         viewModelScope.launch {
             recipeRepository.markUsed(RecipeId(recipeId))
-            val recipe =
-                when (val result = recipeRepository.getById(RecipeId(recipeId))) {
-                    is Result.Success -> result.data
-                    is Result.Error -> null
-                }
-            if (recipe != null) {
-                _state.update { it.copy(detailRecipe = recipe, detailFood = null) }
-            }
+            _state.update { it.copy(detailRecipeId = recipeId, detailFoodId = null) }
+            refreshDetail()
+        }
+    }
+
+    /**
+     * Resolve a food id against every source the picker knows about, local first:
+     * a locally edited row must win over the frozen offline-search snapshot.
+     */
+    private fun resolveFood(id: String): FoodItem? =
+        localFoods.firstOrNull { it.id.value == id }
+            ?: sessionFoods[id]
+            ?: _state.value.onlineFoodItems.firstOrNull { it.id.value == id }
+
+    private fun resolveRecipe(id: String): Recipe? = localRecipes.firstOrNull { it.id.value == id }
+
+    /**
+     * Re-project the open inline detail from the currently observed data, so an
+     * edit made elsewhere (fullscreen detail → editor, favorite toggle, reset to
+     * original, OFF refetch) is visible without closing and reopening the panel.
+     * A source item that vanished closes the panel by projecting `null`.
+     */
+    private fun refreshDetail() {
+        val s = _state.value
+        if (s.detailFoodId == null && s.detailRecipeId == null) return
+        _state.update {
+            it.copy(
+                detailFood = it.detailFoodId?.let(::resolveFood),
+                detailRecipe = it.detailRecipeId?.let(::resolveRecipe),
+            )
         }
     }
 
@@ -408,15 +445,20 @@ class FoodPickerViewModel(
     private fun observeAllFoods() {
         foodRepository
             .observeAll()
-            .onEach { foods -> _state.update { it.copy(userFoods = foods.map { f -> f.toPickerFoodUi() }) } }
-            .launchIn(viewModelScope)
+            .onEach { foods ->
+                localFoods = foods
+                _state.update { it.copy(userFoods = foods.map { f -> f.toPickerFoodUi() }) }
+                refreshDetail()
+            }.launchIn(viewModelScope)
     }
 
     private fun observeAllRecipes() {
         recipeRepository
             .observeAll()
             .onEach { recipes ->
+                localRecipes = recipes
                 _state.update { it.copy(userRecipes = recipes.map { r -> r.toPickerRecipeUi() }) }
+                refreshDetail()
             }.launchIn(viewModelScope)
     }
 

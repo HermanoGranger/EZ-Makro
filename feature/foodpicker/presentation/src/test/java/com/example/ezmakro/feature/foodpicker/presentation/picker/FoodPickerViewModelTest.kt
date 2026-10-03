@@ -10,6 +10,7 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodId
@@ -552,6 +553,8 @@ class FoodPickerViewModelTest {
             assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
             val detailFood = vm.state.value.detailFood
             assertThat(detailFood?.id?.value).isEqualTo("f1")
+            assertThat(vm.state.value.detailFoodId).isEqualTo("f1")
+            assertThat(vm.state.value.detailRecipeId).isNull()
         }
 
     @Test
@@ -601,6 +604,8 @@ class FoodPickerViewModelTest {
             assertThat(vm.state.value.selectedItemReady).isFalse()
             val detailRecipe = vm.state.value.detailRecipe
             assertThat(detailRecipe?.id?.value).isEqualTo("r1")
+            assertThat(vm.state.value.detailRecipeId).isEqualTo("r1")
+            assertThat(vm.state.value.detailFoodId).isNull()
         }
 
     @Test
@@ -923,7 +928,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `OnDismissDetail clears detail food and recipe`() =
+    fun `OnDismissDetail clears the selection ids and projections`() =
         runTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
@@ -931,15 +936,87 @@ class FoodPickerViewModelTest {
 
             vm.onAction(FoodPickerAction.OnFoodClick("f1"))
             assertThat(vm.state.value.detailFood).isNotNull()
+            assertThat(vm.state.value.detailFoodId).isEqualTo("f1")
             vm.onAction(FoodPickerAction.OnDismissDetail)
             assertThat(vm.state.value.detailFood).isNull()
             assertThat(vm.state.value.detailRecipe).isNull()
+            assertThat(vm.state.value.detailFoodId).isNull()
+            assertThat(vm.state.value.detailRecipeId).isNull()
 
             vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
             assertThat(vm.state.value.detailRecipe).isNotNull()
+            assertThat(vm.state.value.detailRecipeId).isEqualTo("r1")
             vm.onAction(FoodPickerAction.OnDismissDetail)
             assertThat(vm.state.value.detailRecipe).isNull()
             assertThat(vm.state.value.detailFood).isNull()
+            assertThat(vm.state.value.detailFoodId).isNull()
+            assertThat(vm.state.value.detailRecipeId).isNull()
+        }
+
+    @Test
+    fun `detail panel shows edited nutrition without reopening`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1", kcalPer100g = 100.0)))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            val before = vm.state.value.detailFood
+            assertThat(before?.nutritionPer100g?.kcal).isEqualTo(100.0)
+
+            fakeFoodRepository.saveUserEdit(testFood("f1", kcalPer100g = 250.0))
+
+            val after = vm.state.value.detailFood
+            assertThat(after?.id?.value).isEqualTo("f1")
+            assertThat(after?.nutritionPer100g?.kcal).isEqualTo(250.0)
+        }
+
+    @Test
+    fun `detail panel reflects a favorite toggle`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            val before = vm.state.value.detailFood
+            assertThat(before?.isFavorite).isEqualTo(false)
+
+            vm.onAction(FoodPickerAction.OnToggleFavorite("f1"))
+
+            val after = vm.state.value.detailFood
+            assertThat(after?.isFavorite).isEqualTo(true)
+        }
+
+    @Test
+    fun `recipe detail panel reflects recipe edits`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1", ingredientKcalPer100g = 200.0)))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
+            val before = vm.state.value.detailRecipe
+            assertThat(before?.nutritionPer100g()?.kcal).isEqualTo(100.0)
+
+            fakeRecipeRepository.save(testRecipe("r1", name = "Recipe r1 neu", ingredientKcalPer100g = 600.0))
+
+            val after = vm.state.value.detailRecipe
+            assertThat(after?.id?.value).isEqualTo("r1")
+            assertThat(after?.name).isEqualTo("Recipe r1 neu")
+            assertThat(after?.nutritionPer100g()?.kcal).isEqualTo(300.0)
+        }
+
+    @Test
+    fun `detail panel closes when the food disappears from the source`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnFoodClick("f1"))
+            assertThat(vm.state.value.detailFood).isNotNull()
+
+            fakeFoodRepository.emitFoods(emptyList())
+
+            assertThat(vm.state.value.detailFood).isNull()
+            assertThat(vm.state.value.detailRecipe).isNull()
         }
 
     @Test
@@ -977,12 +1054,13 @@ class FoodPickerViewModelTest {
         name: String = "Food $id",
         isFavorite: Boolean = false,
         lastUsedAt: Long? = null,
+        kcalPer100g: Double = 100.0,
     ): FoodItem =
         FoodItem(
             id = FoodId(id),
             name = name,
             barcode = null,
-            nutritionPer100g = NutritionValues(100.0, 10.0, 5.0, 20.0, 2.0),
+            nutritionPer100g = NutritionValues(kcalPer100g, 10.0, 5.0, 20.0, 2.0),
             servingUnit = null,
             isUserCreated = true,
             cachedStatus = CachedFoodItemStatus.Original,
@@ -996,6 +1074,7 @@ class FoodPickerViewModelTest {
         name: String = "Recipe $id",
         isFavorite: Boolean = false,
         lastUsedAt: Long? = null,
+        ingredientKcalPer100g: Double = 200.0,
     ): Recipe =
         Recipe(
             id = RecipeId(id),
@@ -1003,7 +1082,7 @@ class FoodPickerViewModelTest {
             ingredients =
                 listOf(
                     RecipeIngredient(
-                        food = testFood("ing-$id"),
+                        food = testFood("ing-$id", kcalPer100g = ingredientKcalPer100g),
                         rawWeight = RawWeight(100.0),
                         servingCount = null,
                     ),
@@ -1053,7 +1132,10 @@ private class FakeFoodRepository : FoodRepository {
 
     override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> = lookupResult
 
-    override suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local> = Result.Success(Unit)
+    override suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local> {
+        foodItems.value = foodItems.value.filter { it.id != foodItem.id } + foodItem
+        return Result.Success(Unit)
+    }
 
     override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> = Result.Success(Unit)
 
@@ -1121,7 +1203,7 @@ private class FakeRecipeRepository : RecipeRepository {
         Result.Success(recipeItems.value.firstOrNull { it.id == id })
 
     override suspend fun save(recipe: Recipe): EmptyResult<DataError.Local> {
-        recipeItems.value = recipeItems.value + recipe
+        recipeItems.value = recipeItems.value.filter { it.id != recipe.id } + recipe
         return Result.Success(Unit)
     }
 

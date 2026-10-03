@@ -27,7 +27,27 @@ data class FoodPickerState(
     val isCameraPermissionGranted: Boolean = false,
     val isLookingUpBarcode: Boolean = false,
     val barcodeError: UiText? = null,
+    /**
+     * Id of the food whose inline detail panel is open. Actions only write this
+     * id; [detailFood] is re-projected from the observed data (see
+     * `FoodPickerViewModel.refreshDetail()`), so an edit made elsewhere shows up
+     * in the still-open panel without reopening it.
+     */
+    val detailFoodId: String? = null,
+    /**
+     * Id of the recipe whose inline detail panel is open, counterpart of [detailFoodId].
+     */
+    val detailRecipeId: String? = null,
+    /**
+     * Read-only projection of [detailFoodId], maintained exclusively by
+     * `FoodPickerViewModel.refreshDetail()`. `null` means the panel is closed —
+     * including when the source item disappeared.
+     */
     val detailFood: FoodItem? = null,
+    /**
+     * Read-only projection of [detailRecipeId], maintained exclusively by
+     * `FoodPickerViewModel.refreshDetail()`.
+     */
     val detailRecipe: Recipe? = null,
     val selectedItemReady: Boolean = false,
     val selectedItemId: String? = null,
