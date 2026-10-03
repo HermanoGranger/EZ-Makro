@@ -12,6 +12,11 @@ durch Regressionstests abgesichert und committet; das lokale Gate (`build`,
 `detekt`, `ktlintCheck`) ist grün. Für weitere Implementierung liegt Phase 10+
 an (siehe `roadmap.md`); für weitere Bugfix-/Qualitätsarbeit siehe Abschnitt 3.
 
+**Nachtrag 2026-10-03:** Nach dem QoL-Plan (WPs 1–4) wurde eine sechste
+Fehlerklasse aufgedeckt — veraltete Snapshots im Compose-State (UI beobachtet
+die Quelle nicht). Sechs Instanzen, davon zwei mit Datenverlust. Plan und
+Agent-Prompts: `docs/Bugfix_Plan_Stale_Snapshots.md` (P4.1–P4.5).
+
 ## 2. Abgeschlossene Bugfix-Phasen
 
 ### Vor dem Plan (Kontext, Commits `389a8e5` + `c5abe44`)
@@ -58,11 +63,22 @@ Regressionstests für alle drei Fixes.
 
 Regressionstests für alle sieben Fixes.
 
+### P4 — Stale Snapshots (geplant, eigenes Dokument)
+
+Ausgelöst durch den Nutzer-Report „Lebensmittel Ansicht → Vollbild → lokale
+Änderung → zurück zur Lebensmittel Ansicht (Änderung noch nicht da)". Ursache:
+`FoodPickerViewModel` hält `state.detailFood` als eingefrorenen Snapshot. Bei der
+Analyse fanden sich fünf weitere Instanzen derselben Fehlerklasse — darunter
+Datenverlust im Rezept-Editor (P4.3) und im History-Screen (P4.4).
+
+Details, Fix-Entwurf, Testplan und Agent-Prompts:
+`docs/Bugfix_Plan_Stale_Snapshots.md`.
+
 ## 3. Backlog — offene Qualitätspunkte (separate Analyse)
 
-Keine P-Bugs offen. Diese Punkte sind bewusst **keine Bugs**, sondern
-Feature-Lücken bzw. Verbesserungen — vorrangig für die Arbeit nach Abschluss
-der Kernfunktion (Phase 10+):
+Keine P-Bugs offen (P1–P3 abgeschlossen, P4 in Arbeit). Diese Punkte sind
+bewusst **keine Bugs**, sondern Feature-Lücken bzw. Verbesserungen — vorrangig
+für die Arbeit nach Abschluss der Kernfunktion (Phase 10+):
 
 - **OFF-`UpdateAvailable`-Status ist toter Code** — kein Produktions-Aufrufer
   von `markUpdateAvailable` → Feature-Lücke. Umsetzung, sobald ein OFF-Sync
@@ -76,6 +92,13 @@ der Kernfunktion (Phase 10+):
 - **Session-Cache nach Process Death verloren** — Navigation
   (`MainActivity.kt:217-241`) behandelt `getSessionItem == null` still; ggf.
   wiederherstellen oder Rückfrage.
+- **Session-Cache ist nicht beobachtbar** — `getSessionItem` liest eine
+  `ConcurrentHashMap` ohne Flow-Gegenstück; für P4.1/P4.5 wird er deshalb
+  lokal im ViewModel gespiegelt. Mittelfristig `observeSessionItem(id)` ergänzen.
+- **`DiaryDayViewModel.date` aus dem Koin-Singleton `CurrentDateProvider`
+  geseedet** — Verhalten ist über `saveState`/`restoreState` beabsichtigt
+  ("gemerktes Datum bleibt erhalten"); erst bei konkretem Fehlreport bearbeiten.
+- **Totes Feld `latestRecipe`** in `RecipeDetailViewModel.kt:33` — kosmetisch.
 
 ## 4. Ablauf pro Fix
 
