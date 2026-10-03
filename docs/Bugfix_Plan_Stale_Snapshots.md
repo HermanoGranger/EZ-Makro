@@ -464,6 +464,7 @@ Regressionstest zuerst rot und eigenem Commit. Gate nach jedem Paket:
 | P4.3 | `88c4fc5` |
 | P4.4 | `305e1c8` |
 | P4.5 | `a66f7a2` |
+| Nachtrag zu P4.5 (optional) | `4402234` |
 
 ### Abweichungen von der Planung (bewusst)
 
@@ -480,8 +481,9 @@ Regressionstest zuerst rot und eigenem Commit. Gate nach jedem Paket:
    Draft überschrieben. Deshalb zusätzlich `KEY_DIRTY` im Handle, das in allen
    `On*Change`-Actions gesetzt wird (Initialwert über `hasRestoredDraft`).
 3. **`FoodEditState.cachedStatus` kam mit P4.5** (server-owned, wird bei jeder
-   Emission gespiegelt), das Badge-Rendering ist der optionale Folgecommit. Ein
-   State-Feld ohne Consumer wäre toter Code, deshalb wurde es hier mitgezogen.
+   Emission gespiegelt), das Badge-Rendering ist der optionale Folgecommit `4402234`
+   (mit dem Badge wurde die Status-Projektion `CachedFoodItemStatus.toFoodEditStatusUi()`
+   aus `toFoodUi` herausgelöst, damit Editor und Detailseite dieselbe Quelle nutzen).
 4. **Testname-Korrektur in `RoomDiaryRepositoryTest`:** `getHistory returns entries
    within range newest first` behauptete eine absteigende Sortierung, die Query
    sortiert aber aufsteigend nach `date, slot` (der ViewModel sortiert selbst
@@ -496,8 +498,9 @@ Regressionstest zuerst rot und eigenem Commit. Gate nach jedem Paket:
   weiterhin den `sessionFoods`-Map-Spiegel.
 - `DiaryDayViewModel.date`-Startwert (Startwert aus dem `CurrentDateProvider`).
 - Totes Feld `latestRecipe` in `RecipeDetailViewModel.kt:33` (kosmetisch).
-- ADR-004-Badge im Food-Editor (`FoodEditState.cachedStatus` ist vorbereitet;
-  `EditStatusBadge` liegt heute privat in `FoodDetailScreen.kt:265`).
+- (erledigt in `4402234`) ADR-004-Badge im Food-Editor: `EditStatusBadge` ist von
+  `FoodDetailScreen` in `presentation/components/` gewandert und wird jetzt auch im
+  Editor aus `FoodEditState.cachedStatus` gerendert.
 
 ---
 
