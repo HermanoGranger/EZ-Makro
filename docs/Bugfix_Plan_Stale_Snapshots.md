@@ -1,7 +1,8 @@
 # Bugfix-Plan P4 — Stale Snapshots (UI beobachtet nichts)
 
 Stand: 2026-10-03. Folgeplan zu `docs/Bugfix_Plan.md` (P1–P3 abgeschlossen).
-Auslöser ist der gemeldete Bug:
+**Status: abgeschlossen** — alle fünf Pakete sind implementiert und committed
+(siehe „Abschluss — Umsetzungsnotizen"). Auslöser des Plans war der gemeldete Bug:
 
 > Lebensmittel Ansicht → Vollbild → lokale Änderung → zurück zur Lebensmittel
 > Ansicht (Änderung noch nicht da). Erst wenn die Lebensmittel Ansicht schließt
@@ -80,6 +81,8 @@ umbenanntes Lebensmittel ist danach sofort unter dem neuen Namen auffindbar.
 ---
 
 ## P4.1 — FoodPicker: Inline-Detail aus dem Flow projizieren
+
+**Status:** erledigt — Commit `9e77166`.
 
 ### Ziel
 
@@ -183,6 +186,8 @@ ob es Annahmen über `detailFood` gibt.
 
 ## P4.2 — FoodPicker: lokale Version schlägt Online-Snapshot
 
+**Status:** erledigt — Commits `36e66ca` (Hauptbug) und `386900b` (Nachzug: bedingter `popBackStack` im Rezeptpfad).
+
 ### Ziel
 
 Ein OFF-Treffer, der lokal bereits gecacht **und editiert** ist, muss überall
@@ -241,6 +246,8 @@ nicht (`OfflineFirstFoodRepository.kt:130-133`). Das bleibt bei P4.2 gültig.
 ---
 
 ## P4.3 — Rezept-Editor: Formular einmalig seeden (Datenverlust)
+
+**Status:** erledigt — Commit `88c4fc5`.
 
 ### Ziel
 
@@ -302,6 +309,8 @@ Snapshot-Staleness-Hinweis nicht verloren geht.
 ---
 
 ## P4.4 — History: echter Range-Flow
+
+**Status:** erledigt — Commit `305e1c8`.
 
 ### Ziel
 
@@ -367,6 +376,8 @@ init {
 ---
 
 ## P4.5 — `.first()`-Prefill in FoodEdit und Goals
+
+**Status:** erledigt — Commit `a66f7a2`.
 
 ### Ziel
 
@@ -437,6 +448,56 @@ aber dieselbe Fehlerklasse.
   - `typing is not clobbered by a goal emission`
 - `core/data/src/test/java/.../food/OfflineFirstFoodRepositoryTest.kt`:
   `observeById` delegiert korrekt.
+
+---
+
+## Abschluss — Umsetzungsnotizen
+
+Ausgeführt in der Reihenfolge P4.1 → P4.2 → P4.3 → P4.4 → P4.5, jedes Paket mit
+Regressionstest zuerst rot und eigenem Commit. Gate nach jedem Paket:
+`./gradlew build detekt ktlintCheck` (Stand P4.5: 326 Tests, 0 Fehler).
+
+| Paket | Commit(s) |
+|-------|-----------|
+| P4.1 | `9e77166` |
+| P4.2 | `36e66ca`, `386900b` |
+| P4.3 | `88c4fc5` |
+| P4.4 | `305e1c8` |
+| P4.5 | `a66f7a2` |
+
+### Abweichungen von der Planung (bewusst)
+
+1. **`CopyYesterdayUseCase` war ein zweiter Consumer von `DiaryRepository.getHistory`
+   (P4.4).** Der Plan nennt nur `HistoryViewModel`. Das UseCase nutzte denselben
+   One-Shot-Read für einen Single-Tag-Range. Statt eine zweite Range-API
+   (One-Shot *und* Flow) am Leben zu halten, liest es jetzt
+   `observeByDate(sourceDate).first()` — für einen Einmal-Kopiervorgang genügt ein
+   Snapshot, der Fehlerpfad bleibt über `save()` erhalten. Damit ist `getHistory`
+   aus dem Interface entfernt.
+2. **Draft-Ownership braucht ein persistiertes Dirty-Flag (P4.5).** `isDirty` allein
+   wäre nach Process Death verloren: `SavedStateHandle` stellt `name`/`barcode`
+   wieder her, der Flag-Zustand nicht — der Seed hätte den wiederhergestellten
+   Draft überschrieben. Deshalb zusätzlich `KEY_DIRTY` im Handle, das in allen
+   `On*Change`-Actions gesetzt wird (Initialwert über `hasRestoredDraft`).
+3. **`FoodEditState.cachedStatus` kam mit P4.5** (server-owned, wird bei jeder
+   Emission gespiegelt), das Badge-Rendering ist der optionale Folgecommit. Ein
+   State-Feld ohne Consumer wäre toter Code, deshalb wurde es hier mitgezogen.
+4. **Testname-Korrektur in `RoomDiaryRepositoryTest`:** `getHistory returns entries
+   within range newest first` behauptete eine absteigende Sortierung, die Query
+   sortiert aber aufsteigend nach `date, slot` (der ViewModel sortiert selbst
+   absteigend pro Tag). Umbenannt in `ordered by date and slot`.
+5. **Detekt `TooManyFunctions` (Grenze 11) in `FoodEditViewModel`:** Die
+   Merge-Logik liegt deshalb als file-private Extension
+   `FoodEditState.mergedWith(food)` oberhalb der Klasse statt als private Methode.
+
+### Bewusst offen (Backlog)
+
+- Session-Cache als Flow (`observeSessionItem`) — der FoodPicker nutzt in P4.1
+  weiterhin den `sessionFoods`-Map-Spiegel.
+- `DiaryDayViewModel.date`-Startwert (Startwert aus dem `CurrentDateProvider`).
+- Totes Feld `latestRecipe` in `RecipeDetailViewModel.kt:33` (kosmetisch).
+- ADR-004-Badge im Food-Editor (`FoodEditState.cachedStatus` ist vorbereitet;
+  `EditStatusBadge` liegt heute privat in `FoodDetailScreen.kt:265`).
 
 ---
 
