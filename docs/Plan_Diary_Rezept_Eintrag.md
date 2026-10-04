@@ -338,10 +338,21 @@ vom Diary-Modus genutzt werden kann. Reine Verschiebung.
    `R.string`-Referenzen auf `core:presentation` umstellen.
 3. **Nährwertsumme verschieben.** `TotalNutritionSummary`
    (`RecipeEditorScreen.kt:215-227`) → `core/presentation/.../recipe/RecipeNutritionTotal.kt`
-   als `@Composable fun RecipeNutritionTotal(totalNutrition: NutritionValues)`.
-   Der Label-String `recipe_detail_total` bleibt im Recipes-Modul — der Summen-
-   Komponente wird der Label als **Parameter** übergeben, damit `core:presentation`
-   keine Recipes-Ressource referenziert.
+   als
+   ```kotlin
+   @Composable
+   fun RecipeNutritionTotal(
+       totalNutrition: NutritionValues,
+       label: String,
+       modifier: Modifier = Modifier,
+   )
+   ```
+   Der Label kommt als **Parameter**, damit `core:presentation` keinen
+   Modul-`R`-Konflikt erzeugt. Die Ressource `recipe_detail_total` wandert
+   gleichzeitig nach `core:presentation` (Schritt „Festgelegte Vorgaben"), sodass
+   beide Aufrufer — Recipe-Editor und Diary-Editor in WP5 — dieselbe Quelle nutzen.
+   Aktueller Aufrufer: `RecipeEditorScreen.kt:216`
+   (`val totalLabel = stringResource(R.string.recipe_detail_total)`).
 4. **Zutatenliste + Ergänzen-Button verschieben.** Der Block aus
    `RecipeEditorScreen.kt:184-201` → `core/presentation/.../recipe/RecipeIngredientList.kt`:
    ```kotlin
