@@ -27,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
+import com.example.ezmakro.core.domain.util.parsePositiveInt
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet

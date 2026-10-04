@@ -1,22 +1,8 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
 import com.example.ezmakro.core.domain.model.NutritionValues
-import com.example.ezmakro.core.domain.model.RecipeSnapshot
+import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
 import com.example.ezmakro.core.presentation.uitext.UiText
-import java.util.UUID
-
-data class IngredientDraft(
-    val id: String = UUID.randomUUID().toString(),
-    val foodId: String,
-    val foodName: String,
-    val servingLabel: String?,
-    val rawWeight: String = "",
-    val servingCount: String = "",
-    val recipeId: String? = null,
-    val originalLastModifiedAt: Long? = null,
-    val snapshotChanged: Boolean = false,
-    val recipeSnapshot: RecipeSnapshot? = null,
-)
 
 data class RecipeEditorState(
     val isEditingExisting: Boolean,
@@ -25,7 +11,7 @@ data class RecipeEditorState(
     val category: String = "",
     val portions: String = "1",
     val finalWeight: String = "",
-    val ingredients: List<IngredientDraft> = emptyList(),
+    val ingredients: List<RecipeIngredientDraft> = emptyList(),
     val ingredientNutrition: List<NutritionValues> = emptyList(),
     val totalNutrition: NutritionValues = NutritionValues.ZERO,
     val availableFoods: List<FoodPickerItem> = emptyList(),

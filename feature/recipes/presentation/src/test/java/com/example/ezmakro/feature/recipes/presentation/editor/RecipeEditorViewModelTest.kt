@@ -15,6 +15,7 @@ import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
 import com.example.ezmakro.core.domain.model.RecipeSnapshot
 import com.example.ezmakro.core.domain.model.ServingUnit
+import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeFoodRepository
 import com.example.ezmakro.feature.recipes.presentation.fake.FakeRecipeRepository
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,7 @@ class RecipeEditorViewModelTest {
             recipeId = recipeId,
             recipeRepository = recipeRepo,
             foodRepository = foodRepo,
+            buildRecipeFromDraftsUseCase = BuildRecipeFromDraftsUseCase(),
             savedStateHandle = androidx.lifecycle.SavedStateHandle(),
         )
 

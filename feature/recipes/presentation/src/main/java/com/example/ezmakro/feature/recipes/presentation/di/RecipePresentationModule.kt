@@ -2,6 +2,7 @@ package com.example.ezmakro.feature.recipes.presentation.di
 
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
+import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
 import com.example.ezmakro.feature.recipes.presentation.detail.RecipeDetailViewModel
 import com.example.ezmakro.feature.recipes.presentation.editor.RecipeEditorViewModel
 import com.example.ezmakro.feature.recipes.presentation.list.RecipeListViewModel
@@ -19,11 +20,14 @@ val recipePresentationModule =
     module {
         viewModelOf(::RecipeListViewModel)
 
+        factory { BuildRecipeFromDraftsUseCase() }
+
         viewModel { (recipeId: String?) ->
             RecipeEditorViewModel(
                 recipeId = recipeId,
                 recipeRepository = get(),
                 foodRepository = get(),
+                buildRecipeFromDraftsUseCase = get(),
                 savedStateHandle = get(),
             )
         }

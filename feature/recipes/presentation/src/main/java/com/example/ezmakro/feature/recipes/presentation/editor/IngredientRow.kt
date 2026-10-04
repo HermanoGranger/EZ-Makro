@@ -17,12 +17,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
+import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
 
 @Composable
 fun IngredientRow(
-    ingredient: IngredientDraft,
+    ingredient: RecipeIngredientDraft,
     isExpanded: Boolean,
     nutrition: NutritionValues?,
     onRawWeightChange: (String) -> Unit,
@@ -32,6 +34,7 @@ fun IngredientRow(
 ) {
     val rawWeight = ingredient.rawWeight.parseNonNegativeDouble()
     val servingCountVal = ingredient.servingCount.parseNonNegativeDouble()
+    val servingLabel = ingredient.servingLabel
 
     Column(modifier = Modifier.fillMaxWidth()) {
         IngredientHeaderRow(
@@ -50,7 +53,7 @@ fun IngredientRow(
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
-            if (ingredient.servingLabel != null) {
+            if (servingLabel != null) {
                 OutlinedTextField(
                     value = ingredient.servingCount,
                     onValueChange = onServingCountChange,
@@ -58,7 +61,7 @@ fun IngredientRow(
                         Text(
                             stringResource(
                                 R.string.recipe_editor_ingredient_serving_count,
-                                ingredient.servingLabel,
+                                servingLabel,
                             ),
                         )
                     },
@@ -85,7 +88,7 @@ fun IngredientRow(
 
 @Composable
 private fun IngredientHeaderRow(
-    ingredient: IngredientDraft,
+    ingredient: RecipeIngredientDraft,
     onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {

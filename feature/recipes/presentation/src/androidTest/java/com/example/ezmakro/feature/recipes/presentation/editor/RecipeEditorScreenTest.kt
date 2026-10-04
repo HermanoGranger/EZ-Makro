@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -16,7 +17,7 @@ class RecipeEditorScreenTest {
 
     private fun state(
         name: String = "",
-        ingredients: List<IngredientDraft> = emptyList(),
+        ingredients: List<RecipeIngredientDraft> = emptyList(),
         finalWeight: String = "",
     ) = RecipeEditorState(
         isEditingExisting = false,
@@ -63,7 +64,7 @@ class RecipeEditorScreenTest {
                     state(
                         ingredients =
                             listOf(
-                                IngredientDraft(
+                                RecipeIngredientDraft(
                                     foodId = "f1",
                                     foodName = "Apple",
                                     servingLabel = null,

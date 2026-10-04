@@ -4,21 +4,22 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.calculation.nutrition
-import com.example.ezmakro.core.domain.calculation.nutritionPer100g
-import com.example.ezmakro.core.domain.calculation.totalNutrition
-import com.example.ezmakro.core.domain.calculation.totalRawWeight
 import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.NutritionValues
-import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
-import com.example.ezmakro.core.domain.model.RecipeSnapshot
+import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
+import com.example.ezmakro.core.domain.model.markChangedRecipeSnapshots
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
+import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
+import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
+import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
+import com.example.ezmakro.core.domain.util.parsePositiveInt
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
@@ -38,6 +39,7 @@ class RecipeEditorViewModel(
     private val recipeId: String?,
     private val recipeRepository: RecipeRepository,
     private val foodRepository: FoodRepository,
+    private val buildRecipeFromDraftsUseCase: BuildRecipeFromDraftsUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val _state =
@@ -195,7 +197,7 @@ class RecipeEditorViewModel(
             it.copy(
                 ingredients =
                     it.ingredients +
-                        IngredientDraft(
+                        RecipeIngredientDraft(
                             foodId = action.foodId,
                             foodName = foodName,
                             servingLabel = servingLabel,
@@ -213,7 +215,7 @@ class RecipeEditorViewModel(
             it.copy(
                 ingredients =
                     it.ingredients +
-                        IngredientDraft(
+                        RecipeIngredientDraft(
                             foodId = recipeId,
                             foodName = recipe.name,
                             servingLabel = null,
@@ -255,7 +257,7 @@ class RecipeEditorViewModel(
                         isFavorite = recipe.isFavorite,
                         ingredients =
                             recipe.ingredients.map { ing ->
-                                IngredientDraft(
+                                RecipeIngredientDraft(
                                     foodId =
                                         ing.food
                                             ?.id
@@ -286,15 +288,15 @@ class RecipeEditorViewModel(
     private fun recomputeNutrition() {
         val foods = foodsState.value
         val recipes = recipesState.value
+        // Resolved draft by draft: an unresolvable draft contributes ZERO instead
+        // of dropping the nutrition of all drafts around it.
         val ingredientNutrition =
             _state.value.ingredients.map { draft ->
-                val ingredient =
-                    if (draft.recipeId != null) {
-                        resolveRecipeIngredient(draft, recipes)
-                    } else {
-                        resolveFoodIngredient(draft, foods)
-                    }
-                ingredient?.nutrition() ?: NutritionValues.ZERO
+                val resolved = buildRecipeFromDraftsUseCase(listOf(draft), foods, recipes)
+                when (resolved) {
+                    is Result.Success -> resolved.data.firstOrNull()?.nutrition() ?: NutritionValues.ZERO
+                    is Result.Error -> NutritionValues.ZERO
+                }
             }
         val total =
             ingredientNutrition.fold(NutritionValues.ZERO) { acc, value -> acc + value }
@@ -310,13 +312,7 @@ class RecipeEditorViewModel(
         val recipes = recipesState.value
         _state.update { current ->
             current.copy(
-                ingredients =
-                    current.ingredients.map { draft ->
-                        if (draft.recipeId == null || draft.originalLastModifiedAt == null) return@map draft
-                        val original = recipes.firstOrNull { it.id.value == draft.recipeId }
-                        val changed = original == null || original.lastModifiedAt != draft.originalLastModifiedAt
-                        draft.copy(snapshotChanged = changed)
-                    },
+                ingredients = current.ingredients.markChangedRecipeSnapshots(recipes),
             )
         }
     }
@@ -333,11 +329,26 @@ class RecipeEditorViewModel(
         val s = _state.value
         try {
             val parsed = parseSaveInput(s) ?: return
-            val ingredients = buildIngredients(s.ingredients)
-            if (ingredients == null) {
-                _state.update { it.copy(isSaving = false) }
-                return
-            }
+            val resolved =
+                buildRecipeFromDraftsUseCase(
+                    drafts = s.ingredients,
+                    foods = foodsState.value,
+                    recipes = recipesState.value,
+                )
+            val ingredients =
+                when (resolved) {
+                    is Result.Success -> resolved.data
+                    is Result.Error -> {
+                        _state.update {
+                            it.copy(
+                                isSaving = false,
+                                ingredientError =
+                                    UiText.StringResource(R.string.recipe_editor_error_ingredient_weight),
+                            )
+                        }
+                        return
+                    }
+                }
             val recipe = buildRecipe(s, parsed, ingredients)
             val result = recipeRepository.save(recipe)
             result.onSuccess {
@@ -430,90 +441,6 @@ class RecipeEditorViewModel(
             }
         }
         return !hasError
-    }
-
-    private fun buildIngredients(drafts: List<IngredientDraft>): List<RecipeIngredient>? {
-        val result = ArrayList<RecipeIngredient>(drafts.size)
-        val foods = foodsState.value
-        val recipes = recipesState.value
-        for (draft in drafts) {
-            val ingredient =
-                if (draft.recipeId != null) {
-                    resolveRecipeIngredient(draft, recipes)
-                } else {
-                    resolveFoodIngredient(draft, foods)
-                }
-            if (ingredient == null) {
-                _state.update {
-                    it.copy(ingredientError = UiText.StringResource(R.string.recipe_editor_error_ingredient_weight))
-                }
-                return null
-            }
-            result += ingredient
-        }
-        return result
-    }
-
-    private fun resolveRecipeIngredient(
-        draft: IngredientDraft,
-        recipes: List<Recipe>,
-    ): RecipeIngredient? {
-        val recipe = recipes.firstOrNull { it.id.value == draft.recipeId }
-        val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
-        val servingCount = draft.servingCount.parseNonNegativeDouble()
-        val hasPositiveAmount =
-            (rawWeight != null && rawWeight.grams > 0.0) || (servingCount != null && servingCount > 0.0)
-        if (!hasPositiveAmount) return null
-        // A deleted sub-recipe still keeps its stored snapshot in the parent
-        // recipe; fall back to it so a mere save does not fail.
-        val snapshot = recipe?.let { createSnapshot(it) } ?: draft.recipeSnapshot ?: return null
-        return RecipeIngredient(
-            food = null,
-            recipeSnapshot = snapshot,
-            rawWeight = rawWeight,
-            servingCount = servingCount,
-        )
-    }
-
-    private fun resolveFoodIngredient(
-        draft: IngredientDraft,
-        foods: List<FoodItem>,
-    ): RecipeIngredient? {
-        val food = foods.firstOrNull { it.id.value == draft.foodId }
-        val rawWeight = draft.rawWeight.parseNonNegativeDouble()?.let { RawWeight(it) }
-        val servingCount = draft.servingCount.parseNonNegativeDouble()
-        val hasPositiveWeight =
-            (rawWeight != null && rawWeight.grams > 0.0) || (servingCount != null && servingCount > 0.0)
-        val needsServingUnit = servingCount != null && rawWeight == null
-        val hasServingUnit = !needsServingUnit || food?.servingUnit != null
-        if (food == null || !hasPositiveWeight || !hasServingUnit) return null
-        return RecipeIngredient(
-            food = food,
-            recipeSnapshot = null,
-            rawWeight = rawWeight,
-            servingCount = servingCount,
-        )
-    }
-
-    private fun createSnapshot(recipe: Recipe): RecipeSnapshot {
-        val totalRaw = recipe.totalRawWeight().grams
-        val totalWeight = recipe.finalWeight?.grams ?: totalRaw
-        val nutritionPer100g =
-            recipe.nutritionPer100g()
-                ?: if (totalRaw > 0.0) {
-                    recipe.totalNutrition() * (100.0 / totalRaw)
-                } else {
-                    NutritionValues.ZERO
-                }
-        val gramsPerPortion = totalWeight / recipe.portions
-        return RecipeSnapshot(
-            recipeId = recipe.id,
-            recipeName = recipe.name,
-            nutritionPer100g = nutritionPer100g,
-            originalLastModifiedAt = recipe.lastModifiedAt,
-            portions = recipe.portions,
-            gramsPerPortion = gramsPerPortion,
-        )
     }
 
     private fun <T> List<T>.updateAt(
