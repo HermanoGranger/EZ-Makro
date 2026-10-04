@@ -4,6 +4,7 @@ import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
+import com.example.ezmakro.core.domain.usecase.diary.EditDiaryRecipeEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
@@ -39,6 +40,7 @@ val diaryPresentationModule =
         factory { AddRecipeToDiaryUseCase(get()) }
         factory { CopyYesterdayUseCase(get()) }
         factory { DeleteDiaryEntryUseCase(get()) }
+        factory { EditDiaryRecipeEntryUseCase(get(), get()) }
         factory { GetHistoryUseCase(get()) }
         factory { QuickAddUseCase(get()) }
         factory { UpdateDiaryEntryUseCase(get()) }
