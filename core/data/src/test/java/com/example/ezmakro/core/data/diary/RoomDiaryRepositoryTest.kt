@@ -5,10 +5,13 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import com.example.ezmakro.core.data.diary.mapper.toDiaryEntry
+import com.example.ezmakro.core.data.diary.mapper.toEntity
 import com.example.ezmakro.core.database.dao.DiaryEntryDao
 import com.example.ezmakro.core.database.entity.DiaryEntryEntity
 import com.example.ezmakro.core.domain.calculation.consumedNutrition
@@ -193,6 +196,55 @@ class RoomDiaryRepositoryTest {
             assertThat(entryRead.recipe!!.ingredients).hasSize(2)
             assertThat(entryRead.consumedNutrition()).isEqualTo(r.nutritionPerPortion() * 1.0)
         }
+
+    @Test
+    fun `save recipe entry with isRecipeOverridden persists the flag`() =
+        runTest {
+            val dao = FakeDiaryDao()
+            val entry =
+                DiaryEntry(
+                    id = DiaryEntryId("d1"),
+                    slot = MealSlot.DINNER,
+                    date = LocalDate.of(2026, 7, 19),
+                    food = null,
+                    recipe = recipe(),
+                    amountGrams = null,
+                    portionCount = 1.0,
+                    isRecipeOverridden = true,
+                )
+            repoWith(dao).save(entry)
+
+            val stored = dao.getById("d1")
+            assertThat(stored).isNotNull()
+            assertThat(stored!!.recipeOverridden).isTrue()
+
+            val read = repoWith(dao).getById(DiaryEntryId("d1"))
+            assertThat(read).isInstanceOf(Result.Success::class)
+            assertThat((read as Result.Success).data!!.isRecipeOverridden).isTrue()
+        }
+
+    @Test
+    fun `toEntity and toDiaryEntry round-trip the override flag`() {
+        val overridden =
+            DiaryEntry(
+                id = DiaryEntryId("d1"),
+                slot = MealSlot.DINNER,
+                date = LocalDate.of(2026, 7, 19),
+                food = null,
+                recipe = recipe(),
+                amountGrams = null,
+                portionCount = 1.0,
+                isRecipeOverridden = true,
+            )
+
+        val overriddenEntity = overridden.toEntity()
+        assertThat(overriddenEntity.recipeOverridden).isTrue()
+        assertThat(overriddenEntity.toDiaryEntry().isRecipeOverridden).isTrue()
+
+        val plainEntity = overridden.copy(isRecipeOverridden = false).toEntity()
+        assertThat(plainEntity.recipeOverridden).isFalse()
+        assertThat(plainEntity.toDiaryEntry().isRecipeOverridden).isFalse()
+    }
 
     @Test
     fun `observeByDate returns only entries of that date ordered by slot`() =

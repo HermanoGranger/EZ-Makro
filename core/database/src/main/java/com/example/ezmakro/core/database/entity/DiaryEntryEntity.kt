@@ -21,6 +21,10 @@ import androidx.room.PrimaryKey
  * [amountGrams] (raw amount for food, or grams of prepared dish) and
  * [portionCount] are mutually exclusive for recipe entries, matching the domain
  * invariants.
+ *
+ * [recipeOverridden] marks a diary-specific deviation of the logged recipe's
+ * ingredients from the live recipe. It is a pure marker: it never rewrites
+ * [recipeSnapshot], which stays the historical document of this entry.
  */
 @Entity(
     tableName = "diary_entries",
@@ -57,6 +61,8 @@ data class DiaryEntryEntity(
     val amountGrams: Double?,
     @ColumnInfo(name = "portion_count")
     val portionCount: Double?,
+    @ColumnInfo(name = "recipe_overridden", defaultValue = "0")
+    val recipeOverridden: Boolean = false,
     @ColumnInfo(name = "food_snapshot", defaultValue = "NULL")
     val foodSnapshot: String? = null,
     @ColumnInfo(name = "recipe_snapshot", defaultValue = "NULL")

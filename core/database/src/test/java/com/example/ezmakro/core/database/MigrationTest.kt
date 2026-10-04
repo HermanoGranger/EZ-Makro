@@ -12,6 +12,7 @@ import com.example.ezmakro.core.database.migration.MIGRATION_2_3
 import com.example.ezmakro.core.database.migration.MIGRATION_5_6
 import com.example.ezmakro.core.database.migration.MIGRATION_6_7
 import com.example.ezmakro.core.database.migration.MIGRATION_7_8
+import com.example.ezmakro.core.database.migration.MIGRATION_8_9
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -216,6 +217,93 @@ class MigrationTest {
             assertThat(c.getString(1)).isEqualTo("Pfannkuchen")
             assertThat(c.getDouble(2)).isEqualTo(500.0)
             assertThat(c.getInt(3)).isEqualTo(2)
+        }
+
+        migrated.close()
+    }
+
+    private fun seedDiaryEntryAtV8() {
+        helper.createDatabase(dbName, 8).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO food_items (
+                    id, name, barcode,
+                    nutri_kcal, nutri_protein_g, nutri_fat_g, nutri_carbs_g, nutri_fiber_g,
+                    serving_label, serving_grams_equivalent, is_user_created, cached_status,
+                    orig_name, orig_barcode, orig_nutri_kcal, orig_nutri_protein_g,
+                    orig_nutri_fat_g, orig_nutri_carbs_g, orig_nutri_fiber_g,
+                    orig_serving_label, orig_serving_grams_equivalent, orig_is_user_created
+                ) VALUES (
+                    'f1', 'Haferflocken', NULL,
+                    350.0, 12.0, 6.0, 60.0, 8.0,
+                    NULL, NULL, 0, 'ORIGINAL',
+                    'Haferflocken', NULL, 350.0, 12.0,
+                    6.0, 60.0, 8.0,
+                    NULL, NULL, 0
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                INSERT INTO diary_entries (id, slot, date, food_item_id, recipe_id,
+                    amount_grams, portion_count, food_snapshot, recipe_snapshot)
+                VALUES ('d1', 'BREAKFAST', '2026-07-17', 'f1', NULL,
+                    150.0, NULL, '{"name":"Haferflocken"}', NULL)
+                """.trimIndent(),
+            )
+        }
+    }
+
+    @Test
+    fun `migrate 8 to 9 adds recipe_overridden defaulting to false without touching snapshots`() {
+        seedDiaryEntryAtV8()
+
+        val migrated = helper.runMigrationsAndValidate(dbName, 9, true, MIGRATION_8_9)
+
+        migrated.query("PRAGMA table_info(diary_entries)").use { c ->
+            val columns = mutableMapOf<String, String>()
+            while (c.moveToNext()) {
+                columns[c.getString(1)] = c.getString(4)
+            }
+            assertThat(columns.containsKey("recipe_overridden")).isEqualTo(true)
+            assertThat(columns["recipe_overridden"]).isEqualTo("0")
+            assertThat(columns.containsKey("recipe_snapshot")).isEqualTo(true)
+        }
+
+        // Existing rows keep their data and get the marker set to false.
+        val query =
+            "SELECT id, slot, date, food_item_id, amount_grams, food_snapshot, recipe_overridden " +
+                "FROM diary_entries"
+        migrated.query(query).use { c ->
+            check(c.moveToFirst()) { "expected the pre-migration diary entry to survive" }
+            assertThat(c.getString(0)).isEqualTo("d1")
+            assertThat(c.getString(1)).isEqualTo("BREAKFAST")
+            assertThat(c.getString(2)).isEqualTo("2026-07-17")
+            assertThat(c.getString(3)).isEqualTo("f1")
+            assertThat(c.getDouble(4)).isEqualTo(150.0)
+            assertThat(c.getString(5)).isEqualTo("""{"name":"Haferflocken"}""")
+            assertThat(c.getInt(6)).isEqualTo(0)
+        }
+
+        migrated.close()
+    }
+
+    @Test
+    fun `migrate 8 to 9 leaves recipe_overridden writable`() {
+        seedDiaryEntryAtV8()
+
+        val migrated = helper.runMigrationsAndValidate(dbName, 9, true, MIGRATION_8_9)
+
+        // The marker is a plain writable column, not an "insert once" flag.
+        migrated.execSQL("UPDATE diary_entries SET recipe_overridden = 1 WHERE id = 'd1'")
+        migrated.query("SELECT recipe_overridden FROM diary_entries WHERE id = 'd1'").use { c ->
+            check(c.moveToFirst())
+            assertThat(c.getInt(0)).isEqualTo(1)
+        }
+        migrated.execSQL("UPDATE diary_entries SET recipe_overridden = 0 WHERE id = 'd1'")
+        migrated.query("SELECT recipe_overridden FROM diary_entries WHERE id = 'd1'").use { c ->
+            check(c.moveToFirst())
+            assertThat(c.getInt(0)).isEqualTo(0)
         }
 
         migrated.close()

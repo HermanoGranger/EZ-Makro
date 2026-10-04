@@ -21,6 +21,10 @@ enum class MealSlot {
  * portions (if [FoodItem.servingUnit] is set) — exactly one must be provided.
  * For a recipe, the user logs EITHER [portionCount] portions OR [amountGrams]
  * of the prepared dish — exactly one must be set.
+ *
+ * A diary entry is an **immutable historical document**: [food] / [recipe] are
+ * frozen snapshots taken at log time, never live references to the current
+ * source entities. Later edits of the source do not rewrite the entry.
  */
 data class DiaryEntry(
     val id: DiaryEntryId,
@@ -30,6 +34,12 @@ data class DiaryEntry(
     val recipe: Recipe?,
     val amountGrams: Double?,
     val portionCount: Double?,
+    /**
+     * true, wenn die Zutaten des geloggten Rezepts für diesen Tag vom Rezept
+     * abweichen (Nutzeranpassung im Tagebuch). Bei `false` entspricht der
+     * Snapshot exakt dem Stand beim Loggen.
+     */
+    val isRecipeOverridden: Boolean = false,
 ) {
     init {
         require(food != null || recipe != null) { "DiaryEntry needs a food or a recipe" }

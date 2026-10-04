@@ -18,6 +18,7 @@ fun DiaryEntryEntity.toDiaryEntry(): DiaryEntry {
         recipe = recipe,
         amountGrams = amountGrams,
         portionCount = portionCount,
+        isRecipeOverridden = recipeOverridden,
     )
 }
 
@@ -30,6 +31,7 @@ fun DiaryEntry.toEntity(): DiaryEntryEntity =
         recipeId = recipe?.id?.value,
         amountGrams = amountGrams,
         portionCount = portionCount,
+        recipeOverridden = isRecipeOverridden,
         foodSnapshot = food?.let { JsonConverters.encodeFoodItem(it) },
         recipeSnapshot = recipe?.let { JsonConverters.encodeRecipe(it) },
     )

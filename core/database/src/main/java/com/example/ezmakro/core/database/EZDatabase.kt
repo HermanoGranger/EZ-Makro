@@ -43,6 +43,8 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
  *   as they provided no value and added confusion.
  * - 8: Phase 10 — Recipes favorites/recency: `recipes.is_favorite` and
  *   `recipes.last_used_at` columns.
+ * - 9: Tagebuch-Rezept-Einträge können eine Tagesanpassung markieren
+ *   (diary_entries.recipe_overridden).
  * Migrations live in [com.example.ezmakro.core.database.migration.Migrations];
  * the migration test harness lives in the test source set.
  */
@@ -55,7 +57,7 @@ import com.example.ezmakro.core.database.entity.WeightLogEntity
         DiaryEntryEntity::class,
         WeightLogEntity::class,
     ],
-    version = 8,
+    version = 9,
 )
 @TypeConverters(ScalarConverters::class, JsonConverters::class)
 abstract class EZDatabase : RoomDatabase() {

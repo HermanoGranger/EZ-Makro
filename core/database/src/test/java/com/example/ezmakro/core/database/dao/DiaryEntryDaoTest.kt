@@ -5,11 +5,14 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.database.DatabaseTest
 import com.example.ezmakro.core.database.entity.DiaryEntryEntity
 import com.example.ezmakro.core.database.testutil.FoodItemFixtures
+import com.example.ezmakro.core.database.testutil.RecipeFixtures
 import com.example.ezmakro.core.database.testutil.upsertFood
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -35,8 +38,27 @@ class DiaryEntryDaoTest : DatabaseTest() {
         portionCount = null,
     )
 
+    private fun recipeEntry(
+        id: String = "d1",
+        recipeOverridden: Boolean = false,
+    ) = DiaryEntryEntity(
+        id = id,
+        slot = "DINNER",
+        date = "2026-07-17",
+        foodItemId = null,
+        recipeId = "r1",
+        amountGrams = null,
+        portionCount = 1.0,
+        recipeOverridden = recipeOverridden,
+        recipeSnapshot = """{"id":"r1","name":"Pfannkuchen"}""",
+    )
+
     private fun seedFoods() {
         db.foodItemDao().upsertFood(FoodItemFixtures.food(id = "f1"))
+    }
+
+    private fun seedRecipes() {
+        db.recipeDao().upsertRecipe(RecipeFixtures.recipe(id = "r1"))
     }
 
     @Test
@@ -106,6 +128,21 @@ class DiaryEntryDaoTest : DatabaseTest() {
             assertThat(survived?.foodItemId).isNull()
             // amount_grams etc. (the actual logged data) must be preserved
             assertThat(survived?.amountGrams).isEqualTo(150.0)
+        }
+    }
+
+    @Test
+    fun `recipe_overridden round-trips on upsert and a later upsert overwrites it`() {
+        seedRecipes()
+        runBlocking {
+            dao.upsert(recipeEntry(recipeOverridden = true))
+            val overridden = dao.getById("d1")
+            assertThat(overridden).isNotNull()
+            assertThat(overridden!!.recipeOverridden).isTrue()
+            assertThat(overridden.recipeSnapshot).isEqualTo("""{"id":"r1","name":"Pfannkuchen"}""")
+
+            dao.upsert(recipeEntry(recipeOverridden = false))
+            assertThat(dao.getById("d1")!!.recipeOverridden).isFalse()
         }
     }
 }

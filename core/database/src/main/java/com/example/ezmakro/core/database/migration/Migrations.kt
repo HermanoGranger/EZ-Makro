@@ -234,6 +234,25 @@ val MIGRATION_7_8 =
         }
     }
 
+/**
+ * Diary recipe entries can be marked as day-specific adjustment.
+ *
+ * `diary_entries.recipe_overridden` is a pure marker for "the ingredients of the
+ * logged recipe deviate from the live recipe for this day". No data is converted:
+ * the historical `recipe_snapshot` JSON stays untouched, and existing rows get
+ * the column default `0` (`false`) — entries logged before this version could
+ * never carry a day-specific adjustment.
+ */
+val MIGRATION_8_9 =
+    object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE diary_entries " +
+                    "ADD COLUMN recipe_overridden INTEGER NOT NULL DEFAULT 0",
+            )
+        }
+    }
+
 val ALL_MIGRATIONS =
     arrayOf(
         MIGRATION_1_2,
@@ -243,4 +262,5 @@ val ALL_MIGRATIONS =
         MIGRATION_5_6,
         MIGRATION_6_7,
         MIGRATION_7_8,
+        MIGRATION_8_9,
     )

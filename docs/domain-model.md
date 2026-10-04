@@ -98,6 +98,7 @@ classDiagram
         +Recipe recipe
         +Double amountGrams
         +Double portionCount
+        +Boolean isRecipeOverridden
     }
     class WeightLog {
         +WeightLogId id
@@ -131,6 +132,26 @@ classDiagram
     DiaryEntry --> Recipe
     WeightLog --> WeightLogId
 ```
+
+### DiaryEntry — `isRecipeOverridden`
+
+Ein Tagebuch-Eintrag ist ein **unveränderliches historisches Dokument**:
+`food` / `recipe` sind zum Zeitpunkt des Loggens eingefrorene Snapshots, keine
+Live-Referenzen auf die aktuellen Quell-Entities. Spätere Änderungen am Rezept
+schreiben den Eintrag nicht um.
+
+`isRecipeOverridden: Boolean = false` unterscheidet dabei zwei Fälle, die rein
+über den Snapshot nicht unterscheidbar sind:
+
+- `false` — der Snapshot entspricht exakt dem Stand beim Loggen.
+- `true` — die Zutaten wurden für diesen Tag bewusst angepasst
+  (Tagesanpassung, "nur dieser Tag"), das Rezept selbst blieb unverändert.
+
+Persistiert als `diary_entries.recipe_overridden` (`INTEGER NOT NULL DEFAULT 0`,
+Migration 8→9, rein additiv). Die Migration ist eine reine Markierung ohne
+Datenumstellung: bestehende Zeilen erhalten `false`, da ein vor der Migration
+gelogter Eintrag keine Tagesanpassung tragen konnte. Das Feld verändert nie den
+Snapshot-JSON und ist ein überschreibbares Flag (kein Erstsetz-Flag).
 
 ## Sequenzdiagramm: Rezept anlegen
 
