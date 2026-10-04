@@ -37,6 +37,7 @@ import com.example.ezmakro.feature.recipes.presentation.R
 import com.example.ezmakro.feature.recipes.presentation.model.RecipeNutritionUi
 import org.koin.androidx.compose.koinViewModel
 import java.time.LocalDate
+import com.example.ezmakro.core.presentation.R as CoreR
 
 @Composable
 fun RecipeDetailRoot(
@@ -172,7 +173,7 @@ fun RecipeDetailScreen(
             Text(stringResource(R.string.recipe_detail_portions, recipe.portions))
 
             RecipeMacroSummary(
-                label = stringResource(R.string.recipe_detail_total),
+                label = stringResource(CoreR.string.recipe_detail_total),
                 nutrition = recipe.totalMacros,
             )
             RecipeMacroSummary(

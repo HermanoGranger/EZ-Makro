@@ -99,6 +99,10 @@ für die Arbeit nach Abschluss der Kernfunktion (Phase 10+):
   geseedet** — Verhalten ist über `saveState`/`restoreState` beabsichtigt
   ("gemerktes Datum bleibt erhalten"); erst bei konkretem Fehlreport bearbeiten.
 - **Totes Feld `latestRecipe`** in `RecipeDetailViewModel.kt:33` — kosmetisch.
+- **`:feature:diary → :feature:foodpicker`** (`feature/diary/presentation/build.gradle.kts`)
+  ist eine **bewusste** Abweichung von der Skill-Regel „Features never depend on
+  each other": `FoodPickerSheet` ist ein geteilter Bottom-Sheet-Baustein, den Diary
+  (`DiaryDayScreen.kt`) und Recipes (`RecipeEditorScreen.kt`) beide nutzen. Kein Bug.
 
 ## 4. Ablauf pro Fix
 

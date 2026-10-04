@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -26,9 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
 import com.example.ezmakro.core.domain.util.parsePositiveInt
+import com.example.ezmakro.core.presentation.recipe.RecipeIngredientList
+import com.example.ezmakro.core.presentation.recipe.RecipeNutritionTotal
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
@@ -37,6 +37,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerView
 import com.example.ezmakro.feature.recipes.presentation.R
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import com.example.ezmakro.core.presentation.R as CoreR
 
 @Composable
 fun RecipeEditorRoot(
@@ -181,24 +182,26 @@ private fun EditorForm(
             }
         }
 
-        item { TotalNutritionSummary(totalNutrition = state.totalNutrition) }
-
         item {
-            Button(onClick = onOpenPicker, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.recipe_editor_add_ingredient))
-            }
-            state.ingredientError?.let { Text(text = it.asString()) }
+            RecipeNutritionTotal(state.totalNutrition, stringResource(CoreR.string.recipe_detail_total))
         }
 
-        itemsIndexed(state.ingredients, key = { _, ingredient -> ingredient.id }) { index, ingredient ->
-            IngredientRow(
-                ingredient = ingredient,
-                isExpanded = state.expandedIngredientIndex == index,
-                nutrition = state.ingredientNutrition.getOrNull(index),
-                onRawWeightChange = { onAction(RecipeEditorAction.OnIngredientRawWeightChange(index, it)) },
-                onServingCountChange = { onAction(RecipeEditorAction.OnIngredientServingCountChange(index, it)) },
-                onRemove = { onAction(RecipeEditorAction.OnRemoveIngredientClick(index)) },
-                onClick = { onAction(RecipeEditorAction.OnIngredientClick(index)) },
+        item {
+            RecipeIngredientList(
+                ingredients = state.ingredients,
+                ingredientNutrition = state.ingredientNutrition,
+                expandedIngredientIndex = state.expandedIngredientIndex,
+                onAddIngredient = onOpenPicker,
+                onRawWeightChange = { index, value ->
+                    onAction(RecipeEditorAction.OnIngredientRawWeightChange(index, value))
+                },
+                onServingCountChange = { index, value ->
+                    onAction(RecipeEditorAction.OnIngredientServingCountChange(index, value))
+                },
+                onRemoveIngredient = { onAction(RecipeEditorAction.OnRemoveIngredientClick(it)) },
+                onIngredientClick = { onAction(RecipeEditorAction.OnIngredientClick(it)) },
+                addIngredientLabel = stringResource(CoreR.string.recipe_editor_add_ingredient),
+                ingredientError = state.ingredientError,
             )
         }
 
@@ -207,25 +210,10 @@ private fun EditorForm(
                 onClick = { onAction(RecipeEditorAction.OnSaveClick) },
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.recipe_editor_save)) }
+            ) { Text(stringResource(CoreR.string.recipe_editor_save)) }
             state.saveError?.let { Text(text = it.asString()) }
         }
     }
-}
-
-@Composable
-private fun TotalNutritionSummary(totalNutrition: NutritionValues) {
-    val totalLabel = stringResource(R.string.recipe_detail_total)
-    Text(
-        text =
-            "$totalLabel: ${totalNutrition.kcal.formatValue()} kcal · " +
-                "P ${totalNutrition.proteinG.formatValue()} g · " +
-                "KH ${totalNutrition.carbsG.formatValue()} g · " +
-                "F ${totalNutrition.fatG.formatValue()} g · " +
-                "B ${totalNutrition.fiberG.formatValue()} g",
-        style = MaterialTheme.typography.titleSmall,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-    )
 }
 
 @Composable
@@ -266,7 +254,7 @@ private fun PortionsField(
     OutlinedTextField(
         value = state.portions,
         onValueChange = { onAction(RecipeEditorAction.OnPortionsChange(it)) },
-        label = { Text(stringResource(R.string.recipe_editor_portions)) },
+        label = { Text(stringResource(CoreR.string.recipe_editor_portions)) },
         isError = state.numberError != null,
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
@@ -281,8 +269,8 @@ private fun FinalWeightField(
     OutlinedTextField(
         value = state.finalWeight,
         onValueChange = { onAction(RecipeEditorAction.OnFinalWeightChange(it)) },
-        label = { Text(stringResource(R.string.recipe_editor_final_weight)) },
-        supportingText = { Text(stringResource(R.string.recipe_editor_final_weight_hint)) },
+        label = { Text(stringResource(CoreR.string.recipe_editor_final_weight)) },
+        supportingText = { Text(stringResource(CoreR.string.recipe_editor_final_weight_hint)) },
         isError = state.numberError != null,
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),

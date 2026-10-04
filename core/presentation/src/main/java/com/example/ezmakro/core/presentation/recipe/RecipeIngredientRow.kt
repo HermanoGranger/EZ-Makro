@@ -1,4 +1,4 @@
-package com.example.ezmakro.feature.recipes.presentation.editor
+package com.example.ezmakro.core.presentation.recipe
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,11 +19,11 @@ import androidx.compose.ui.unit.dp
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
 import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
+import com.example.ezmakro.core.presentation.R
 import com.example.ezmakro.core.presentation.util.formatValue
-import com.example.ezmakro.feature.recipes.presentation.R
 
 @Composable
-fun IngredientRow(
+fun RecipeIngredientRow(
     ingredient: RecipeIngredientDraft,
     isExpanded: Boolean,
     nutrition: NutritionValues?,

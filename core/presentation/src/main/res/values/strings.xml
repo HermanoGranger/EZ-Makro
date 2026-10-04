@@ -28,4 +28,14 @@
     <string name="diary_slot_lunch">Mittag</string>
     <string name="diary_slot_dinner">Abend</string>
     <string name="diary_slot_snacks">Snacks</string>
+
+    <string name="recipe_editor_ingredient_raw_weight">Rohgewicht (g)</string>
+    <string name="recipe_editor_ingredient_serving_count">Anzahl (%1$s)</string>
+    <string name="recipe_editor_recipe_snapshot_changed">Rezept geändert</string>
+    <string name="recipe_editor_add_ingredient">Zutat hinzufügen</string>
+    <string name="recipe_editor_portions">Portionen</string>
+    <string name="recipe_editor_final_weight">Endgewicht (g)</string>
+    <string name="recipe_editor_final_weight_hint">Optional – für präzise pro 100g Werte</string>
+    <string name="recipe_editor_save">Speichern</string>
+    <string name="recipe_detail_total">Gesamt</string>
 </resources>

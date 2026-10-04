@@ -36,12 +36,12 @@ import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
+import com.example.ezmakro.core.presentation.util.encodeRouteParam
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.Goals
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
 import com.example.ezmakro.feature.diary.presentation.navigation.diaryGraph
 import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
-import com.example.ezmakro.feature.food.presentation.navigation.encodeRouteParam
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
 import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES
 import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
