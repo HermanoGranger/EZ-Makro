@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,6 +56,7 @@ fun DiaryEntryDetail(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
+                RecipeBadges(data = data)
             }
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onEdit) {
@@ -90,4 +93,37 @@ private fun MacroValue(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+@Composable
+private fun RecipeBadges(data: DiaryEntryDetailData) {
+    if (!data.isRecipe) return
+    if (!data.isRecipeOverridden && !data.isSourceRecipeOutdated) return
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 4.dp),
+    ) {
+        if (data.isRecipeOverridden) {
+            DiaryBadge(text = data.recipeOverriddenLabel)
+        }
+        if (data.isSourceRecipeOutdated) {
+            DiaryBadge(text = data.recipeChangedLabel)
+        }
+    }
+}
+
+@Composable
+private fun DiaryBadge(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(4.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
+    }
 }

@@ -27,6 +27,8 @@ Details zu umgesetzten Phasen und geplanten Inhalten: `docs/Vollstaendiger_Imple
 Bugfix-Archiv (P1–P3 abgeschlossen) + Qualitäts-Backlog: `docs/Bugfix_Plan.md`.
 Aktiver Bugfix-Plan (P4 — veraltete Snapshots im State, in Arbeit):
 `docs/Bugfix_Plan_Stale_Snapshots.md`.
+Diary-Rezept-Eintrag (Rezept-Inhalte im Tagebucheintrag bearbeiten, Badges
+„Tagesanpassung" und „Rezept geändert"): `docs/Plan_Diary_Rezept_Eintrag.md`.
 
 ## Personas
 

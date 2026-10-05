@@ -25,6 +25,8 @@ data class DiaryEntryUi(
     val fat: String,
     val carbs: String,
     val fiber: String,
+    val isRecipeOverridden: Boolean = false,
+    val isSourceRecipeOutdated: Boolean = false,
 )
 
 /**
@@ -67,6 +69,7 @@ internal fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
         fat = nutrition.fatG.formatValue(),
         carbs = nutrition.carbsG.formatValue(),
         fiber = nutrition.fiberG.formatValue(),
+        isRecipeOverridden = recipe != null && isRecipeOverridden,
     )
 }
 

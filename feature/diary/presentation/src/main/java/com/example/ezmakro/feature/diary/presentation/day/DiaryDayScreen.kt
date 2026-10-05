@@ -379,9 +379,13 @@ private fun mealSlotSection(
     onEditIngredients: (String) -> Unit = {},
 ) {
     val summary = entries.sumNutrition()
+    val recipeOverriddenLabel =
+        stringResource(com.example.ezmakro.feature.diary.presentation.R.string.diary_recipe_edit_badge_day_override)
+    val recipeChangedLabel =
+        stringResource(com.example.ezmakro.feature.diary.presentation.R.string.diary_recipe_edit_badge_recipe_changed)
     CollapsibleMealSlot(
         title = title,
-        entries = entries.map { it.toDetailData() },
+        entries = entries.map { it.toDetailData(recipeOverriddenLabel, recipeChangedLabel) },
         isExpanded = isExpanded,
         onToggle = onToggle,
         onEditEntry = onEditEntry,
@@ -402,7 +406,10 @@ private fun mealSlotSection(
     )
 }
 
-private fun DiaryEntryUi.toDetailData(): DiaryEntryDetailData =
+private fun DiaryEntryUi.toDetailData(
+    recipeOverriddenLabel: String,
+    recipeChangedLabel: String,
+): DiaryEntryDetailData =
     DiaryEntryDetailData(
         id = id,
         name = name,
@@ -413,6 +420,10 @@ private fun DiaryEntryUi.toDetailData(): DiaryEntryDetailData =
         carbs = carbs,
         fiber = fiber,
         isRecipe = isRecipe,
+        isRecipeOverridden = isRecipeOverridden,
+        isSourceRecipeOutdated = isSourceRecipeOutdated,
+        recipeOverriddenLabel = recipeOverriddenLabel,
+        recipeChangedLabel = recipeChangedLabel,
     )
 
 @Composable

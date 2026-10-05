@@ -8,6 +8,7 @@ import com.example.ezmakro.core.domain.model.DiaryEntryId
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.repository.GoalRepository
+import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
@@ -40,6 +41,7 @@ import java.time.LocalDate
 class DiaryDayViewModel(
     private val repository: DiaryRepository,
     private val goalRepository: GoalRepository,
+    private val recipeRepository: RecipeRepository,
     private val copyYesterdayUseCase: CopyYesterdayUseCase,
     private val deleteEntryUseCase: DeleteDiaryEntryUseCase,
     private val updateEntryUseCase: UpdateDiaryEntryUseCase,
@@ -62,8 +64,23 @@ class DiaryDayViewModel(
                 repository
                     .observeByDate(d)
                     .combine(goalRepository.observeGoal()) { entries, goal -> entries to goal }
-            }.onEach { (entries, goal) ->
-                val ui = entries.map { it.toDiaryEntryUi() }
+                    .combine(recipeRepository.observeAll()) { (entries, goal), recipes ->
+                        Triple(entries, goal, recipes)
+                    }
+            }.onEach { (entries, goal, recipes) ->
+                val modifiedAt = recipes.associate { it.id.value to it.lastModifiedAt }
+                val ui =
+                    entries.map { entry ->
+                        val base = entry.toDiaryEntryUi()
+                        val snapshot = entry.recipe
+                        val liveAt = snapshot?.let { modifiedAt[it.id.value] }
+                        base.copy(
+                            isSourceRecipeOutdated =
+                                snapshot != null &&
+                                    liveAt != null &&
+                                    liveAt > snapshot.lastModifiedAt,
+                        )
+                    }
                 _state.update {
                     it.copy(
                         date = currentDateProvider.date.value,

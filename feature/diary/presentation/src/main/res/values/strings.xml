@@ -72,4 +72,6 @@
     <string name="diary_recipe_edit_amount_mode_grams">Gramm</string>
     <string name="diary_recipe_edit_scope_confirm">Übernehmen</string>
     <string name="diary_recipe_edit_error_amount_invalid">Menge muss größer als 0 sein</string>
+    <string name="diary_recipe_edit_badge_day_override">Tagesanpassung</string>
+    <string name="diary_recipe_edit_badge_recipe_changed">Rezept geändert</string>
 </resources>

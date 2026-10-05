@@ -61,6 +61,94 @@ class DiaryDayScreenTest {
             fiber = "1",
         )
 
+    private fun recipeEntryUi(
+        id: String,
+        slot: MealSlot,
+        name: String,
+        isRecipeOverridden: Boolean = false,
+        isSourceRecipeOutdated: Boolean = false,
+    ): DiaryEntryUi =
+        entryUi(id, slot, name, "300").copy(
+            isRecipe = true,
+            isRecipeOverridden = isRecipeOverridden,
+            isSourceRecipeOutdated = isSourceRecipeOutdated,
+        )
+
+    private fun setDayContent(state: DiaryDayState) {
+        composeTestRule.setContent {
+            DiaryDayScreen(
+                state = state,
+                snackbarHostState = SnackbarHostState(),
+                callbacks =
+                    DiaryDayCallbacks(
+                        onAction = {},
+                        onRequestDelete = { _, _ -> },
+                        onRequestEdit = {},
+                        onRequestAdd = {},
+                        onNavigateToHistory = {},
+                    ),
+            )
+        }
+    }
+
+    @Test
+    fun showsDayOverrideBadge_forOverriddenRecipeEntry() {
+        setDayContent(
+            DiaryDayState(
+                date = LocalDate.of(2026, 7, 19),
+                lunch = listOf(recipeEntryUi("r1", MealSlot.LUNCH, "Bowl", isRecipeOverridden = true)),
+                expandedSlots = setOf(MealSlot.LUNCH),
+            ),
+        )
+
+        composeTestRule.onNodeWithText("Bowl").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tagesanpassung").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsRecipeChangedBadge_forOutdatedSourceRecipe() {
+        setDayContent(
+            DiaryDayState(
+                date = LocalDate.of(2026, 7, 19),
+                lunch = listOf(recipeEntryUi("r1", MealSlot.LUNCH, "Bowl", isSourceRecipeOutdated = true)),
+                expandedSlots = setOf(MealSlot.LUNCH),
+            ),
+        )
+
+        composeTestRule.onNodeWithText("Bowl").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Rezept geändert").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsNoRecipeBadges_forFoodEntry() {
+        setDayContent(
+            DiaryDayState(
+                date = LocalDate.of(2026, 7, 19),
+                breakfast = listOf(entryUi("f1", MealSlot.BREAKFAST, "Haferflocken", "150")),
+                expandedSlots = setOf(MealSlot.BREAKFAST),
+            ),
+        )
+
+        composeTestRule.onNodeWithText("Haferflocken").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tagesanpassung").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Rezept geändert").assertDoesNotExist()
+    }
+
+    @Test
+    fun showsNoRecipeBadges_forPlainRecipeEntry() {
+        setDayContent(
+            DiaryDayState(
+                date = LocalDate.of(2026, 7, 19),
+                lunch = listOf(recipeEntryUi("r1", MealSlot.LUNCH, "Bowl")),
+                expandedSlots = setOf(MealSlot.LUNCH),
+            ),
+        )
+
+        composeTestRule.onNodeWithText("Bowl").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tagesanpassung").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Rezept geändert").assertDoesNotExist()
+    }
+
     @Test
     fun displaysEntriesGroupedBySlot_withSummaryHeader() {
         val state =

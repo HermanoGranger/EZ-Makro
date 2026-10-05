@@ -19,6 +19,10 @@ import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.model.RawWeight
+import com.example.ezmakro.core.domain.model.Recipe
+import com.example.ezmakro.core.domain.model.RecipeId
+import com.example.ezmakro.core.domain.model.RecipeIngredient
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
@@ -26,6 +30,7 @@ import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.feature.diary.presentation.fake.FakeDiaryRepository
 import com.example.ezmakro.feature.diary.presentation.fake.FakeGoalRepository
+import com.example.ezmakro.feature.diary.presentation.fake.FakeRecipeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -44,6 +49,7 @@ class DiaryDayViewModelTest {
     private val goal = NutritionGoal(kcal = 2000.0, proteinG = 150.0, fatG = 56.0, carbsG = 225.0, fiberG = 30.0)
     private lateinit var repository: FakeDiaryRepository
     private lateinit var goals: FakeGoalRepository
+    private lateinit var recipes: FakeRecipeRepository
     private lateinit var currentDateProvider: CurrentDateProvider
     private lateinit var viewModel: DiaryDayViewModel
 
@@ -75,17 +81,58 @@ class DiaryDayViewModelTest {
             portionCount = null,
         )
 
+    private fun recipe(
+        id: String,
+        lastModifiedAt: Long,
+    ): Recipe =
+        Recipe(
+            id = RecipeId(id),
+            name = "Recipe $id",
+            ingredients =
+                listOf(
+                    RecipeIngredient(
+                        food = food("f-$id"),
+                        recipeSnapshot = null,
+                        rawWeight = RawWeight(100.0),
+                        servingCount = null,
+                    ),
+                ),
+            finalWeight = null,
+            portions = 2,
+            lastModifiedAt = lastModifiedAt,
+        )
+
+    private fun recipeEntry(
+        id: String,
+        slot: MealSlot,
+        recipeId: String,
+        snapshotModifiedAt: Long,
+        isRecipeOverridden: Boolean = false,
+    ): DiaryEntry =
+        DiaryEntry(
+            id = DiaryEntryId(id),
+            slot = slot,
+            date = date,
+            food = null,
+            recipe = recipe(recipeId, snapshotModifiedAt),
+            amountGrams = null,
+            portionCount = 1.0,
+            isRecipeOverridden = isRecipeOverridden,
+        )
+
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeDiaryRepository()
         goals = FakeGoalRepository(goal)
+        recipes = FakeRecipeRepository()
         currentDateProvider = CurrentDateProvider()
         currentDateProvider.setDate(date)
         viewModel =
             DiaryDayViewModel(
                 repository = repository,
                 goalRepository = goals,
+                recipeRepository = recipes,
                 copyYesterdayUseCase = CopyYesterdayUseCase(repository),
                 deleteEntryUseCase = DeleteDiaryEntryUseCase(repository),
                 updateEntryUseCase = UpdateDiaryEntryUseCase(repository),
@@ -298,5 +345,104 @@ class DiaryDayViewModelTest {
                 viewModel.state.value.summary
                     ?.consumedKcal,
             ).isEqualTo("200")
+        }
+
+    @Test
+    fun `recipe entry with isRecipeOverridden sets the flag in its slot list`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 1000L))
+            repository.emitEntry(
+                recipeEntry("e1", MealSlot.LUNCH, "r1", 1000L, isRecipeOverridden = true),
+            )
+
+            val ui =
+                viewModel.state.value.lunch
+                    .single()
+            assertThat(ui.id).isEqualTo("e1")
+            assertThat(ui.isRecipeOverridden).isTrue()
+        }
+
+    @Test
+    fun `recipe entry without override and unchanged source recipe has both flags false`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 1000L))
+            repository.emitEntry(recipeEntry("e1", MealSlot.DINNER, "r1", 1000L))
+
+            val ui =
+                viewModel.state.value.dinner
+                    .single()
+            assertThat(ui.isRecipeOverridden).isFalse()
+            assertThat(ui.isSourceRecipeOutdated).isFalse()
+        }
+
+    @Test
+    fun `live recipe with newer lastModifiedAt marks the entry outdated`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 2000L))
+            repository.emitEntry(recipeEntry("e1", MealSlot.SNACKS, "r1", 1000L))
+
+            assertThat(
+                viewModel.state.value.snacks
+                    .single()
+                    .isSourceRecipeOutdated,
+            ).isTrue()
+        }
+
+    @Test
+    fun `live recipe with older lastModifiedAt keeps the entry not outdated`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 500L))
+            repository.emitEntry(recipeEntry("e1", MealSlot.SNACKS, "r1", 1000L))
+
+            assertThat(
+                viewModel.state.value.snacks
+                    .single()
+                    .isSourceRecipeOutdated,
+            ).isFalse()
+        }
+
+    @Test
+    fun `deleted source recipe leaves the outdated flag false`() =
+        runTest {
+            repository.emitEntry(recipeEntry("e1", MealSlot.BREAKFAST, "r1", 1000L))
+
+            val ui =
+                viewModel.state.value.breakfast
+                    .single()
+            assertThat(ui.isSourceRecipeOutdated).isFalse()
+        }
+
+    @Test
+    fun `food entry never gets recipe flags`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 2000L))
+            repository.emitEntry(entry("f-entry", MealSlot.BREAKFAST, "f1", 100.0))
+
+            val ui =
+                viewModel.state.value.breakfast
+                    .single()
+            assertThat(ui.isRecipe).isFalse()
+            assertThat(ui.isRecipeOverridden).isFalse()
+            assertThat(ui.isSourceRecipeOutdated).isFalse()
+        }
+
+    @Test
+    fun `updating the source recipe flips the flag live without recreating the view model`() =
+        runTest {
+            recipes.emitRecipe(recipe("r1", 1000L))
+            repository.emitEntry(recipeEntry("e1", MealSlot.LUNCH, "r1", 1000L))
+            assertThat(
+                viewModel.state.value.lunch
+                    .single()
+                    .isSourceRecipeOutdated,
+            ).isFalse()
+
+            recipes.emitRecipe(recipe("r1", 3000L))
+
+            assertThat(
+                viewModel.state.value.lunch
+                    .single()
+                    .isSourceRecipeOutdated,
+            ).isTrue()
         }
 }

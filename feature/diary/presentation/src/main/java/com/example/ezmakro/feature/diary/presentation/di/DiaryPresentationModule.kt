@@ -27,6 +27,7 @@ val diaryPresentationModule =
             DiaryDayViewModel(
                 repository = get(),
                 goalRepository = get(),
+                recipeRepository = get(),
                 copyYesterdayUseCase = get(),
                 deleteEntryUseCase = get(),
                 updateEntryUseCase = get(),
