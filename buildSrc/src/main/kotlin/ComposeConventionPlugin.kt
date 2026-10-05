@@ -20,6 +20,9 @@ class ComposeConventionPlugin : Plugin<Project> {
                 add("implementation", libs.findLibrary("androidx-compose-ui-core").get())
                 add("implementation", libs.findLibrary("androidx-compose-ui-graphics").get())
                 add("implementation", libs.findLibrary("androidx-compose-material3").get())
+                // Nur die Annotationen, damit `@Preview` auch im Release kompiliert.
+                // `ui-tooling` selbst bleibt debug-only.
+                add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
                 add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
             }
         }

@@ -143,11 +143,28 @@ private fun CollapsibleHeader(
             )
         }
         IconButton(onClick = onRequestAdd) {
-            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.diary_slot_add))
         }
+        if (entries.isNotEmpty()) {
+            ExpandCollapseIcon(isExpanded = isExpanded, onToggle = onToggle)
+        }
+    }
+}
+
+@Composable
+private fun ExpandCollapseIcon(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    IconButton(onClick = onToggle) {
         Icon(
-            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-            contentDescription = null,
+            imageVector =
+                if (isExpanded) {
+                    Icons.Default.KeyboardArrowUp
+                } else {
+                    Icons.Default.KeyboardArrowDown
+                },
+            contentDescription = if (isExpanded) "Einklappen" else "Ausklappen",
         )
     }
 }

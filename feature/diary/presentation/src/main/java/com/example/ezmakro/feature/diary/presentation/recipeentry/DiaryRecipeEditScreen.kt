@@ -13,22 +13,32 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
 import com.example.ezmakro.core.domain.usecase.diary.DiaryRecipeEditScope
 import com.example.ezmakro.core.presentation.recipe.RecipeIngredientList
 import com.example.ezmakro.core.presentation.recipe.RecipeNutritionTotal
@@ -37,9 +47,10 @@ import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
+import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
-import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
 import com.example.ezmakro.core.presentation.R as CoreR
 
 @Composable
@@ -49,18 +60,25 @@ fun DiaryRecipeEditRoot(
     onNavigateBack: () -> Unit,
     viewModel: DiaryRecipeEditViewModel = koinViewModel { parametersOf(entryId) },
 ) {
+    val scope = rememberCoroutineScope()
     val state = viewModel.state.collectAsStateWithLifecycle().value
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             DiaryRecipeEditEvent.Saved -> onSaved()
             DiaryRecipeEditEvent.NavigateBack -> onNavigateBack()
-            is DiaryRecipeEditEvent.ShowMessage -> { }
+            is DiaryRecipeEditEvent.ShowMessage -> {
+                snackbarHostState.currentSnackbarData?.dismiss()
+                scope.launch { snackbarHostState.showSnackbar(event.message.asString(context)) }
+            }
         }
     }
 
     DiaryRecipeEditScreen(
         state = state,
+        snackbarHostState = snackbarHostState,
         onAction = viewModel::onAction,
     )
 }
@@ -71,6 +89,7 @@ fun DiaryRecipeEditRoot(
 fun DiaryRecipeEditScreen(
     state: DiaryRecipeEditState,
     onAction: (DiaryRecipeEditAction) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = {
@@ -78,12 +97,14 @@ fun DiaryRecipeEditScreen(
                 title = { Text(stringResource(R.string.diary_recipe_edit_title)) },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
@@ -93,6 +114,11 @@ fun DiaryRecipeEditScreen(
                     Text(
                         text = stringResource(R.string.diary_recipe_edit_logged_amount),
                         style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.diary_recipe_edit_logged_on, state.date.formattedDate()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row {
@@ -142,13 +168,25 @@ fun DiaryRecipeEditScreen(
                     ingredientNutrition = state.ingredientNutrition,
                     expandedIngredientIndex = state.expandedIngredientIndex,
                     onAddIngredient = { onAction(DiaryRecipeEditAction.OnAddIngredientClick) },
-                    onRawWeightChange = { index, value -> onAction(DiaryRecipeEditAction.OnIngredientRawWeightChange(index, value)) },
-                    onServingCountChange = { index, value -> onAction(DiaryRecipeEditAction.OnIngredientServingCountChange(index, value)) },
+                    onRawWeightChange = {
+                        index,
+                        value,
+                        ->
+                        onAction(DiaryRecipeEditAction.OnIngredientRawWeightChange(index, value))
+                    },
+                    onServingCountChange = {
+                        index,
+                        value,
+                        ->
+                        onAction(DiaryRecipeEditAction.OnIngredientServingCountChange(index, value))
+                    },
                     onRemoveIngredient = { index -> onAction(DiaryRecipeEditAction.OnRemoveIngredient(index)) },
                     onIngredientClick = { index -> onAction(DiaryRecipeEditAction.OnIngredientClick(index)) },
                     addIngredientLabel = stringResource(CoreR.string.recipe_editor_add_ingredient),
                     ingredientError = state.ingredientError,
                 )
+                // `RecipeIngredientList` hat keinen Ersetzen-Hook: Ersetzen läuft über
+                // Entfernen + Hinzufügen.
                 Text(
                     text = stringResource(R.string.diary_recipe_edit_replace_hint),
                     style = MaterialTheme.typography.bodySmall,
@@ -188,14 +226,14 @@ fun DiaryRecipeEditScreen(
                             onClick = { onAction(DiaryRecipeEditAction.OnAmountModeChange(DiaryAmountMode.PORTIONS)) },
                             enabled = state.amountMode != DiaryAmountMode.PORTIONS,
                         ) {
-                            Text(stringResource(CoreR.string.recipe_editor_portions))
+                            Text(stringResource(R.string.diary_recipe_edit_amount_mode_portions))
                         }
                         Spacer(modifier = Modifier.padding(4.dp))
                         Button(
                             onClick = { onAction(DiaryRecipeEditAction.OnAmountModeChange(DiaryAmountMode.GRAMS)) },
                             enabled = state.amountMode != DiaryAmountMode.GRAMS,
                         ) {
-                            Text(stringResource(CoreR.string.recipe_editor_final_weight))
+                            Text(stringResource(R.string.diary_recipe_edit_amount_mode_grams))
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -244,9 +282,11 @@ fun DiaryRecipeEditScreen(
             viewModel = foodPickerViewModel,
             onAddAsIngredient = { id, name, servingLabel, isRecipe ->
                 if (isRecipe) {
+                    onAction(DiaryRecipeEditAction.OnPickerRecipeNotAllowed)
                     onAction(DiaryRecipeEditAction.OnDismissPicker)
                     return@FoodPickerSheet
                 }
+                onAction(DiaryRecipeEditAction.OnAddIngredientWithData(id, name, servingLabel))
                 onAction(DiaryRecipeEditAction.OnDismissPicker)
             },
             onAddToDiary = { _, _, _, _, _, _ -> },
@@ -262,6 +302,7 @@ private fun SaveScopeDialog(
     onConfirm: (DiaryRecipeEditScope) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var selectedScope by remember { mutableStateOf(DiaryRecipeEditScope.ENTRY_ONLY) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.diary_recipe_edit_save_scope_title)) },
@@ -270,24 +311,28 @@ private fun SaveScopeDialog(
                 RadioRow(
                     text = stringResource(R.string.diary_recipe_edit_scope_entry_only),
                     hint = stringResource(R.string.diary_recipe_edit_scope_entry_only_hint),
-                    selected = false,
+                    selected = selectedScope == DiaryRecipeEditScope.ENTRY_ONLY,
                     enabled = true,
-                    onClick = { onConfirm(DiaryRecipeEditScope.ENTRY_ONLY) },
+                    onClick = { selectedScope = DiaryRecipeEditScope.ENTRY_ONLY },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 RadioRow(
                     text = stringResource(R.string.diary_recipe_edit_scope_recipe),
                     hint = stringResource(R.string.diary_recipe_edit_scope_recipe_hint),
-                    selected = false,
+                    selected = selectedScope == DiaryRecipeEditScope.RECIPE_AND_ENTRY,
                     enabled = canUpdateRecipe,
-                    onClick = { if (canUpdateRecipe) onConfirm(DiaryRecipeEditScope.RECIPE_AND_ENTRY) },
+                    onClick = { if (canUpdateRecipe) selectedScope = DiaryRecipeEditScope.RECIPE_AND_ENTRY },
                 )
             }
         },
-        confirmButton = {},
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedScope) }) {
+                Text(stringResource(R.string.diary_recipe_edit_scope_confirm))
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Abbrechen")
+                Text(stringResource(R.string.diary_recipe_edit_scope_cancel))
             }
         },
     )
@@ -302,15 +347,15 @@ private fun RadioRow(
     onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = Role.RadioButton,
-                enabled = enabled,
-            )
-            .padding(8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .selectable(
+                    selected = selected,
+                    onClick = onClick,
+                    role = Role.RadioButton,
+                    enabled = enabled,
+                ).padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = onClick, enabled = enabled)
@@ -324,4 +369,86 @@ private fun RadioRow(
 
 @Composable
 private fun formatNutrition(n: NutritionValues): String =
-    "${n.kcal.formatValue()} kcal · P ${n.proteinG.formatValue()} · F ${n.fatG.formatValue()} · KH ${n.carbsG.formatValue()} · B ${n.fiberG.formatValue()}"
+    buildString {
+        append("${n.kcal.formatValue()} kcal")
+        append(" · P ${n.proteinG.formatValue()}")
+        append(" · F ${n.fatG.formatValue()}")
+        append(" · KH ${n.carbsG.formatValue()}")
+        append(" · B ${n.fiberG.formatValue()}")
+    }
+
+@Suppress("UnusedPrivateMember")
+@Preview(showBackground = true)
+@Composable
+private fun DiaryRecipeEditScreenPreview() {
+    MaterialTheme {
+        DiaryRecipeEditScreen(
+            state = PREVIEW_STATE,
+            onAction = {},
+        )
+    }
+}
+
+private val PREVIEW_BULGUR = previewNutrition(kcal = 100.0, protein = 10.0, fat = 5.0, carbs = 2.0, fiber = 1.0)
+private val PREVIEW_TOMATENMARK = previewNutrition(kcal = 60.0, protein = 6.0, fat = 3.0, carbs = 12.0, fiber = 1.5)
+private val PREVIEW_TOTAL = PREVIEW_BULGUR + PREVIEW_TOMATENMARK
+
+private val PREVIEW_STATE =
+    DiaryRecipeEditState(
+        isLoading = false,
+        entryId = "entry-1",
+        recipeName = "Bulgur Test",
+        date = "2026-07-19",
+        sourceRecipeId = "recipe-1",
+        canUpdateRecipe = true,
+        amountMode = DiaryAmountMode.PORTIONS,
+        amountText = "1",
+        portions = "2",
+        finalWeight = "200",
+        ingredients =
+            listOf(
+                previewDraft("f1", "Bulgur", "100"),
+                previewDraft("f2", "Tomatenmark", "75"),
+            ),
+        ingredientNutrition = listOf(PREVIEW_BULGUR, PREVIEW_TOMATENMARK),
+        totalNutrition = PREVIEW_TOTAL,
+        originalConsumedNutrition = PREVIEW_TOTAL * 0.5,
+        consumedNutrition = PREVIEW_TOTAL * 0.55,
+    )
+
+private fun previewNutrition(
+    kcal: Double,
+    protein: Double,
+    fat: Double,
+    carbs: Double,
+    fiber: Double,
+) = NutritionValues(
+    kcal = kcal,
+    proteinG = protein,
+    fatG = fat,
+    carbsG = carbs,
+    fiberG = fiber,
+)
+
+/** Renders the ISO date of the entry as `dd.MM.yyyy` for the header line. */
+private fun String.formattedDate(): String =
+    runCatching {
+        java.time.LocalDate
+            .parse(this)
+            .format(DATE_HEADER_FORMATTER)
+    }.getOrDefault(this)
+
+private val DATE_HEADER_FORMATTER: java.time.format.DateTimeFormatter =
+    java.time.format.DateTimeFormatter
+        .ofPattern("dd.MM.yyyy")
+
+private fun previewDraft(
+    foodId: String,
+    foodName: String,
+    rawWeight: String,
+) = RecipeIngredientDraft(
+    foodId = foodId,
+    foodName = foodName,
+    servingLabel = null,
+    rawWeight = rawWeight,
+)

@@ -20,6 +20,15 @@ class FakeRecipeRepository : RecipeRepository {
         store.value = store.value + (recipe.id.value to recipe)
     }
 
+    /** Replaces the whole set at once, e.g. to simulate a deleted source recipe. */
+    fun emitRecipes(recipes: List<Recipe>) {
+        store.value = recipes.associateBy { it.id.value }
+    }
+
+    fun clearRecipes() {
+        store.value = emptyMap()
+    }
+
     override fun observeAll(): Flow<List<Recipe>> = store.map { it.values.toList() }
 
     override fun observeById(id: RecipeId): Flow<Recipe?> = store.map { it[id.value] }

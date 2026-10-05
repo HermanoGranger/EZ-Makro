@@ -21,8 +21,7 @@ class FakeFoodRepository : FoodRepository {
 
     override fun observeAll(): Flow<List<FoodItem>> = store.map { it.values.toList() }
 
-    override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> =
-        Result.Success(store.value[id.value])
+    override suspend fun getById(id: FoodId): Result<FoodItem?, DataError.Local> = Result.Success(store.value[id.value])
 
     override fun observeById(id: FoodId): Flow<FoodItem?> = store.map { it[id.value] }
 
@@ -51,7 +50,10 @@ class FakeFoodRepository : FoodRepository {
 
     override fun observeRecent(limit: Int): Flow<List<FoodItem>> = store.map { it.values.take(limit) }
 
-    override fun searchLocal(query: String): Flow<List<FoodItem>> = store.map { it.values.filter { it.name.contains(query, true) } }
+    override fun searchLocal(query: String): Flow<List<FoodItem>> =
+        store.map {
+            it.values.filter { it.name.contains(query, true) }
+        }
 
     companion object {
         fun food(

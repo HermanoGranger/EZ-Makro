@@ -387,7 +387,13 @@ private fun mealSlotSection(
         onEditEntry = onEditEntry,
         onRequestDelete = { entryId -> onRequestDelete(entryId, slot) },
         onRequestAdd = { onRequestAdd(slot) },
-        onEditIngredientsEntry = { onEditIngredients(it) }, onEditIngredientsLabel = stringResource(com.example.ezmakro.feature.diary.presentation.R.string.diary_recipe_edit_ingredients_action),
+        onEditIngredientsEntry = {
+            onEditIngredients(it)
+        },
+        onEditIngredientsLabel =
+            stringResource(
+                com.example.ezmakro.feature.diary.presentation.R.string.diary_recipe_edit_ingredients_action,
+            ),
         summaryKcal = summary.kcal.formatValue(),
         summaryProtein = summary.proteinG.formatValue(),
         summaryFat = summary.fatG.formatValue(),

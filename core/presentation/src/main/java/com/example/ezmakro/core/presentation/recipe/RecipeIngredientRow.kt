@@ -10,7 +10,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +31,6 @@ fun RecipeIngredientRow(
     onServingCountChange: (String) -> Unit,
     onRemove: () -> Unit,
     onClick: () -> Unit,
-    onReplace: (() -> Unit)? = null,
 ) {
     val rawWeight = ingredient.rawWeight.parseNonNegativeDouble()
     val servingCountVal = ingredient.servingCount.parseNonNegativeDouble()
@@ -43,7 +41,6 @@ fun RecipeIngredientRow(
             ingredient = ingredient,
             onClick = onClick,
             onRemove = onRemove,
-            onReplace = onReplace,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -94,7 +91,6 @@ private fun IngredientHeaderRow(
     ingredient: RecipeIngredientDraft,
     onClick: () -> Unit,
     onRemove: () -> Unit,
-    onReplace: (() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -109,9 +105,6 @@ private fun IngredientHeaderRow(
             )
         }
         IconButton(onClick = onRemove) { Text("✕") }
-        onReplace?.let {
-            TextButton(onClick = it) { Text("Ersetzen") }
-        }
     }
 }
 
