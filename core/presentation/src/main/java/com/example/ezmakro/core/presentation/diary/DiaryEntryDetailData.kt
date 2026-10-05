@@ -9,4 +9,5 @@ data class DiaryEntryDetailData(
     val fat: String,
     val carbs: String,
     val fiber: String,
+    val isRecipe: Boolean = false,
 )

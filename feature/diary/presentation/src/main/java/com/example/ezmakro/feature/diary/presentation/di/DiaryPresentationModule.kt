@@ -8,10 +8,12 @@ import com.example.ezmakro.core.domain.usecase.diary.EditDiaryRecipeEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.GetHistoryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
+import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayViewModel
 import com.example.ezmakro.feature.diary.presentation.goals.GoalsViewModel
 import com.example.ezmakro.feature.diary.presentation.history.HistoryViewModel
 import com.example.ezmakro.feature.diary.presentation.quickadd.QuickAddViewModel
+import com.example.ezmakro.feature.diary.presentation.recipeentry.DiaryRecipeEditViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -36,6 +38,18 @@ val diaryPresentationModule =
         viewModel { QuickAddViewModel(get(), get()) }
         viewModel { GoalsViewModel(get()) }
 
+        viewModel {
+            DiaryRecipeEditViewModel(
+                entryId = get(),
+                diaryRepository = get(),
+                editDiaryRecipeEntryUseCase = get(),
+                recipeRepository = get(),
+                foodRepository = get(),
+                buildRecipeFromDraftsUseCase = get(),
+                savedStateHandle = get(),
+            )
+        }
+
         factory { AddFoodToDiaryUseCase(get()) }
         factory { AddRecipeToDiaryUseCase(get()) }
         factory { CopyYesterdayUseCase(get()) }
@@ -44,4 +58,5 @@ val diaryPresentationModule =
         factory { GetHistoryUseCase(get()) }
         factory { QuickAddUseCase(get()) }
         factory { UpdateDiaryEntryUseCase(get()) }
+        factory { BuildRecipeFromDraftsUseCase() }
     }

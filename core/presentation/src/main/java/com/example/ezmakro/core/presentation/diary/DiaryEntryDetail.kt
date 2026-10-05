@@ -21,6 +21,8 @@ fun DiaryEntryDetail(
     data: DiaryEntryDetailData,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onEditIngredients: (() -> Unit)? = null,
+    onEditIngredientsLabel: String = "Zutaten",
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -63,6 +65,14 @@ fun DiaryEntryDetail(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.error,
                     )
+                }
+                if (onEditIngredients != null && data.isRecipe) {
+                    TextButton(onClick = onEditIngredients) {
+                        Text(
+                            onEditIngredientsLabel,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
                 }
             }
         }

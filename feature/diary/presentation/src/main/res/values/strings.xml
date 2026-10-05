@@ -46,4 +46,25 @@
     <string name="quick_add_error_name">Name darf nicht leer sein</string>
     <string name="quick_add_error_amount">Menge muss größer als 0 sein</string>
     <string name="quick_add_error_save">Speichern fehlgeschlagen</string>
+
+    <string name="diary_recipe_edit_title">Rezept-Zutaten bearbeiten</string>
+    <string name="diary_recipe_edit_logged_amount">Eingetragene Menge</string>
+    <string name="diary_recipe_edit_amount_mode_label">Mengenmodus</string>
+    <string name="diary_recipe_edit_save_scope_title">Speichern</string>
+    <string name="diary_recipe_edit_scope_entry_only">Nur für diesen Tag</string>
+    <string name="diary_recipe_edit_scope_entry_only_hint">Änderungen gelten nur für diesen Tagebucheintrag</string>
+    <string name="diary_recipe_edit_scope_recipe">Rezept dauerhaft ändern</string>
+    <string name="diary_recipe_edit_scope_recipe_hint">Änderungen werden in das ursprüngliche Rezept übernommen</string>
+    <string name="diary_recipe_edit_ingredients_action">Zutaten</string>
+    <string name="diary_recipe_edit_replace_hint">Zum Ersetzen: Zutat entfernen und neu hinzufügen</string>
+    <string name="diary_recipe_edit_info_recipe_outdated">Das Quellrezept wurde inzwischen geändert</string>
+    <string name="diary_recipe_edit_info_recipe_deleted">Das Quellrezept wurde gelöscht</string>
+    <string name="diary_recipe_edit_picker_recipe_not_allowed">Rezepte können nicht als Zutat hinzugefügt werden</string>
+    <string name="diary_recipe_edit_error_unknown_food">Unbekannte Zutat</string>
+    <string name="diary_recipe_edit_error_missing_snapshot">Rezept-Snapshot fehlt</string>
+    <string name="diary_recipe_edit_error_no_ingredients">Mindestens eine Zutat nötig</string>
+    <string name="diary_recipe_edit_error_ingredient_weight">Zutat braucht Rohgewicht oder Anzahl</string>
+    <string name="diary_recipe_edit_error_save_failed">Fehler beim Speichern</string>
+    <string name="diary_recipe_edit_compare_label">Vergleich</string>
+    <string name="diary_recipe_edit_error_amount_invalid">Menge muss größer als 0 sein</string>
 </resources>

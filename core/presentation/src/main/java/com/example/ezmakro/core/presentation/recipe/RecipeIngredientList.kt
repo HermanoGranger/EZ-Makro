@@ -38,6 +38,7 @@ fun RecipeIngredientList(
     onServingCountChange: (Int, String) -> Unit,
     onRemoveIngredient: (Int) -> Unit,
     onIngredientClick: (Int) -> Unit,
+    onReplaceIngredient: ((Int) -> Unit)? = null,
     addIngredientLabel: String,
     ingredientError: UiText?,
     modifier: Modifier = Modifier,
@@ -61,6 +62,7 @@ fun RecipeIngredientList(
                     onServingCountChange = { onServingCountChange(index, it) },
                     onRemove = { onRemoveIngredient(index) },
                     onClick = { onIngredientClick(index) },
+                    onReplace = onReplaceIngredient?.let { { it(index) } },
                 )
             }
         }

@@ -75,6 +75,7 @@ fun DiaryDayRoot(
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     onNavigateToFoodDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
     onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
+    onNavigateToRecipeEdit: (String) -> Unit = {},
     viewModel: DiaryDayViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -102,6 +103,7 @@ fun DiaryDayRoot(
                 onRequestAdd = { slot -> pickerSlot = slot },
                 onNavigateToHistory = onNavigateToHistory,
                 onNavigateToGoals = onNavigateToGoals,
+                onRequestEditIngredients = { entryId -> onNavigateToRecipeEdit(entryId) },
             ),
     )
 
@@ -197,6 +199,7 @@ data class DiaryDayCallbacks(
     val onRequestAdd: (MealSlot) -> Unit,
     val onNavigateToHistory: () -> Unit,
     val onNavigateToGoals: () -> Unit = {},
+    val onRequestEditIngredients: (String) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -311,6 +314,7 @@ fun DiaryDayScreen(
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
                         onRequestAdd = callbacks.onRequestAdd,
+                        onEditIngredients = callbacks.onRequestEditIngredients,
                     )
                 }
                 item {
@@ -323,6 +327,7 @@ fun DiaryDayScreen(
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
                         onRequestAdd = callbacks.onRequestAdd,
+                        onEditIngredients = callbacks.onRequestEditIngredients,
                     )
                 }
                 item {
@@ -335,6 +340,7 @@ fun DiaryDayScreen(
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
                         onRequestAdd = callbacks.onRequestAdd,
+                        onEditIngredients = callbacks.onRequestEditIngredients,
                     )
                 }
                 item {
@@ -347,6 +353,7 @@ fun DiaryDayScreen(
                         onEditEntry = callbacks.onRequestEdit,
                         onRequestDelete = callbacks.onRequestDelete,
                         onRequestAdd = callbacks.onRequestAdd,
+                        onEditIngredients = callbacks.onRequestEditIngredients,
                     )
                 }
 
@@ -369,6 +376,7 @@ private fun mealSlotSection(
     onEditEntry: (String) -> Unit,
     onRequestDelete: (String, MealSlot) -> Unit,
     onRequestAdd: (MealSlot) -> Unit,
+    onEditIngredients: (String) -> Unit = {},
 ) {
     val summary = entries.sumNutrition()
     CollapsibleMealSlot(
@@ -379,6 +387,7 @@ private fun mealSlotSection(
         onEditEntry = onEditEntry,
         onRequestDelete = { entryId -> onRequestDelete(entryId, slot) },
         onRequestAdd = { onRequestAdd(slot) },
+        onEditIngredientsEntry = { onEditIngredients(it) }, onEditIngredientsLabel = stringResource(com.example.ezmakro.feature.diary.presentation.R.string.diary_recipe_edit_ingredients_action),
         summaryKcal = summary.kcal.formatValue(),
         summaryProtein = summary.proteinG.formatValue(),
         summaryFat = summary.fatG.formatValue(),
@@ -397,6 +406,7 @@ private fun DiaryEntryUi.toDetailData(): DiaryEntryDetailData =
         fat = fat,
         carbs = carbs,
         fiber = fiber,
+        isRecipe = isRecipe,
     )
 
 @Composable

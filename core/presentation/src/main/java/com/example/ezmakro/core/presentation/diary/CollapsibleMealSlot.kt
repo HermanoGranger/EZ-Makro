@@ -47,6 +47,8 @@ fun CollapsibleMealSlot(
     summaryFat: String,
     summaryCarbs: String,
     summaryFiber: String,
+    onEditIngredientsEntry: ((String) -> Unit)? = null,
+    onEditIngredientsLabel: String = "Zutaten",
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -73,6 +75,8 @@ fun CollapsibleMealSlot(
                         data = entry,
                         onEdit = { onEditEntry(entry.id) },
                         onDelete = { onRequestDelete(entry.id) },
+                        onEditIngredients = onEditIngredientsEntry?.let { fn -> { fn(entry.id) } },
+                        onEditIngredientsLabel = onEditIngredientsLabel,
                     )
                 }
             }
@@ -120,28 +124,31 @@ private fun CollapsibleHeader(
                     MacroChip("KH", summaryCarbs)
                     MacroChip("B", summaryFiber)
                 }
-            } else {
+            }
+            if (entries.isEmpty()) {
                 Text(
-                    text = "\u2014",
+                    text = "—",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
-        }
-        IconButton(onClick = onRequestAdd) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(R.string.diary_slot_add),
-            )
         }
         if (entries.isNotEmpty()) {
-            IconButton(onClick = onToggle) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (isExpanded) "Einklappen" else "Ausklappen",
-                )
-            }
+            Text(
+                text = "${entries.size}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 8.dp),
+            )
         }
+        IconButton(onClick = onRequestAdd) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = null)
+        }
+        Icon(
+            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+            contentDescription = null,
+        )
     }
 }
 
@@ -150,11 +157,19 @@ private fun MacroChip(
     label: String,
     value: String,
 ) {
-    Text(
-        text = "$label $value",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
