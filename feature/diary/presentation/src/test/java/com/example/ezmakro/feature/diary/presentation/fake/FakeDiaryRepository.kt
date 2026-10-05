@@ -6,6 +6,7 @@ import com.example.ezmakro.core.domain.model.LocalDateRange
 import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -15,6 +16,16 @@ class FakeDiaryRepository : DiaryRepository {
     val entries = MutableStateFlow<List<DiaryEntry>>(emptyList())
     private val deleted = mutableListOf<DiaryEntryId>()
     private val saved = mutableListOf<DiaryEntry>()
+
+    /**
+     * Wenn gesetzt, wartet [getById] auf dieses Gate.
+     *
+     * Bildet die reale Reihenfolge nach: Room beantwortet die suspendierende Query
+     * asynchron, während die beobachteten Flows bereits emittieren können. Ohne
+     * Gate läuft `getById` mit `UnconfinedTestDispatcher` immer synchron vor der
+     * ersten Emission und verdeckt damit Race-Conditions.
+     */
+    var getByIdGate: CompletableDeferred<Unit>? = null
 
     fun emitEntry(entry: DiaryEntry) {
         entries.value = entries.value.filter { it.id != entry.id } + entry
@@ -29,8 +40,10 @@ class FakeDiaryRepository : DiaryRepository {
     override fun observeByDate(date: LocalDate): Flow<List<DiaryEntry>> =
         entries.map { list -> list.filter { it.date == date } }
 
-    override suspend fun getById(id: DiaryEntryId): Result<DiaryEntry?, DataError.Local> =
-        Result.Success(entries.value.firstOrNull { it.id == id })
+    override suspend fun getById(id: DiaryEntryId): Result<DiaryEntry?, DataError.Local> {
+        getByIdGate?.await()
+        return Result.Success(entries.value.firstOrNull { it.id == id })
+    }
 
     override suspend fun save(entry: DiaryEntry): com.example.ezmakro.core.domain.result.EmptyResult<DataError.Local> {
         saved.add(entry)

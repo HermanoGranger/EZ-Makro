@@ -185,14 +185,6 @@ fun DiaryRecipeEditScreen(
                     addIngredientLabel = stringResource(CoreR.string.recipe_editor_add_ingredient),
                     ingredientError = state.ingredientError,
                 )
-                // `RecipeIngredientList` hat keinen Ersetzen-Hook: Ersetzen läuft über
-                // Entfernen + Hinzufügen.
-                Text(
-                    text = stringResource(R.string.diary_recipe_edit_replace_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
             }
 
             item {
@@ -201,6 +193,8 @@ fun DiaryRecipeEditScreen(
                     OutlinedTextField(
                         value = state.portions,
                         onValueChange = { onAction(DiaryRecipeEditAction.OnPortionsChange(it)) },
+                        isError = state.numberError != null,
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -212,6 +206,8 @@ fun DiaryRecipeEditScreen(
                     OutlinedTextField(
                         value = state.finalWeight,
                         onValueChange = { onAction(DiaryRecipeEditAction.OnFinalWeightChange(it)) },
+                        isError = state.numberError != null,
+                        singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text(stringResource(CoreR.string.recipe_editor_final_weight_hint)) },
                     )
@@ -241,6 +237,8 @@ fun DiaryRecipeEditScreen(
                         value = state.amountText,
                         onValueChange = { onAction(DiaryRecipeEditAction.OnAmountChange(it)) },
                         modifier = Modifier.fillMaxWidth(),
+                        isError = state.amountError != null,
+                        singleLine = true,
                         label = { Text(stringResource(R.string.diary_recipe_edit_logged_amount)) },
                     )
                 }
@@ -255,6 +253,9 @@ fun DiaryRecipeEditScreen(
                     Text(stringResource(CoreR.string.recipe_editor_save))
                 }
                 state.saveError?.let {
+                    Text(it.asString(), color = MaterialTheme.colorScheme.error)
+                }
+                state.numberError?.let {
                     Text(it.asString(), color = MaterialTheme.colorScheme.error)
                 }
                 state.amountError?.let {

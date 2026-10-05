@@ -7,6 +7,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isGreaterThan
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
@@ -28,6 +29,7 @@ import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCa
 import com.example.ezmakro.feature.diary.presentation.fake.FakeDiaryRepository
 import com.example.ezmakro.feature.diary.presentation.fake.FakeFoodRepository
 import com.example.ezmakro.feature.diary.presentation.fake.FakeRecipeRepository
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -283,46 +285,31 @@ class DiaryRecipeEditViewModelTest {
 
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientClick)
         assertThat(vm.state.value.isAddPickerOpen).isTrue()
-        assertThat(vm.state.value.replaceIngredientIndex).isNull()
 
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null))
 
         val state = vm.state.value
         assertThat(state.ingredients).hasSize(2)
         assertThat(state.ingredients.last().foodName).isEqualTo("Tomatenmark")
-        assertThat(state.replaceIngredientIndex).isNull()
         // A draft without an amount is not buildable yet.
         assertThat(state.ingredientError).isNotNull()
     }
 
+    /**
+     * Der Editor kennt kein Ersetzen: Zutaten werden entfernt und neu hinzugefügt.
+     */
     @Test
-    fun `adding an ingredient after replace swaps it at the same index`() {
+    fun `replacing an ingredient is done by removing it and adding it again`() {
         val vm = viewModel()
 
-        vm.onAction(DiaryRecipeEditAction.OnReplaceIngredient(0))
-        assertThat(vm.state.value.isAddPickerOpen).isTrue()
-        assertThat(vm.state.value.replaceIngredientIndex).isEqualTo(0)
-
-        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null))
-
-        val state = vm.state.value
-        assertThat(state.ingredients).hasSize(1)
-        assertThat(state.ingredients.first().foodName).isEqualTo("Tomatenmark")
-        assertThat(state.replaceIngredientIndex).isNull()
-    }
-
-    @Test
-    fun `a new add after replace appends instead of replacing`() {
-        val vm = viewModel()
-
-        vm.onAction(DiaryRecipeEditAction.OnReplaceIngredient(0))
+        vm.onAction(DiaryRecipeEditAction.OnRemoveIngredient(0))
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientClick)
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null))
 
-        assertThat(
+        val names =
             vm.state.value.ingredients
-                .map { it.foodName },
-        ).isEqualTo(listOf("Bulgur", "Tomatenmark"))
+                .map { it.foodName }
+        assertThat(names).isEqualTo(listOf("Tomatenmark"))
     }
 
     @Test
@@ -518,5 +505,107 @@ class DiaryRecipeEditViewModelTest {
         recipeRepo.clearRecipes()
 
         assertThat(vm.state.value.canUpdateRecipe).isFalse()
+    }
+
+    @Test
+    fun `an older live recipe is not flagged as outdated`() {
+        val vm = viewModel()
+
+        // Backup-Restore oder Uhrenwechsel: das Live-Rezept ist älter als der Snapshot.
+        recipeRepo.emitRecipe(baseRecipe.copy(lastModifiedAt = 1L))
+
+        assertThat(vm.state.value.isSourceRecipeOutdated).isFalse()
+    }
+
+    /**
+     * Regression: emittieren die Quell-Flows, bevor `getById` antwortet, blieb
+     * `canUpdateRecipe` dauerhaft `false` — die dauerhafte Änderung war damit
+     * unerreichbar. Siehe Bugfix-Commit.
+     */
+    @Test
+    fun `sources emitting before the entry loads still allow a permanent recipe update`() =
+        runTest(testDispatcher) {
+            val gate = CompletableDeferred<Unit>()
+            diaryRepo.getByIdGate = gate
+            val vm = viewModel()
+
+            // Quell-Flows haben emittiert, der Eintrag ist noch nicht geladen.
+            gate.complete(Unit)
+            testScheduler.advanceUntilIdle()
+
+            val state = vm.state.value
+            assertThat(state.sourceRecipeId).isEqualTo(baseRecipe.id.value)
+            assertThat(state.canUpdateRecipe).isTrue()
+            assertThat(state.isSourceRecipeOutdated).isFalse()
+        }
+
+    /**
+     * Regression: `0` in Portionen threw `require(portions > 0)` und riss die App
+     * bei jedem Tastendruck mit.
+     */
+    @Test
+    fun `zero portions does not crash and blocks saving`() {
+        val vm = viewModel()
+
+        vm.onAction(DiaryRecipeEditAction.OnPortionsChange("0"))
+
+        assertThat(vm.state.value.consumedNutrition.kcal).isGreaterThan(0.0)
+
+        vm.onAction(DiaryRecipeEditAction.OnSaveClick)
+        val state = vm.state.value
+        assertThat(state.numberError).isNotNull()
+        assertThat(state.isSaveScopeDialogOpen).isFalse()
+    }
+
+    /** Regression: `FinalWeight` fordert `grams > 0` — `0` crashte ebenso. */
+    @Test
+    fun `zero final weight does not crash and blocks saving`() {
+        val vm = viewModel()
+
+        vm.onAction(DiaryRecipeEditAction.OnFinalWeightChange("0"))
+
+        assertThat(vm.state.value.consumedNutrition.kcal).isGreaterThan(0.0)
+
+        vm.onAction(DiaryRecipeEditAction.OnSaveClick)
+        val state = vm.state.value
+        assertThat(state.numberError).isNotNull()
+        assertThat(state.isSaveScopeDialogOpen).isFalse()
+    }
+
+    @Test
+    fun `a blank final weight is accepted because the field is optional`() {
+        val vm = viewModel()
+        vm.onAction(DiaryRecipeEditAction.OnFinalWeightChange(""))
+
+        vm.onAction(DiaryRecipeEditAction.OnSaveClick)
+
+        assertThat(vm.state.value.isSaveScopeDialogOpen).isTrue()
+    }
+
+    /** Regression: `parseNonNegativeDouble` akzeptierte `1,5`, `toDoubleOrNull` nicht. */
+    @Test
+    fun `a german decimal comma is accepted in the amount field`() {
+        val vm = viewModel()
+        // 100 kcal gesamt, 2 Portionen -> 50 kcal pro Portion.
+        vm.onAction(DiaryRecipeEditAction.OnAmountChange("1,5"))
+
+        assertThat(vm.state.value.consumedNutrition.kcal).isEqualTo(75.0)
+
+        vm.onAction(DiaryRecipeEditAction.OnSaveClick)
+
+        assertThat(vm.state.value.amountError).isNull()
+        assertThat(vm.state.value.isSaveScopeDialogOpen).isTrue()
+    }
+
+    @Test
+    fun `a fractional portion count is rejected because portions must be whole`() {
+        val vm = viewModel()
+
+        vm.onAction(DiaryRecipeEditAction.OnPortionsChange("2,5"))
+        vm.onAction(DiaryRecipeEditAction.OnSaveClick)
+
+        val state = vm.state.value
+        assertThat(state.numberError).isNotNull()
+        assertThat(state.isSaveScopeDialogOpen).isFalse()
     }
 }

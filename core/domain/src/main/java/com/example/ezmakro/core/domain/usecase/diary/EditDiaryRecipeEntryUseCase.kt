@@ -97,15 +97,27 @@ class EditDiaryRecipeEntryUseCase(
                 is Result.Error -> return Result.Error(result.error)
                 is Result.Success -> result.data
             }
-        // Ein Zeitstempel für beide Schreibvorgänge: unterschiedliche Werte würden
-        // sofort ein falsches "Rezept geändert" anzeigen.
-        val now = System.currentTimeMillis()
+        // `lastModifiedAt` nur bei echter inhaltlicher Änderung. Ein blindes `now`
+        // würde allen anderen Tagebucheinträgen desselben Rezepts fälschlich ein
+        // "Rezept geändert"-Badge zeigen, obwohl nur die Menge dieses Eintrags
+        // angepasst wurde. Der Zeitstempel des gespeicherten Snapshots muss
+        // weiterhin mit dem Live-Rezept übereinstimmen, damit dieser Eintrag
+        // selbst kein Badge bekommt.
+        val contentChanged =
+            live.ingredients != editedRecipe.ingredients ||
+                live.portions != editedRecipe.portions ||
+                live.finalWeight != editedRecipe.finalWeight
         val saved =
             live.copy(
                 ingredients = editedRecipe.ingredients,
                 portions = editedRecipe.portions,
                 finalWeight = editedRecipe.finalWeight,
-                lastModifiedAt = now,
+                lastModifiedAt =
+                    if (contentChanged) {
+                        System.currentTimeMillis()
+                    } else {
+                        live.lastModifiedAt
+                    },
             )
         return recipeRepository.save(saved).map {
             ResolvedSnapshot(saved, isRecipeOverridden = false)

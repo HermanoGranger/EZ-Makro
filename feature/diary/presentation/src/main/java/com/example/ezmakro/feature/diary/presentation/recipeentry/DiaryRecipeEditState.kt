@@ -28,7 +28,6 @@ data class DiaryRecipeEditState(
     val originalConsumedNutrition: NutritionValues = NutritionValues.ZERO,
     val consumedNutrition: NutritionValues = NutritionValues.ZERO,
     val expandedIngredientIndex: Int? = null,
-    val replaceIngredientIndex: Int? = null,
     val isAddPickerOpen: Boolean = false,
     val isSaving: Boolean = false,
     val amountError: UiText? = null,

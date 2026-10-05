@@ -56,7 +56,6 @@
     <string name="diary_recipe_edit_scope_recipe">Rezept dauerhaft ändern</string>
     <string name="diary_recipe_edit_scope_recipe_hint">Änderungen werden in das ursprüngliche Rezept übernommen</string>
     <string name="diary_recipe_edit_ingredients_action">Zutaten</string>
-    <string name="diary_recipe_edit_replace_hint">Zum Ersetzen: Zutat entfernen und neu hinzufügen</string>
     <string name="diary_recipe_edit_info_recipe_outdated">Das Quellrezept wurde inzwischen geändert</string>
     <string name="diary_recipe_edit_info_recipe_deleted">Das Quellrezept wurde gelöscht</string>
     <string name="diary_recipe_edit_picker_recipe_not_allowed">Rezepte können nicht als Zutat hinzugefügt werden</string>
@@ -72,6 +71,7 @@
     <string name="diary_recipe_edit_amount_mode_grams">Gramm</string>
     <string name="diary_recipe_edit_scope_confirm">Übernehmen</string>
     <string name="diary_recipe_edit_error_amount_invalid">Menge muss größer als 0 sein</string>
+    <string name="diary_recipe_edit_error_number_invalid">Ungültiger Wert</string>
     <string name="diary_recipe_edit_badge_day_override">Tagesanpassung</string>
     <string name="diary_recipe_edit_badge_recipe_changed">Rezept geändert</string>
 </resources>

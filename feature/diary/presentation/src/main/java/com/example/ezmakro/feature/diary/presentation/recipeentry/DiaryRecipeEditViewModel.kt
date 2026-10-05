@@ -23,7 +23,11 @@ import com.example.ezmakro.core.domain.usecase.diary.DiaryRecipeEditScope
 import com.example.ezmakro.core.domain.usecase.diary.EditDiaryRecipeEntryUseCase
 import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
 import com.example.ezmakro.core.domain.usecase.recipe.RecipeDraftError
-import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
+import com.example.ezmakro.core.domain.util.NumberInput
+import com.example.ezmakro.core.domain.util.isAccepted
+import com.example.ezmakro.core.domain.util.parsePortionsInput
+import com.example.ezmakro.core.domain.util.parsePositiveDecimalInput
+import com.example.ezmakro.core.domain.util.valueOrNull
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.uitext.toUiText
 import com.example.ezmakro.feature.diary.presentation.R
@@ -55,7 +59,7 @@ class DiaryRecipeEditViewModel(
     private val _state = MutableStateFlow(DiaryRecipeEditState(entryId = entryId))
     val state: StateFlow<DiaryRecipeEditState> = _state.asStateFlow()
 
-    private val _events = Channel<DiaryRecipeEditEvent>()
+    private val _events = Channel<DiaryRecipeEditEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
     private var hasSeeded = false
@@ -81,7 +85,6 @@ class DiaryRecipeEditViewModel(
                     action.value,
                 )
             is DiaryRecipeEditAction.OnRemoveIngredient -> onRemoveIngredient(action.index)
-            is DiaryRecipeEditAction.OnReplaceIngredient -> onReplaceIngredient(action.index)
             is DiaryRecipeEditAction.OnAddIngredientClick -> onAddIngredientClick()
             is DiaryRecipeEditAction.OnAddIngredientWithData ->
                 onAddIngredientWithData(
@@ -154,6 +157,31 @@ class DiaryRecipeEditViewModel(
         }
         applySavedStateHandle()
         recompute()
+        // `loadEntry()` und die Quell-Flows laufen unabhängig voneinander. Emittieren
+        // die Flows, bevor der Eintrag geladen ist, wurde `canUpdateRecipe` nie neu
+        // berechnet und die dauerhafte Änderung bliebe für immer gesperrt.
+        applySourceRecipeState()
+    }
+
+    /**
+     * Leitet Verfügbarkeit und Alterungs-Status des Quellrezepts aus dem geladenen
+     * Snapshot und der zuletzt gesehenen Rezeptliste ab.
+     *
+     * Wird sowohl nach dem Seeding als auch bei jeder Rezept-Emission aufgerufen,
+     * damit die Reihenfolge von `getById` und `observeAll()` keine Rolle spielt.
+     */
+    private fun applySourceRecipeState() {
+        val sourceId = _state.value.sourceRecipeId ?: return
+        val snapshotAt = loadedEntry?.recipe?.lastModifiedAt ?: 0L
+        val live = recipesState.firstOrNull { it.id.value == sourceId }
+        _state.update {
+            it.copy(
+                canUpdateRecipe = live != null,
+                // Nur ein *neueres* Live-Rezept gilt als geändert — ein älterer
+                // Zeitstempel (Backup-Restore, Uhrenwechsel) ist kein Update.
+                isSourceRecipeOutdated = live != null && live.lastModifiedAt > snapshotAt,
+            )
+        }
     }
 
     private fun applySavedStateHandle() {
@@ -183,21 +211,9 @@ class DiaryRecipeEditViewModel(
             .observeAll()
             .onEach { recipes ->
                 recipesState = recipes
-                val sourceId = _state.value.sourceRecipeId
-                val canUpdate = sourceId != null && recipes.any { it.id.value == sourceId }
-                val outdated =
-                    sourceId != null &&
-                        recipes.any { r ->
-                            r.id.value == sourceId && loadedEntry?.recipe?.lastModifiedAt != r.lastModifiedAt
-                        }
+                applySourceRecipeState()
                 val drafts = _state.value.ingredients.markChangedRecipeSnapshots(recipes)
-                _state.update {
-                    it.copy(
-                        canUpdateRecipe = canUpdate,
-                        isSourceRecipeOutdated = outdated,
-                        ingredients = drafts,
-                    )
-                }
+                _state.update { it.copy(ingredients = drafts) }
                 recompute()
             }.launchIn(viewModelScope)
     }
@@ -235,34 +251,27 @@ class DiaryRecipeEditViewModel(
         }
     }
 
-    private fun onReplaceIngredient(index: Int) {
-        _state.update { it.copy(replaceIngredientIndex = index, isAddPickerOpen = true) }
-    }
-
     private fun onAddIngredientClick() {
-        _state.update { it.copy(replaceIngredientIndex = null, isAddPickerOpen = true) }
+        _state.update { it.copy(isAddPickerOpen = true) }
     }
 
+    /**
+     * Hängt eine neue Zutat an — Ersetzen kennt der Editor nicht, der Nutzer
+     * entfernt die Zutat und fügt sie neu hinzu.
+     */
     private fun onAddIngredientWithData(
         foodId: String,
         foodName: String,
         servingLabel: String?,
     ) {
-        val list = _state.value.ingredients.toMutableList()
-        val replaceIndex = _state.value.replaceIngredientIndex
-        val draft =
-            RecipeIngredientDraft(
-                foodId = foodId,
-                foodName = foodName,
-                servingLabel = servingLabel,
-            )
-        if (replaceIndex != null && replaceIndex in list.indices) {
-            list[replaceIndex] = draft
-            _state.update { it.copy(ingredients = list, replaceIngredientIndex = null, ingredientError = null) }
-        } else {
-            list.add(draft)
-            _state.update { it.copy(ingredients = list, replaceIngredientIndex = null, ingredientError = null) }
-        }
+        val list =
+            _state.value.ingredients +
+                RecipeIngredientDraft(
+                    foodId = foodId,
+                    foodName = foodName,
+                    servingLabel = servingLabel,
+                )
+        _state.update { it.copy(ingredients = list, ingredientError = null) }
         recompute()
     }
 
@@ -295,14 +304,23 @@ class DiaryRecipeEditViewModel(
     }
 
     private fun onSaveClick() {
-        val amountValid =
-            _state.value.amountText.parseNonNegativeDouble() != null &&
-                _state.value.amountText.toDoubleOrNull() != null &&
-                _state.value.amountText.toDouble() > 0.0
-        if (!amountValid) {
+        // Menge und Portionen sind Pflichtfelder: `Empty` ist hier kein gültiger Wert.
+        // Das Endgewicht bleibt optional.
+        val amount = _state.value.amountText.parsePositiveDecimalInput()
+        val portions = _state.value.portions.parsePortionsInput()
+        val finalWeight = _state.value.finalWeight.parsePositiveDecimalInput()
+        if (amount !is NumberInput.Valid) {
             _state.update {
                 it.copy(
                     amountError = UiText.StringResource(R.string.diary_recipe_edit_error_amount_invalid),
+                )
+            }
+            return
+        }
+        if (portions !is NumberInput.Valid || !finalWeight.isAccepted) {
+            _state.update {
+                it.copy(
+                    numberError = UiText.StringResource(R.string.diary_recipe_edit_error_number_invalid),
                 )
             }
             return
@@ -334,19 +352,11 @@ class DiaryRecipeEditViewModel(
         ingredients: List<RecipeIngredient>,
         scope: DiaryRecipeEditScope,
     ) {
-        val editedRecipe =
-            createEditedRecipe(
-                ingredients = ingredients,
-                portions =
-                    _state.value.portions
-                        .parseNonNegativeDouble()
-                        ?.toInt() ?: 1,
-                finalWeight =
-                    _state.value.finalWeight
-                        .parseNonNegativeDouble()
-                        ?.let(::FinalWeight),
-            )
-        val amount = _state.value.amountText.toDoubleOrNull()
+        val editedRecipe = editedRecipeFromState(ingredients)
+        val amount =
+            _state.value.amountText
+                .parsePositiveDecimalInput()
+                .valueOrNull
         viewModelScope.launch {
             val saveResult =
                 editDiaryRecipeEntryUseCase(
@@ -415,24 +425,16 @@ class DiaryRecipeEditViewModel(
 
     private fun computeConsumedForCurrent(ingredients: List<RecipeIngredient>): NutritionValues {
         val entry = loadedEntry
-        val amount = _state.value.amountText.toDoubleOrNull()
+        val amount =
+            _state.value.amountText
+                .parsePositiveDecimalInput()
+                .valueOrNull
         // Ohne Eintrag, Zutaten oder gültige Menge gibt es nichts zu berechnen:
         // `DiaryEntry` verlangt genau eine der beiden Mengenangaben.
         return if (entry != null && ingredients.isNotEmpty() && amount != null) {
             entry
                 .copy(
-                    recipe =
-                        createEditedRecipe(
-                            ingredients = ingredients,
-                            portions =
-                                _state.value.portions
-                                    .parseNonNegativeDouble()
-                                    ?.toInt() ?: 1,
-                            finalWeight =
-                                _state.value.finalWeight
-                                    .parseNonNegativeDouble()
-                                    ?.let(::FinalWeight),
-                        ),
+                    recipe = editedRecipeFromState(ingredients),
                     amountGrams = if (_state.value.amountMode == DiaryAmountMode.GRAMS) amount else null,
                     portionCount = if (_state.value.amountMode == DiaryAmountMode.PORTIONS) amount else null,
                 ).consumedNutrition()
@@ -440,6 +442,31 @@ class DiaryRecipeEditViewModel(
             NutritionValues.ZERO
         }
     }
+
+    /**
+     * Baut das bearbeitete Rezept aus dem aktuellen Formularzustand.
+     *
+     * Zwischenwerte wie `0`, `-` oder ein leeres Portionen-Feld dürfen das
+     * Domain-Modell nicht verletzen — `Recipe` fordert `portions > 0` und
+     * `FinalWeight` fordert `grams > 0.0`. Für die Live-Vorschau greifen deshalb
+     * sichere Ausweichwerte; `onSaveClick` verweigert anschließend das
+     * Speichern ungültiger Eingaben.
+     */
+    private fun editedRecipeFromState(ingredients: List<RecipeIngredient>): Recipe =
+        createEditedRecipe(
+            ingredients = ingredients,
+            portions =
+                _state.value.portions
+                    .parsePortionsInput()
+                    .valueOrNull
+                    ?.toInt()
+                    ?.coerceAtLeast(1) ?: 1,
+            finalWeight =
+                _state.value.finalWeight
+                    .parsePositiveDecimalInput()
+                    .valueOrNull
+                    ?.let(::FinalWeight),
+        )
 
     private fun createEditedRecipe(
         ingredients: List<RecipeIngredient>,

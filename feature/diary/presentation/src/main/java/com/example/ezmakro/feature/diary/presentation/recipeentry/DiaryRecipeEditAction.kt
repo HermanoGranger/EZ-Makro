@@ -17,10 +17,6 @@ sealed interface DiaryRecipeEditAction {
         val index: Int,
     ) : DiaryRecipeEditAction
 
-    data class OnReplaceIngredient(
-        val index: Int,
-    ) : DiaryRecipeEditAction
-
     data object OnAddIngredientClick : DiaryRecipeEditAction
 
     data class OnAddIngredientWithData(

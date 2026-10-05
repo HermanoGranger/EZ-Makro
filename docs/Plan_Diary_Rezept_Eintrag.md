@@ -93,8 +93,9 @@ Haferflocken-Müsli                    [Tagesanpassung]
 2. **Hinweiszeile** bei inzwischen geändertem Rezept und bei gelöschtem Quellrezept.
 3. **Summenzeile** der Zutatenernährung — identische Komponente wie im Rezept-Editor (A1).
 4. **Zutatenliste** — pro Zeile: Name, Rohgewicht-Feld, Anzahl-Feld (wenn
-   `servingLabel != null`), kcal, aufklappbar alle Makros. Pro Zeile: „Ersetzen"
-   (andere Marke) und „Entfernen". Darunter „Zutat hinzufügen".
+   `servingLabel != null`), kcal, aufklappbar alle Makros. Pro Zeile: „Entfernen".
+   Darunter „Zutat hinzufügen". **Kein „Ersetzen"** — der Nutzer entfernt eine
+   Zutat und fügt sie neu hinzu (siehe Bugfix-Commit).
 5. **„Erweitert"** (ausklappbar) — Portionen, finales Endgewicht.
 6. **Menge im Tagebuch** — Umschalter Portionen/Gramm wie im Rezeptdetail.
 7. **Speichern** → Dialog „Änderung übernehmen" mit zwei Optionen:
@@ -792,7 +793,6 @@ Save-Scope-Dialog und Anbindung an die Tagebuch-Zeile.
        val originalConsumedNutrition: NutritionValues = NutritionValues.ZERO,
        val consumedNutrition: NutritionValues = NutritionValues.ZERO,
        val expandedIngredientIndex: Int? = null,
-       val replaceIngredientIndex: Int? = null,
        val isAddPickerOpen: Boolean = false,
        val isSaving: Boolean = false,
        val amountError: UiText? = null,
@@ -805,7 +805,7 @@ Save-Scope-Dialog und Anbindung an die Tagebuch-Zeile.
 3. **Action/Event definieren.** Action:
    `OnIngredientRawWeightChange(index, value)`,
    `OnIngredientServingCountChange(index, value)`,
-   `OnRemoveIngredient(index)`, `OnReplaceIngredient(index)`,
+   `OnRemoveIngredient(index)`,
    `OnAddIngredientClick`, `OnIngredientClick(index)`,
    `OnAmountModeChange(mode)`, `OnAmountChange(value)`,
    `OnPortionsChange(value)`, `OnFinalWeightChange(value)`,
@@ -852,11 +852,8 @@ Save-Scope-Dialog und Anbindung an die Tagebuch-Zeile.
    3. Hinweis `!canUpdateRecipe` → `diary_recipe_edit_info_recipe_deleted`.
    4. `RecipeNutritionTotal(totalNutrition = state.totalNutrition, label = stringResource(CoreR.string.recipe_detail_total))`.
    5. `RecipeIngredientList(...)` aus `core:presentation`; `onAddIngredient` öffnet
-      den Picker im Modus „hinzufügen". Für „Ersetzen" zusätzlich einen
-      `TextButton` „Ersetzen" in der Zeile — falls `RecipeIngredientList` aus WP2
-      keinen Ersetzen-Hook hat, wird die Zeile **nicht** umgebaut, sondern das
-      Ersetzen über Entfernen + Hinzufügen bedient und im UI-Text
-      (`diary_recipe_edit_replace_hint`) erklärt. Diese Abweichung im WP melden.
+      den Picker im Modus „hinzufügen". Die Zeile wird **nicht** umgebaut: Es gibt
+      bewusst keinen Ersetzen-Hook — Zutaten werden entfernt und neu hinzugefügt.
    6. Portionen-Feld, Endgewicht-Feld.
    7. Amount-Umschalter (Portionen/Gramm) + Feld.
    8. Speichern-Button (`enabled = !state.isSaving`), `saveError` darunter.
@@ -866,8 +863,8 @@ Save-Scope-Dialog und Anbindung an die Tagebuch-Zeile.
    - `FoodPickerSheet` mit `FoodPickerTarget.RECIPE_INGREDIENT` und
      `onAddAsIngredient = { id, name, servingLabel, isRecipe -> … }`:
      `isRecipe == true` → `ShowMessage(diary_recipe_edit_picker_recipe_not_allowed)`
-     und Picker schließen; sonst `OnAddIngredientClick`-Analogon für
-     `replaceIngredientIndex` (ersetzen) bzw. anhängen.
+     und Picker schließen; sonst `OnAddIngredientWithData(...)` — die gewählte
+     Zutat wird immer angehängt.
 6. **Shared-UI-Erweiterung (Einstiegspunkt).**
    - `DiaryEntryDetailData`: `val isRecipe: Boolean = false`
    - `DiaryEntryDetail`: neuer optionaler Parameter
@@ -918,7 +915,7 @@ Save-Scope-Dialog und Anbindung an die Tagebuch-Zeile.
    `diary_recipe_edit_amount_mode_label`, `diary_recipe_edit_save_scope_title`,
    `diary_recipe_edit_scope_entry_only`, `diary_recipe_edit_scope_entry_only_hint`,
    `diary_recipe_edit_scope_recipe`, `diary_recipe_edit_scope_recipe_hint`,
-   `diary_recipe_edit_ingredients_action`, `diary_recipe_edit_replace_hint`,
+   `diary_recipe_edit_ingredients_action`,
    `diary_recipe_edit_info_recipe_outdated`, `diary_recipe_edit_info_recipe_deleted`,
    `diary_recipe_edit_picker_recipe_not_allowed`,
    `diary_recipe_edit_error_unknown_food`, `diary_recipe_edit_error_missing_snapshot`,

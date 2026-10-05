@@ -18,8 +18,10 @@ import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.recipe.BuildRecipeFromDraftsUseCase
-import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
+import com.example.ezmakro.core.domain.util.NumberInput
+import com.example.ezmakro.core.domain.util.parsePositiveDecimalInput
 import com.example.ezmakro.core.domain.util.parsePositiveInt
+import com.example.ezmakro.core.domain.util.valueOrNull
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
@@ -380,7 +382,10 @@ class RecipeEditorViewModel(
 
     private fun parseSaveInput(s: RecipeEditorState): ParsedSaveInput? {
         val portions = s.portions.parsePositiveInt()
-        if (portions == null) {
+        // `FinalWeight` fordert `grams > 0` — `0` muss als Fehler enden, nicht als
+        // `require`-Verletzung. Ein leeres Feld bleibt ein optionaler Wert.
+        val finalWeight = s.finalWeight.parsePositiveDecimalInput()
+        if (portions == null || finalWeight is NumberInput.Invalid) {
             _state.update {
                 it.copy(
                     isSaving = false,
@@ -389,8 +394,10 @@ class RecipeEditorViewModel(
             }
             return null
         }
-        val fwRaw = s.finalWeight.parseNonNegativeDouble()
-        return ParsedSaveInput(portions, fwRaw?.let { FinalWeight(it) })
+        return ParsedSaveInput(
+            portions = portions,
+            finalWeight = finalWeight.valueOrNull?.let { FinalWeight(it) },
+        )
     }
 
     private fun buildRecipe(

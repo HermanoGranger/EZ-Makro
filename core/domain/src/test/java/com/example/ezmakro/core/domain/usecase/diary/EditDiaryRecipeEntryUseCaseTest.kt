@@ -369,6 +369,47 @@ class EditDiaryRecipeEntryUseCaseTest {
             assertThat(log).isEqualTo(listOf("recipe", "diary"))
         }
 
+    /**
+     * Regression: `lastModifiedAt` wurde bei jeder permanenten Änderung auf `now`
+     * gesetzt — auch wenn nur die Menge des Eintrags angepasst wurde. Alle
+     * anderen Tagebucheinträge desselben Rezepts zeigten dadurch fälschlich
+     * "Rezept geändert".
+     */
+    @Test
+    fun `recipe and entry keeps the timestamp when only the amount was changed`() =
+        runBlocking {
+            val (_, diary, recipeRepository) = fakes()
+
+            edit(
+                diary,
+                recipeRepository,
+                // Inhaltlich identisch zum Live-Rezept, nur der Zeitstempel ist der Snapshot.
+                edited = liveRecipe.copy(lastModifiedAt = snapshotModifiedAt),
+                scope = DiaryRecipeEditScope.RECIPE_AND_ENTRY,
+            )
+
+            val savedRecipe = recipeRepository.saved!!
+            assertThat(savedRecipe.lastModifiedAt).isEqualTo(liveModifiedAt)
+            assertThat(savedRecipe.ingredients).isEqualTo(liveRecipe.ingredients)
+            assertThat(savedRecipe.portions).isEqualTo(liveRecipe.portions)
+            assertThat(savedRecipe.finalWeight).isEqualTo(liveRecipe.finalWeight)
+        }
+
+    @Test
+    fun `recipe and entry bumps the timestamp when the final weight changed`() =
+        runBlocking {
+            val (_, diary, recipeRepository) = fakes()
+
+            edit(
+                diary,
+                recipeRepository,
+                edited = editedRecipe.copy(ingredients = liveRecipe.ingredients, portions = liveRecipe.portions),
+                scope = DiaryRecipeEditScope.RECIPE_AND_ENTRY,
+            )
+
+            assertThat(recipeRepository.saved!!.lastModifiedAt).isGreaterThan(liveModifiedAt)
+        }
+
     @Test
     fun `sub recipe snapshot inside the edited recipe survives`() =
         runBlocking {
