@@ -52,6 +52,7 @@ class DiaryRecipeEditScreenTest {
         amountText: String = "1",
         ingredientError: com.example.ezmakro.core.presentation.uitext.UiText? = null,
         amountError: com.example.ezmakro.core.presentation.uitext.UiText? = null,
+        numberError: com.example.ezmakro.core.presentation.uitext.UiText? = null,
         saveError: com.example.ezmakro.core.presentation.uitext.UiText? = null,
         isSaveScopeDialogOpen: Boolean = false,
     ) = DiaryRecipeEditState(
@@ -73,6 +74,7 @@ class DiaryRecipeEditScreenTest {
         consumedNutrition = consumed,
         ingredientError = ingredientError,
         amountError = amountError,
+        numberError = numberError,
         saveError = saveError,
         isSaveScopeDialogOpen = isSaveScopeDialogOpen,
     )
@@ -133,7 +135,7 @@ class DiaryRecipeEditScreenTest {
     }
 
     @Test
-    fun replaceFallsBackToRemoveAndAdd_becauseListHasNoHook() {
+    fun theIngredientListOffersNoReplaceAffordance() {
         setContent(
             state(
                 ingredients = listOf(draft("f1", "Bulgur", "100"), draft("f2", "Tomatenmark", "75")),
@@ -145,11 +147,12 @@ class DiaryRecipeEditScreenTest {
             ),
         )
 
-        composeTestRule
-            .onNodeWithText("Zum Ersetzen: Zutat entfernen und neu hinzufügen")
-            .performScrollTo()
-            .assertIsDisplayed()
+        // Ersetzen kennt der Editor nicht: Zutaten werden entfernt und neu
+        // hinzugefügt. Weder ein Button noch ein erklärender Hinweistext.
         composeTestRule.onAllNodesWithText("Ersetzen").assertCountEquals(0)
+        composeTestRule
+            .onAllNodesWithText("Zum Ersetzen: Zutat entfernen und neu hinzufügen")
+            .assertCountEquals(0)
     }
 
     @Test
@@ -182,6 +185,10 @@ class DiaryRecipeEditScreenTest {
                     UiText.DynamicString(
                         "Menge muss größer als 0 sein",
                     ),
+                numberError =
+                    UiText.DynamicString(
+                        "Ungültiger Wert",
+                    ),
                 saveError =
                     UiText.DynamicString(
                         "Fehler beim Speichern",
@@ -191,6 +198,7 @@ class DiaryRecipeEditScreenTest {
 
         composeTestRule.onNodeWithText("Zutat braucht Rohgewicht oder Anzahl").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Menge muss größer als 0 sein").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ungültiger Wert").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Fehler beim Speichern").performScrollTo().assertIsDisplayed()
     }
 

@@ -80,7 +80,7 @@ fun NavGraphBuilder.diaryGraph(
         )
         quickAddComposable(navController)
         historyComposable(navController)
-        recipeEditComposable(navController)
+        recipeEditComposable(navController, onNavigateToFoodCreate)
     }
 }
 
@@ -157,7 +157,10 @@ private fun NavGraphBuilder.historyComposable(navController: NavHostController) 
     }
 }
 
-private fun NavGraphBuilder.recipeEditComposable(navController: NavHostController) {
+private fun NavGraphBuilder.recipeEditComposable(
+    navController: NavHostController,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit,
+) {
     composable(
         route = "$ROUTE_DIARY_RECIPE_EDIT/{$ROUTE_DIARY_RECIPE_EDIT_PARAM_ENTRY_ID}",
         arguments =
@@ -172,6 +175,7 @@ private fun NavGraphBuilder.recipeEditComposable(navController: NavHostControlle
             entryId = entryId,
             onSaved = { navController.popBackStack() },
             onNavigateBack = { navController.popBackStack() },
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
         )
     }
 }

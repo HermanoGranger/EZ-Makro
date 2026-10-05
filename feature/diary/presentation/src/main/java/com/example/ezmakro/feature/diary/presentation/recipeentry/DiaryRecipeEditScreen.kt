@@ -58,6 +58,7 @@ fun DiaryRecipeEditRoot(
     entryId: String,
     onSaved: () -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
     viewModel: DiaryRecipeEditViewModel = koinViewModel { parametersOf(entryId) },
 ) {
     val scope = rememberCoroutineScope()
@@ -80,6 +81,7 @@ fun DiaryRecipeEditRoot(
         state = state,
         snackbarHostState = snackbarHostState,
         onAction = viewModel::onAction,
+        onNavigateToFoodCreate = onNavigateToFoodCreate,
     )
 }
 
@@ -90,6 +92,7 @@ fun DiaryRecipeEditScreen(
     state: DiaryRecipeEditState,
     onAction: (DiaryRecipeEditAction) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -291,7 +294,7 @@ fun DiaryRecipeEditScreen(
                 onAction(DiaryRecipeEditAction.OnDismissPicker)
             },
             onAddToDiary = { _, _, _, _, _, _ -> },
-            onNavigateToFoodCreate = {},
+            onNavigateToFoodCreate = onNavigateToFoodCreate,
             onDismiss = { onAction(DiaryRecipeEditAction.OnDismissPicker) },
         )
     }
