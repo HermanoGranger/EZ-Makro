@@ -29,4 +29,5 @@ val databaseModule =
         single { get<EZDatabase>().recipeDao() }
         single { get<EZDatabase>().diaryEntryDao() }
         single { get<EZDatabase>().weightLogDao() }
+        single { get<EZDatabase>().backupDao() }
     }

@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.ezmakro.core.database.converter.JsonConverters
 import com.example.ezmakro.core.database.converter.ScalarConverters
+import com.example.ezmakro.core.database.dao.BackupDao
 import com.example.ezmakro.core.database.dao.DiaryEntryDao
 import com.example.ezmakro.core.database.dao.FoodItemDao
 import com.example.ezmakro.core.database.dao.RecipeDao
@@ -68,6 +69,8 @@ abstract class EZDatabase : RoomDatabase() {
     abstract fun diaryEntryDao(): DiaryEntryDao
 
     abstract fun weightLogDao(): WeightLogDao
+
+    abstract fun backupDao(): BackupDao
 
     companion object {
         const val DB_NAME = "ez_makro.db"
