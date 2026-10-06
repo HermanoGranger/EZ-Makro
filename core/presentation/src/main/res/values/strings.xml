@@ -12,6 +12,8 @@
     <string name="error_service_unavailable">Der Dienst ist gerade überlastet – bitte versuche es später erneut</string>
     <string name="error_serialization">Daten konnten nicht gelesen werden</string>
     <string name="error_disk_full">Speicherplatz ist voll</string>
+    <string name="error_invalid_backup">Die Datei ist kein gültiges EZ-Makro-Backup</string>
+    <string name="error_unsupported_backup_version">Dieses Backup stammt aus einer neueren App-Version</string>
     <string name="error_unknown">Ein unbekannter Fehler ist aufgetreten</string>
 
     <string name="diary_add_food_title">Lebensmittel hinzufügen</string>

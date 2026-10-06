@@ -23,7 +23,13 @@ sealed interface DataError : Error {
 
     enum class Local : DataError {
         DISK_FULL,
+
+        /** The selected file is not a readable EZ Makro backup (§3.4 stage 1/2). */
+        INVALID_BACKUP,
         NOT_FOUND,
         UNKNOWN,
+
+        /** The archive's `formatVersion` is newer than this app understands (A2). */
+        UNSUPPORTED_BACKUP_VERSION,
     }
 }

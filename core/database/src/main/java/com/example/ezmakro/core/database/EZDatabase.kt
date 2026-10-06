@@ -74,5 +74,17 @@ abstract class EZDatabase : RoomDatabase() {
 
     companion object {
         const val DB_NAME = "ez_makro.db"
+
+        /**
+         * Room schema version of [EZDatabase], kept next to the `version =`
+         * declaration so both can never drift apart.
+         *
+         * Written into every backup as the purely informational
+         * `dbSchemaVersion` field (A2): the import never branches on it —
+         * `formatVersion` of the backup document decides whether a file can be
+         * imported. Exposed as a constant because `:core:data` deliberately
+         * has no `room-runtime` dependency to read `openHelper` from.
+         */
+        const val SCHEMA_VERSION = 9
     }
 }

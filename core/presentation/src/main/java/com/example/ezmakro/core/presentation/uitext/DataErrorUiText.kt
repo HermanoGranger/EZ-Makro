@@ -25,8 +25,10 @@ fun DataError.toUiText(): UiText {
             DataError.Network.BAD_REQUEST -> R.string.error_unknown
             DataError.Network.UNKNOWN -> R.string.error_unknown
             DataError.Local.DISK_FULL -> R.string.error_disk_full
+            DataError.Local.INVALID_BACKUP -> R.string.error_invalid_backup
             DataError.Local.NOT_FOUND -> R.string.error_not_found
             DataError.Local.UNKNOWN -> R.string.error_unknown
+            DataError.Local.UNSUPPORTED_BACKUP_VERSION -> R.string.error_unsupported_backup_version
         }
     return UiText.StringResource(id)
 }

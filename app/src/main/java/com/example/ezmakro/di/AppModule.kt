@@ -1,6 +1,7 @@
 package com.example.ezmakro.di
 
 import com.example.ezmakro.core.barcode.di.barcodeModule
+import com.example.ezmakro.core.data.di.backupDataModule
 import com.example.ezmakro.core.data.di.coreDataModule
 import com.example.ezmakro.core.data.di.diaryDataModule
 import com.example.ezmakro.core.data.di.foodDataModule
@@ -17,6 +18,7 @@ import org.koin.dsl.module
 val appModule =
     module {
         includes(
+            backupDataModule,
             barcodeModule,
             coreDataModule,
             corePresentationModule,

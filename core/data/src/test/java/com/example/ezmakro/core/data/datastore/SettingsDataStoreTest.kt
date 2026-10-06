@@ -77,4 +77,43 @@ class SettingsDataStoreTest {
         assertThat(settings.getString("a").first()).isNull()
         assertThat(settings.getString("b").first()).isNull()
     }
+
+    @Test
+    fun `snapshot returns every stored string keyed by preference name`(
+        @TempDir tempDir: File,
+    ) = runTest {
+        setup(tempDir)
+        settings.setString("goal_kcal", "2000.0")
+        settings.setString("theme", "dark")
+
+        assertThat(settings.snapshot())
+            .isEqualTo(mapOf("goal_kcal" to "2000.0", "theme" to "dark"))
+    }
+
+    @Test
+    fun `restore writes the archive values and keeps local keys`(
+        @TempDir tempDir: File,
+    ) = runTest {
+        setup(tempDir)
+        settings.setString("local_only", "keep")
+
+        settings.restore(mapOf("goal_kcal" to "1800.0"))
+
+        assertThat(settings.getString("goal_kcal").first()).isEqualTo("1800.0")
+        assertThat(settings.getString("local_only").first()).isEqualTo("keep")
+    }
+
+    @Test
+    fun `snapshot and restore are a no-op on an empty store`(
+        @TempDir tempDir: File,
+    ) = runTest {
+        setup(tempDir)
+
+        val empty = settings.snapshot()
+        assertThat(empty).isEqualTo(emptyMap<String, String>())
+
+        settings.restore(empty)
+
+        assertThat(settings.snapshot()).isEqualTo(emptyMap<String, String>())
+    }
 }

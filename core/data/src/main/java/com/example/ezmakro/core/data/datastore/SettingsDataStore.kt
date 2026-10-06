@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -33,6 +34,34 @@ class SettingsDataStore(
 
     suspend fun clear() {
         dataStore.edit { it.clear() }
+    }
+
+    /**
+     * Snapshot of every stored **string** value, keyed by preference name (A10).
+     *
+     * Deliberately generic: new settings are exported automatically without a
+     * hard-coded key list. Non-string values are skipped — today none exist,
+     * and a future typed preference must opt in explicitly.
+     */
+    suspend fun snapshot(): Map<String, String> =
+        dataStore
+            .data
+            .first()
+            .asMap()
+            .filterValues { it is String }
+            .mapKeys { it.key.name }
+            .mapValues { it.value as String }
+
+    /**
+     * Writes [values] back without deleting anything that is already stored (A10/A6):
+     * an import must never drop a local setting that the archive does not know about.
+     * Empty input is a no-op, so restoring an archive without settings leaves the store untouched.
+     */
+    suspend fun restore(values: Map<String, String>) {
+        if (values.isEmpty()) return
+        dataStore.edit { prefs ->
+            values.forEach { (key, value) -> prefs[stringPreferencesKey(key)] = value }
+        }
     }
 }
 
