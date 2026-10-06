@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.ezmakro.android.library)
     alias(libs.plugins.ezmakro.ktor)
     alias(libs.plugins.ezmakro.koin)
+    alias(libs.plugins.ezmakro.kotlinx.serialization)
 }
 
 android {

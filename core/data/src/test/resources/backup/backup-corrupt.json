@@ -1,0 +1,12 @@
+{
+  "format": "ezmakro.backup",
+  "formatVersion": 1,
+  "appVersionName": "1.0",
+  "appVersionCode": 1,
+  "exportedAtEpochMillis": 1750000000000,
+  "dbSchemaVersion": 9,
+  "content": {
+    "foodItems": [
+      {
+        "id": "off|12345",
+        "name": "Haferflo

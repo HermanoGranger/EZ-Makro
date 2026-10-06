@@ -1,0 +1,80 @@
+{
+  "format": "ezmakro.backup",
+  "formatVersion": 1,
+  "appVersionName": "1.0",
+  "appVersionCode": 1,
+  "exportedAtEpochMillis": 1750000000000,
+  "dbSchemaVersion": 9,
+  "checksum": "sha256:f85f97e64f023f3b3b702616a72544937c7d0f716a6b0768e55210aaf95d23ef",
+  "content": {
+    "settings": [
+      { "key": "goal_kcal", "value": "2000.0" },
+      { "key": "goal_protein_g", "value": "150.0" }
+    ],
+    "foodItems": [
+      {
+        "id": "off|12345",
+        "name": "Haferflocken",
+        "barcode": "12345",
+        "nutriKcal": 379.0,
+        "nutriProteinG": 13.2,
+        "nutriFatG": 6.5,
+        "nutriCarbsG": 67.7,
+        "nutriFiberG": 10.1,
+        "servingLabel": "40 g",
+        "servingGramsEquivalent": 40.0,
+        "isUserCreated": false,
+        "cachedStatus": "ORIGINAL",
+        "origName": null,
+        "origBarcode": null,
+        "origNutriKcal": null,
+        "origNutriProteinG": null,
+        "origNutriFatG": null,
+        "origNutriCarbsG": null,
+        "origNutriFiberG": null,
+        "origServingLabel": null,
+        "origServingGramsEquivalent": null,
+        "origIsUserCreated": null,
+        "isFavorite": true,
+        "lastUsedAt": 1749000000000
+      }
+    ],
+    "recipes": [
+      {
+        "id": "recipe-1",
+        "name": "Porridge",
+        "finalWeightGrams": 500.0,
+        "portions": 4,
+        "category": "Frühstück",
+        "lastModifiedAt": 1749000000000,
+        "isFavorite": false,
+        "lastUsedAt": null,
+        "ingredients": [
+          {
+            "foodItemId": "off|12345",
+            "rawWeightGrams": 80.0,
+            "servingCount": null,
+            "recipeSnapshotJson": null
+          }
+        ]
+      }
+    ],
+    "diaryEntries": [
+      {
+        "id": "diary-1",
+        "slot": "BREAKFAST",
+        "date": "2026-10-05",
+        "foodItemId": null,
+        "recipeId": "recipe-1",
+        "amountGrams": null,
+        "portionCount": 1.0,
+        "recipeOverridden": false,
+        "foodSnapshot": null,
+        "recipeSnapshot": null
+      }
+    ],
+    "weightLogs": [
+      { "date": "2026-10-05", "kilograms": 80.5 }
+    ]
+  }
+}

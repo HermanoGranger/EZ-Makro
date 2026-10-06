@@ -1,0 +1,55 @@
+{
+  "format": "ezmakro.backup",
+  "formatVersion": 1,
+  "appVersionName": "9.9",
+  "appVersionCode": 99,
+  "exportedAtEpochMillis": 1760000000000,
+  "dbSchemaVersion": 21,
+  "futureField": "written by a future app version",
+  "content": {
+    "settings": [
+      { "key": "goal_kcal", "value": "2100.0" }
+    ],
+    "metadata": {
+      "generator": "ezmakro-9.9",
+      "exportReason": "manual"
+    },
+    "foodItems": [
+      {
+        "id": "off|99999",
+        "name": "Future Oats",
+        "barcode": "99999",
+        "nutriKcal": 350.0,
+        "isUserCreated": true,
+        "cachedStatus": "SYNCED_WITH_CLOUD",
+        "futureNutritionField": { "perServing": 12.5 },
+        "isFavorite": false
+      }
+    ],
+    "recipes": [
+      {
+        "id": "recipe-future",
+        "name": "Overnight Oats",
+        "finalWeightGrams": 300.0,
+        "ingredients": [
+          {
+            "foodItemId": "off|99999",
+            "rawWeightGrams": 60.0
+          }
+        ]
+      }
+    ],
+    "diaryEntries": [
+      {
+        "id": "diary-future",
+        "slot": "LUNCH",
+        "date": "2026-10-06",
+        "recipeId": "recipe-future",
+        "portionCount": 1.0
+      }
+    ],
+    "weightLogs": [
+      { "date": "2026-10-06", "kilograms": 81.25 }
+    ]
+  }
+}
