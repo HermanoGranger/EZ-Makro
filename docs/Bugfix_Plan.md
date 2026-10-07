@@ -98,6 +98,11 @@ für die Arbeit nach Abschluss der Kernfunktion (Phase 10+):
 - **`DiaryDayViewModel.date` aus dem Koin-Singleton `CurrentDateProvider`
   geseedet** — Verhalten ist über `saveState`/`restoreState` beabsichtigt
   ("gemerktes Datum bleibt erhalten"); erst bei konkretem Fehlreport bearbeiten.
+- **`JsonConverters.decodeFoodItem`/`decodeRecipe` werfen bei nicht
+  dekodierbaren Snapshots (Crash zur Anzeigezeit)** — der Import verhindert
+  **neue** solcher Zeilen (`BackupValidator` prüft die Dekodierbarkeit, A8/A11),
+  die Anzeige-Pfade (Tagebuch-Eintrag, Rezept-Snapshot) sind aber weiterhin
+  ungeschützt und bräuchten einen eigenen Fallback.
 - **Totes Feld `latestRecipe`** in `RecipeDetailViewModel.kt:33` — kosmetisch.
 - **`:feature:diary → :feature:foodpicker`** (`feature/diary/presentation/build.gradle.kts`)
   ist eine **bewusste** Abweichung von der Skill-Regel „Features never depend on

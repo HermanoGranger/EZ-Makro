@@ -19,7 +19,7 @@ Acceptance → Commit nur nach Freigabe).
 | **9** | Goals | ✅ (im Diary-Module) | Ziele konfigurierbar |
 | **10** | Weight Tracking | 🔜 | Gewicht, Trend, Charts |
 | **11** | Statistics | 🔜 | Wochen-/Monats-/Jahresstatistiken |
-| **12** | Backup | 🔜 | JSON Export/Import, optional verschlüsselt |
+| **12** | Backup | ✅ | JSON Export/Import, Validierung, **ohne** Verschlüsselung (Details: `docs/Plan_Backup_System.md`) |
 | **13** | Polish | 🔜 | Accessibility, Performance, Tablets |
 | **14** | Release Candidate | 🔜 | Alle Tests grün, Release Build, crashfrei |
 
@@ -49,12 +49,12 @@ Diary-Rezept-Eintrag (Rezept-Inhalte im Tagebucheintrag bearbeiten, Badges
    Nährwerte pro 100 g + pro Portion → speichern → ins Tagebuch.
 4. **Tagesrückblick:** Tagebuch mit Summary-Header öffnen → Restkalorien/
    Makros sehen → Copy Yesterday bei Bedarf.
-5. **Backup:** Einstellungen → Export (optional Passwort) → späterer Import.
+5. **Backup:** Einstellungen → Export (JSON, unverschlüsselt) → späterer Import.
 
 ## Meilensteine
 
 - **M1 (nach Phase 3):** ✅ App startet, lokale Daten haltbar, Offline-Basis.
 - **M2 (nach Phase 5):** ✅ Lebensmittel-Erfassung komplett nutzbar.
 - **M3 (nach Phase 8):** ✅ Tägliches Tracking inkl. Summary/Goals möglich.
-- **M4 (nach Phase 12):** Vollständige, backup-fähige App.
+- **M4 (nach Phase 12):** ✅ Vollständige, backup-fähige App.
 - **Release (Phase 14):** RC, Polish.

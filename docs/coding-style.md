@@ -32,6 +32,16 @@ projektspezifische Konventionen.
 - Singletons/DI ausschließlich über Koin; keine manuellen `object`-Service
   mit globalem Zustand außerhalb von Koin.
 
+## Serialisierung (Backup-Format & Snapshots)
+
+- **Neue optionale Felder in `@Serializable`-Modellen brauchen einen
+  Default-Wert.** Erst dadurch bleiben versionierte Serialisierungen
+  (Backup-Format `formatVersion`, eingebettete Tagebuch-Snapshots) älterer
+  Datenstände lesbar. Pflichtfelder des Dokumentrahmens (`format`,
+  `formatVersion`, `appVersion*`, `exportedAtEpochMillis`, `dbSchemaVersion`,
+  `content`) bleiben bewusst default-frei und enden als `Corrupted` (A12,
+  `docs/adr/ADR-007-backup-format.md`).
+
 ## Fehlerbehandlung
 
 - Domänen- und Daten-Layer nutzen den `Result<T, E>`-Wrapper mit `DataError`

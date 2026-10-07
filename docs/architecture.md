@@ -30,6 +30,8 @@ Data                    ── Repository ── Local (Room)  ┐
 - `:core-design-system` — Theme, Farben, Typografie, Basis-Composables
 - Feature-Module (später, z. B. `:feature-food`, `:feature-recipes`) —
   hängen nur von `:core-*` ab, nicht untereinander
+- `:feature:settings:presentation` — Sammel-Seite „Settings" (Tagesziele,
+  Backup); Cross-Feature-Routen laufen wie alle anderen über `:app`
 
 > **Hinweis:** App-Widgets (Glance) sind aus dem Scope gestrichen. Die
 > ursprüngliche ADR-005 wurde daher verworfen.
@@ -56,6 +58,27 @@ Feature-Module kennen einander nicht.
   genutzt (Cache-Then-Network wo sinnvoll).
 - Die App ist ohne Netz voll funktionsfähig; fehlgeschlagene Remote-Calls
   führen zu `Result.Error`, niemals zum Absturz oder zur leeren UI.
+
+## Backup
+
+- **Logischer Export statt DB-Kopie (A1):** eine JSON-Datei mit
+  `formatVersion`, den fünf Tabellen (`food_items`, `recipes`,
+  `recipe_ingredients`, `diary_entries`, `weight_logs`) und allen Settings.
+  Das Format ist ausdrücklich **nicht** an Spalten oder die Room-Schema-
+  Version gebunden — alter Import funktioniert auch nach Schemaänderungen
+  (Kernnachweis in `BackupRoundTripTest`), Formatregeln: `ADR-007`.
+- Zwei Import-Modi (Ergänzen = Default, Ersetzen), Validierung in fünf
+  Stufen mit Preview; der Datenbankimport läuft in **einer**
+  Room-Transaktion, die Settings werden erst nach erfolgreichem Commit
+  wiederhergestellt.
+- **Keine Verschlüsselung, keine Passwort-Sperre** — ausdrückliche
+  Nutzerentscheidung (A3).
+- Code: `:core:data` (`backup`-Package: Codec, Mapper, Validator, Exporter,
+  Importer, Repository); UI in `:feature:settings:presentation`
+  (`BackupScreen`). `:app` übernimmt die Koin-Assemblierung des
+  Settings-/Backup-Bereichs.
+- Android Auto Backup (`allowBackup`, `backup_rules.xml`) bleibt
+  unangetastet (A17); nach dem Import ist **kein** App-Neustart nötig (A16).
 
 ## Dependency Injection
 

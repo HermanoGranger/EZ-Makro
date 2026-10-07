@@ -69,5 +69,6 @@ Rezepten ohne Werbung, Accounts oder unnötige Gamification.
 
 -   Gewichtstracking
 -   Statistiken
--   Backup/Restore (JSON Export/Import, optional passwortverschlüsselt)
+-   Backup/Restore (JSON Export/Import, **ohne** Verschlüsselung —
+    explizite Entscheidung, s. A3 in `docs/Plan_Backup_System.md`)
 -   Dark Mode

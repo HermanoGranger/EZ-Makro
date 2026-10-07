@@ -41,7 +41,8 @@ drin, was ist ausdrücklich nicht drin.
 
 - Gewichtstracking mit Trend
 - Statistiken (Woche/Monat/Jahr)
-- Backup/Restore (JSON, optional passwortverschlüsselt)
+- Backup/Restore (JSON, **ohne** Verschlüsselung — explizite Entscheidung,
+  s. A3 in `docs/Plan_Backup_System.md`)
 - Dark Mode
 
 ## Aus dem Scope gestrichen

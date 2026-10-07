@@ -1,6 +1,6 @@
 # Plan — Backup-System (JSON Export/Import)
 
-**Status:** Planung abgeschlossen (Revision 2), Freigabe für WP1 durch den Nutzer.
+**Status:** abgeschlossen (WP1–WP5, Stand 2026-10-07).
 **Stand:** 2026-10-06 (Revision 2; Code-Basis weiterhin Commit `0916d21`).
 **Bezug:** `docs/architecture.md`, `docs/coding-style.md`, `docs/domain-model.md`,
 `docs/definition-of-done.md`, `docs/roadmap.md`, `docs/Scope_und_Features.md`,
@@ -317,13 +317,14 @@ Transaktion (`insertAll`/`replaceAll`) → Settings → Report.
 
 | WP | Thema | Hängt ab von | Art | Status |
 |---|---|---|---|---|
-| **WP1** | `BackupDao`: Roh-Zugriff auf alle fünf Tabellen + Transaktions-Import | — | Feature (Daten) | 🔜 |
-| **WP2** | Format + Codec: `BackupArchive`, `BackupCodec`, Prüfsumme, Fixtures, ADR-007 | WP1 | Feature (Daten) | 🔜 |
-| **WP3** | Domain-Vertrag, Settings-Snapshot, SAF-Storage, Export/Import-Orchestrierung | WP2 | Feature (Daten) | 🔜 |
-| **WP4** | UI-Modul `:feature:settings:presentation` + Navigation + Diary-Einstieg | WP3 | Feature (Presentation) | 🔜 |
-| **WP5** | Integrationstests, Härtung, Dokumentation | WP4 | Härtung + Doku | 🔜 |
+| **WP1** | `BackupDao`: Roh-Zugriff auf alle fünf Tabellen + Transaktions-Import | — | Feature (Daten) | ✅ |
+| **WP2** | Format + Codec: `BackupArchive`, `BackupCodec`, Prüfsumme, Fixtures, ADR-007 | WP1 | Feature (Daten) | ✅ |
+| **WP3** | Domain-Vertrag, Settings-Snapshot, SAF-Storage, Export/Import-Orchestrierung | WP2 | Feature (Daten) | ✅ |
+| **WP4** | UI-Modul `:feature:settings:presentation` + Navigation + Diary-Einstieg | WP3 | Feature (Presentation) | ✅ |
+| **WP5** | Integrationstests, Härtung, Dokumentation | WP4 | Härtung + Doku | ✅ |
 
-Jede Statuszelle wird nach dem Commit auf ✅ + Commit-Hash aktualisiert.
+Alle fünf WPs sind umgesetzt und grün (lokal: `build`, `detekt`,
+`ktlintCheck`); die Commit-Hashes trägt der Nutzer beim Commit ein.
 
 ---
 

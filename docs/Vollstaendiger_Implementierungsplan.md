@@ -36,7 +36,7 @@
 | B3 | Bugfix Robustheit/UX (P3) | ✅ abgeschlossen |
 | 10 | Weight Tracking | 🔜 offen |
 | 11 | Statistics | 🔜 offen |
-| 12 | Backup | 🔜 offen |
+| 12 | Backup | ✅ abgeschlossen (Details: `docs/Plan_Backup_System.md`) |
 | 13 | Polish | 🔜 offen |
 | 14 | Release Candidate | 🔜 offen |
 
@@ -151,11 +151,19 @@ Wochen-, Monats-, Jahresstatistiken.
 
 ## Phase 12 -- Backup
 
--   JSON Export/Import
--   Validierung
--   **Optionale Verschlüsselung** des Exports mit einem Passwort
-    (Ernährungsdaten sind potenziell sensibel), z. B. via AES mit vom Nutzer
-    gewähltem Passwort
+JSON Export/Import (Datei `ezmakro-backup-<timestamp>.json`, `formatVersion`
+aus `ADR-007`) inkl. Validierung in fünf Stufen mit Preview, zwei Import-Modi
+(Ergänzen = Default, Ersetzen), Prüfsummen-**Warnung** statt Abbruch und
+Wiederherstellung der Settings erst nach erfolgreichem Commit. **Keine
+Verschlüsselung** — ausdrückliche Nutzerentscheidung (A3).
+
+Das Format ist logisch und unabhängig vom Room-Schema: alter Import funktioniert
+auch nach Schemaänderungen (Kernnachweis in `BackupRoundTripTest`).
+
+Vollständiger Plan samt Annahmen (A1–A19), WPs und Abnahme:
+`docs/Plan_Backup_System.md`. Format-ADR: `docs/adr/ADR-007-backup-format.md`.
+UI: `:feature:settings:presentation` (`BackupScreen`), Code: `:core:data`
+(`backup`-Package).
 
 ## Phase 13 -- Polish
 

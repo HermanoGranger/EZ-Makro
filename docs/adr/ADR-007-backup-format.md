@@ -2,7 +2,10 @@
 
 ## Status
 
-Angenommen (Phase 12) — WP2; finalisiert in WP5
+Angenommen (Phase 12) — finalisiert in WP5. Stand: 2026-10-07, mit dem
+implementierten Code abgeglichen (`BackupArchive.kt`, `BackupCodec.kt`,
+`BackupImporter.kt`); der Kernnachweis „Import funktioniert nach einer
+Schema-Änderung" liegt als Test in `BackupRoundTripTest`.
 
 ## Kontext
 
@@ -29,13 +32,34 @@ Felderweiterungen dürfen alte Backups nicht brechen.
   geschrieben als `"sha256:<hex>"`. `settings` ist dafür eine **sortierte
   Liste** (keine `Map`), damit derselbe Datenbestand immer denselben Hash
   liefert. Ein Mismatch — oder ein fehlendes `checksum`-Feld — ist **kein**
-  Abbruch, sondern eine Warnung im Import-Report; eine abgeschnittene Datei
-  fällt ohnehin schon beim JSON-Parser auf und ist dann ein harter Fehler.
+  Abbruch, sondern erscheint als `BackupWarning.ChecksumMismatch` in den
+  `warnings` des Import-Reports bzw. der Preview; eine abgeschnittene Datei
+  fällt ohnehin schon beim JSON-Parser auf (`DecodeError.Corrupted`) und ist
+  dann ein harter Fehler.
 - **Zwei Import-Modi (A6/A7):** *Ergänzen* (Default) fügt nur Fehlendes hinzu
   und überschreibt nie (`INSERT … IGNORE` auf den natürlichen Schlüsseln);
   *Ersetzen* leert die fünf Tabellen FK-sicher und spielt das Backup 1:1 ein.
 - **Kein `rowId`, keine FTS-Sektion (A13); Snapshots bleiben opake Strings
   (A8).**
+
+### Aufbau (`formatVersion = 1`)
+
+Rahmen (`BackupDocumentDto`): `format`, `formatVersion`, `appVersionName`,
+`appVersionCode`, `exportedAtEpochMillis`, `dbSchemaVersion`, `checksum`
+(optional, `""`), `content`.
+
+`content` (`BackupContentDto`) enthält fünf Sektionen in dieser Reihenfolge —
+`settings` (Liste von `key`/`value`, sortiert), `foodItems`, `recipes`
+(jeweils mit eingebetteter `ingredients`-Liste), `diaryEntries`, `weightLogs`.
+
+Die in der Prüfsumme festgehaltene Kanonik (`BackupCodec.canonicalContent`)
+sortiert ausschließlich `settings`; alle übrigen Sektionen behalten ihre
+Reihenfolge.
+
+Nicht Teil des Formats, aber Teil des Import-Reports (A18): die pro Tabelle
+gezählten eingefügten bzw. als Duplikat übersprungenen Zeilen
+(`BackupInsertReport` mit `TableInsertCounts` in `:core:database`) sowie
+`skippedRows`/`droppedReferences`/`warnings`.
 
 ### Forward-Kompatibilitätsregeln (verbindlich)
 
@@ -48,6 +72,9 @@ Felderweiterungen dürfen alte Backups nicht brechen.
 | Snapshots opak | `food_snapshot`, `recipe_snapshot`, `recipe_snapshot_json` laufen als `String?` unverändert durch; die Dekodierbarkeit wird beim Import einmal geprüft (A8) |
 | Determinismus der Prüfsumme | `settings` als sortierte Liste; alle übrigen Sektionen sind `List` |
 | Neue Domain- und Format-Felder brauchen Defaults | A12, `docs/coding-style.md` |
+| Neue Tabelle in einer späteren Phase (z. B. `MealPrep`) | **neue Sektion** in `BackupContentDto` mit Default `emptyList()` (A12); `formatVersion` nur erhöhen, wenn bestehende Daten semantisch anders gelesen werden |
+| Spaltenumbau in `food_items`/`recipes` | **keine** Formatänderung — nur `BackupMapper` anpassen (bewiesen durch `BackupRoundTripTest` „core requirement …") |
+| `Room`-Version hochzählen | ohne Auswirkung, `dbSchemaVersion` bleibt reine Information (A2) |
 | Unbekannte `cachedStatus`-Werte | bleiben als `String` im Format; der Import fällt wie `ScalarConverters.textToCachedStatus` auf `ORIGINAL` zurück |
 
 ## Alternativen
