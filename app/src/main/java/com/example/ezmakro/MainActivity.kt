@@ -45,6 +45,9 @@ import com.example.ezmakro.feature.food.presentation.navigation.ROUTE_FOOD
 import com.example.ezmakro.feature.food.presentation.navigation.foodGraph
 import com.example.ezmakro.feature.recipes.presentation.navigation.ROUTE_RECIPES
 import com.example.ezmakro.feature.recipes.presentation.navigation.recipeGraph
+import com.example.ezmakro.feature.settings.presentation.navigation.ROUTE_SETTINGS
+import com.example.ezmakro.feature.settings.presentation.navigation.ROUTE_SETTINGS_BACKUP
+import com.example.ezmakro.feature.settings.presentation.navigation.settingsGraph
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import java.time.LocalDate
@@ -154,7 +157,7 @@ class MainActivity : ComponentActivity() {
                 navController = navController,
                 onAddToDiaryFromPicker = addToDiaryFromPicker,
                 onNavigateToFoodCreate = onNavigateToFoodCreate,
-                onNavigateToGoals = { navController.navigate(Goals) },
+                onNavigateToSettings = { navController.navigate(ROUTE_SETTINGS) },
                 onNavigateToFoodDetail = { foodId, slot, date ->
                     navController.navigate("food_detail/${encodeRouteParam(foodId)}?slot=${slot.name}&date=$date")
                 },
@@ -182,6 +185,11 @@ class MainActivity : ComponentActivity() {
                 onNavigateToRecipeDetail = { recipeId -> navController.navigate("recipe_detail/$recipeId") },
             )
             goalsGraph(onNavigateBack = onNavigateBack)
+            settingsGraph(
+                onNavigateBack = onNavigateBack,
+                onNavigateToGoals = { navController.navigate(Goals) },
+                onNavigateToBackup = { navController.navigate(ROUTE_SETTINGS_BACKUP) },
+            )
         }
     }
 

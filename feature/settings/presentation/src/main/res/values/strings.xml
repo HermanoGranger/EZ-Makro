@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_goals_title">Tagesziele</string>
+    <string name="settings_goals_subtitle">Kalorien und Makros pro Tag</string>
+    <string name="settings_backup_title">Backup</string>
+    <string name="settings_backup_subtitle">Daten sichern und wiederherstellen</string>
+    <string name="settings_navigate_back">Zurück</string>
+
+    <string name="backup_export_title">Exportieren</string>
+    <string name="backup_import_title">Importieren</string>
+    <string name="backup_include_cached">Gecachte OFF-Lebensmittel einschließen</string>
+    <string name="backup_create">Backup erstellen</string>
+    <string name="backup_open">Backup einspielen</string>
+    <string name="backup_count_foods">%1$d Lebensmittel</string>
+    <string name="backup_count_recipes">%1$d Rezepte</string>
+    <string name="backup_count_days">%1$d Tage</string>
+    <string name="backup_count_weight_logs">%1$d Gewichtseinträge</string>
+
+    <string name="backup_preview_title">Backup einspielen</string>
+    <string name="backup_exported_at">Exportiert: %1$s</string>
+    <string name="backup_app_version">App-Version: %1$s</string>
+    <string name="backup_format_version">Format-Version: %1$d</string>
+    <string name="backup_date_range">Zeitraum: %1$s – %2$s</string>
+    <string name="backup_mode_merge">Ergänzen</string>
+    <string name="backup_mode_merge_hint">Nur Fehlendes hinzufügen, lokale Daten bleiben erhalten</string>
+    <string name="backup_mode_replace">Ersetzen</string>
+    <string name="backup_mode_replace_warning">Alle lokal gespeicherten Lebensmittel, Rezepte, Tagebucheinträge und Gewichtsdaten werden gelöscht.</string>
+    <string name="backup_confirm_import">Importieren</string>
+    <string name="backup_cancel">Abbrechen</string>
+
+    <string name="backup_report_title">Import abgeschlossen</string>
+    <string name="backup_report_inserted">Eingefügt: %1$d</string>
+    <string name="backup_report_duplicates">Duplikate übersprungen: %1$d</string>
+    <string name="backup_report_skipped">Ungültige Zeilen: %1$d</string>
+    <string name="backup_report_dropped_references">Verworfene Referenzen: %1$d</string>
+    <string name="backup_report_skipped_row">%1$s/%2$s: %3$s</string>
+    <string name="backup_warning_checksum">Prüfsumme fehlt oder stimmt nicht überein</string>
+    <string name="backup_warning_invalid_row">Zeile übersprungen: %1$s/%2$s – %3$s</string>
+
+    <string name="backup_export_success">Backup wurde erstellt</string>
+    <string name="backup_working">Bitte warten…</string>
+</resources>

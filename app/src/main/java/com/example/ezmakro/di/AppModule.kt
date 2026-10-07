@@ -13,6 +13,7 @@ import com.example.ezmakro.feature.diary.presentation.di.diaryPresentationModule
 import com.example.ezmakro.feature.food.presentation.di.foodPresentationModule
 import com.example.ezmakro.feature.foodpicker.presentation.di.foodPickerPresentationModule
 import com.example.ezmakro.feature.recipes.presentation.di.recipePresentationModule
+import com.example.ezmakro.feature.settings.presentation.settings.di.settingsPresentationModule
 import org.koin.dsl.module
 
 val appModule =
@@ -31,5 +32,6 @@ val appModule =
             recipePresentationModule,
             diaryPresentationModule,
             foodPickerPresentationModule,
+            settingsPresentationModule,
         )
     }

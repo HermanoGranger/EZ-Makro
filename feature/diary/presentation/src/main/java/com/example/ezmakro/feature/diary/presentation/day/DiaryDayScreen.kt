@@ -63,7 +63,7 @@ import java.time.format.DateTimeFormatter
 fun DiaryDayRoot(
     onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit,
     onNavigateToHistory: () -> Unit,
-    onNavigateToGoals: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     onAddToDiaryFromPicker: (
         foodId: String,
         isRecipe: Boolean,
@@ -102,7 +102,7 @@ fun DiaryDayRoot(
                 onRequestEdit = { id -> editEntryId = id },
                 onRequestAdd = { slot -> pickerSlot = slot },
                 onNavigateToHistory = onNavigateToHistory,
-                onNavigateToGoals = onNavigateToGoals,
+                onNavigateToSettings = onNavigateToSettings,
                 onRequestEditIngredients = { entryId -> onNavigateToRecipeEdit(entryId) },
             ),
     )
@@ -198,7 +198,7 @@ data class DiaryDayCallbacks(
     val onRequestEdit: (String) -> Unit,
     val onRequestAdd: (MealSlot) -> Unit,
     val onNavigateToHistory: () -> Unit,
-    val onNavigateToGoals: () -> Unit = {},
+    val onNavigateToSettings: () -> Unit = {},
     val onRequestEditIngredients: (String) -> Unit = {},
 )
 
@@ -274,10 +274,10 @@ fun DiaryDayScreen(
                             contentDescription = stringResource(R.string.diary_history),
                         )
                     }
-                    IconButton(onClick = callbacks.onNavigateToGoals) {
+                    IconButton(onClick = callbacks.onNavigateToSettings) {
                         Icon(
                             Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.diary_configure_goals),
+                            contentDescription = stringResource(R.string.diary_settings),
                         )
                     }
                 },

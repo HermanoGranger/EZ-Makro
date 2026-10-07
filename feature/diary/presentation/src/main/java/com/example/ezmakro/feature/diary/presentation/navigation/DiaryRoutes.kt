@@ -65,7 +65,7 @@ fun NavGraphBuilder.diaryGraph(
         isGrams: Boolean,
     ) -> Unit = { _, _, _, _, _, _ -> },
     onNavigateToFoodCreate: (barcode: String?) -> Unit = {},
-    onNavigateToGoals: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
     onNavigateToFoodDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
     onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit = { _, _, _ -> },
 ) {
@@ -74,7 +74,7 @@ fun NavGraphBuilder.diaryGraph(
             navController,
             onAddToDiaryFromPicker,
             onNavigateToFoodCreate,
-            onNavigateToGoals,
+            onNavigateToSettings,
             onNavigateToFoodDetail,
             onNavigateToRecipeDetail,
         )
@@ -95,7 +95,7 @@ private fun NavGraphBuilder.dayComposable(
         isGrams: Boolean,
     ) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
-    onNavigateToGoals: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateToFoodDetail: (String, MealSlot, String) -> Unit,
     onNavigateToRecipeDetail: (String, MealSlot, String) -> Unit,
 ) {
@@ -115,7 +115,7 @@ private fun NavGraphBuilder.dayComposable(
                 navController.navigate("$ROUTE_QUICK_ADD?date=$dateParam&${ROUTE_QUICK_ADD_PARAM_SLOT}=${slot.name}")
             },
             onNavigateToHistory = { navController.navigate(ROUTE_HISTORY) },
-            onNavigateToGoals = onNavigateToGoals,
+            onNavigateToSettings = onNavigateToSettings,
             onNavigateToFoodCreate = onNavigateToFoodCreate,
             onNavigateToFoodDetail = onNavigateToFoodDetail,
             onNavigateToRecipeDetail = onNavigateToRecipeDetail,
