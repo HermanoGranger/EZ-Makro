@@ -9,6 +9,7 @@ import com.example.ezmakro.core.database.entity.RecipeEntity
 import com.example.ezmakro.core.database.entity.RecipeIngredientEntity
 import com.example.ezmakro.core.database.entity.WeightLogEntity
 import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.model.backup.BackupPreview
 import com.example.ezmakro.core.domain.model.backup.BackupWarning
 import com.example.ezmakro.core.domain.model.backup.ImportMode
@@ -43,9 +44,12 @@ class BackupImporter(
     private val storage: BackupStorage,
 ) {
     /** Dry run: stages 1–4 only, never writes (A11 — stage 5 is write preparation). */
-    suspend fun preview(uri: String): Result<BackupPreview, DataError.Local> =
+    suspend fun preview(
+        uri: String,
+        mode: ImportMode,
+    ): Result<BackupPreview, DataError.Local> =
         readDocument(uri).flatMap { decoded ->
-            existingIds(ImportMode.MERGE).map { existing ->
+            existingIds(mode).map { existing ->
                 buildPreview(decoded, validateRows(decoded.document.content, existing).skippedRows)
             }
         }
@@ -57,13 +61,12 @@ class BackupImporter(
         readDocument(uri).flatMap { decoded ->
             existingIds(mode).flatMap { existing ->
                 val stage = cleanReferences(validateRows(decoded.document.content, existing))
-                writeRows(stage.rows, mode).flatMap { insertReport ->
+                writeRows(stage.rows, mode).map { insertReport ->
                     val settings =
                         decoded.document.content.settings
                             .associate { it.key to it.value }
-                    restoreSettings(settings).map { settingsRestored ->
-                        buildReport(mode, insertReport, stage, settingsRestored, decoded.checksumValid)
-                    }
+                    val (settingsRestored, settingsWarnings) = restoreSettings(settings)
+                    buildReport(mode, insertReport, stage, settingsRestored, decoded.checksumValid, settingsWarnings)
                 }
             }
         }
@@ -102,17 +105,17 @@ class BackupImporter(
         }
 
     /**
-     * Ids the archive may reference (A19): MERGE = existing ids ∪ valid backup
-     * ids, REPLACE = valid backup ids only — so REPLACE never resolves against
-     * the current database content. The union with the backup ids happens in
-     * [validateRows].
+     * Context the archive may resolve against (A19): MERGE = target-DB foods
+     * (id → serving unit) ∪ valid backup ids, REPLACE = none — so REPLACE
+     * never resolves against the current database content. The union with the
+     * backup ids happens in [validateRows].
      */
     private suspend fun existingIds(mode: ImportMode): Result<ExistingIds, DataError.Local> =
         if (mode == ImportMode.REPLACE) {
             Result.Success(ExistingIds.EMPTY)
         } else {
-            local.readFoodItemIds().flatMap { foodIds ->
-                local.readRecipeIds().map { recipeIds -> ExistingIds(foodIds, recipeIds) }
+            local.readFoodServingUnits().flatMap { foodServingUnits ->
+                local.readRecipeIds().map { recipeIds -> ExistingIds(foodServingUnits, recipeIds) }
             }
         }
 
@@ -124,9 +127,9 @@ class BackupImporter(
         val skippedRows = mutableListOf<SkippedRow>()
         val validFoods = mutableMapOf<String, FoodItem>()
         val foodEntities = validateFoods(content.foodItems, validFoods, skippedRows)
-        val knownFoodIds = existing.foodIds + validFoods.keys
+        val knownFoodIds = existing.foodServingUnits.keys + validFoods.keys
         val (recipeEntities, ingredientEntities) =
-            validateRecipes(content.recipes, validFoods, knownFoodIds, skippedRows)
+            validateRecipes(content.recipes, validFoods, existing.foodServingUnits, skippedRows)
         val knownRecipeIds = existing.recipeIds + recipeEntities.map { it.id }
         return StageFour(
             rows =
@@ -165,13 +168,13 @@ class BackupImporter(
     private fun validateRecipes(
         recipes: List<BackupRecipeDto>,
         validFoods: Map<String, FoodItem>,
-        knownFoodIds: Set<String>,
+        existingFoodServingUnits: Map<String, ServingUnit?>,
         skippedRows: MutableList<SkippedRow>,
     ): Pair<List<RecipeEntity>, List<RecipeIngredientEntity>> {
         val entities = mutableListOf<RecipeEntity>()
         val ingredients = mutableListOf<RecipeIngredientEntity>()
         for (recipe in recipes) {
-            val reason = BackupValidator.validateRecipe(recipe, validFoods, knownFoodIds)
+            val reason = BackupValidator.validateRecipe(recipe, validFoods, existingFoodServingUnits)
             if (reason == null) {
                 val (recipeEntity, ingredientEntityList) = recipe.toEntities()
                 entities += recipeEntity
@@ -261,8 +264,21 @@ class BackupImporter(
             ImportMode.REPLACE -> local.replaceAll(rows)
         }
 
-    private suspend fun restoreSettings(settings: Map<String, String>): Result<Int, DataError.Local> =
-        local.restoreSettings(settings).map { settings.size }
+    /**
+     * Settings follow the successful commit (§3.4). A DataStore failure at
+     * this point must not turn the run into `Result.Error`: the five tables
+     * are already committed, so the report carries `settingsRestored = 0`
+     * plus [BackupWarning.SettingsRestoreFailed] instead. Cancellation is
+     * unaffected — the local data source rethrows it.
+     */
+    private suspend fun restoreSettings(settings: Map<String, String>): Pair<Int, List<BackupWarning>> =
+        when (val result = local.restoreSettings(settings)) {
+            is Result.Success -> settings.size to emptyList()
+            is Result.Error -> {
+                AppLogger.w("Settings restore failed after commit: ${result.error}", tag = "BackupImporter")
+                0 to listOf(BackupWarning.SettingsRestoreFailed)
+            }
+        }
 
     private fun buildReport(
         mode: ImportMode,
@@ -270,6 +286,7 @@ class BackupImporter(
         stage: StageFive,
         settingsRestored: Int,
         checksumValid: Boolean,
+        extraWarnings: List<BackupWarning>,
     ): ImportReport =
         ImportReport(
             mode = mode,
@@ -292,7 +309,7 @@ class BackupImporter(
             skippedRows = stage.skippedRows,
             droppedReferences = stage.droppedReferences,
             settingsRestored = settingsRestored,
-            warnings = warningsOf(checksumValid),
+            warnings = warningsOf(checksumValid) + extraWarnings,
         )
 
     private fun buildPreview(
@@ -335,11 +352,11 @@ class BackupImporter(
         }
 
     private data class ExistingIds(
-        val foodIds: Set<String>,
+        val foodServingUnits: Map<String, ServingUnit?>,
         val recipeIds: Set<String>,
     ) {
         companion object {
-            val EMPTY = ExistingIds(emptySet(), emptySet())
+            val EMPTY = ExistingIds(emptyMap(), emptySet())
         }
     }
 

@@ -125,14 +125,24 @@ fun FoodItemDao.upsertFood(item: FoodItem) {
     )
 }
 
-private fun FoodItemEntity.servingUnit(): ServingUnit? {
-    val grams = servingGramsEquivalent ?: return null
-    val label = servingLabel ?: return null
-    return ServingUnit(label = label, gramsEquivalent = grams)
-}
+private fun FoodItemEntity.servingUnit(): ServingUnit? = toServingUnit(servingLabel, servingGramsEquivalent)
 
 private fun FoodItemEntity.origServingUnit(): ServingUnit? {
     val grams = origServingGramsEquivalent ?: return null
     val label = origServingLabel ?: return null
     return ServingUnit(label = label, gramsEquivalent = grams)
+}
+
+/**
+ * The single definition of the "label and grams must both be present" rule —
+ * used by this mapper and by the backup import's target-DB serving-unit
+ * lookup (`RoomBackupLocalDataSource.readFoodServingUnits`, W3) so the two
+ * cannot drift apart.
+ */
+internal fun toServingUnit(
+    label: String?,
+    gramsEquivalent: Double?,
+): ServingUnit? {
+    val grams = gramsEquivalent ?: return null
+    return label?.let { ServingUnit(label = it, gramsEquivalent = grams) }
 }

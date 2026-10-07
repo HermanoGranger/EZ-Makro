@@ -128,17 +128,26 @@ class BackupDaoTest : DatabaseTest() {
         }
 
     @Test
-    fun `read id projections return the natural keys`() =
+    fun `read food projection returns ids and serving units`() =
         runTest {
             dao.insertAll(
-                foods = listOf(food("f1"), food("f2")),
+                foods =
+                    listOf(
+                        food("f1").copy(servingLabel = "Portion", servingGramsEquivalent = 100.0),
+                        food("f2"),
+                    ),
                 recipes = listOf(RecipeFixtures.recipe(id = "r1")),
                 ingredients = listOf(RecipeFixtures.ingredient(recipeId = "r1", foodId = "f1")),
                 entries = listOf(entry(id = "d1")),
                 weightLogs = listOf(weightLog()),
             )
 
-            assertThat(dao.readFoodItemIds()).containsExactlyInAnyOrder("f1", "f2")
+            val servingUnits = dao.readFoodServingUnits()
+            assertThat(servingUnits.map { it.id }).containsExactlyInAnyOrder("f1", "f2")
+            assertThat(servingUnits.single { it.id == "f1" })
+                .isEqualTo(FoodServingUnitRow(id = "f1", servingLabel = "Portion", servingGramsEquivalent = 100.0))
+            assertThat(servingUnits.single { it.id == "f2" })
+                .isEqualTo(FoodServingUnitRow(id = "f2", servingLabel = null, servingGramsEquivalent = null))
             assertThat(dao.readRecipeIds()).containsExactly("r1")
         }
 
@@ -335,7 +344,7 @@ class BackupDaoTest : DatabaseTest() {
             assertThat(report.diaryEntries).isEqualTo(TableInsertCounts(inserted = 1, skipped = 0))
             assertThat(report.weightLogs).isEqualTo(TableInsertCounts(inserted = 1, skipped = 0))
 
-            assertThat(dao.readFoodItemIds()).containsExactly("f9")
+            assertThat(dao.readFoodServingUnits().map { it.id }).containsExactly("f9")
             assertThat(dao.readRecipeIds()).containsExactly("r9")
             assertThat(dao.readRecipeIngredients().single().recipeId).isEqualTo("r9")
             assertThat(dao.readDiaryEntries().single().id).isEqualTo("d9")

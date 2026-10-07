@@ -4,6 +4,7 @@ import com.example.ezmakro.core.data.diary.mapper.toDiaryEntry
 import com.example.ezmakro.core.data.food.mapper.toFoodItem
 import com.example.ezmakro.core.database.converter.JsonConverters
 import com.example.ezmakro.core.domain.model.FoodItem
+import com.example.ezmakro.core.domain.model.ServingUnit
 import java.time.LocalDate
 
 /**
@@ -38,14 +39,17 @@ object BackupValidator {
      * (REPLACE after a fresh start).
      *
      * @param validFoods foods validated by [validateFood] from this archive.
-     * @param knownExistingFoodIds food ids that are allowed to resolve although
-     * they are not part of the archive — existing ids for MERGE, empty for
-     * REPLACE (A19).
+     * @param existingFoodServingUnits target-DB foods the archive may resolve
+     * against — id → serving unit for MERGE, empty for REPLACE (A19). The
+     * serving unit is read from here (W3) because the runtime mapper resolves
+     * `servingCount` ingredients against exactly these rows after the import;
+     * where a MERGE keeps a pre-existing local row, that row wins over the
+     * archive's copy.
      */
     fun validateRecipe(
         recipe: BackupRecipeDto,
         validFoods: Map<String, FoodItem>,
-        knownExistingFoodIds: Set<String>,
+        existingFoodServingUnits: Map<String, ServingUnit?>,
     ): String? {
         val structuralIssue =
             when {
@@ -55,7 +59,7 @@ object BackupValidator {
                 else -> null
             }
         return structuralIssue
-            ?: recipe.ingredients.firstNotNullOfOrNull { ingredientIssue(it, validFoods, knownExistingFoodIds) }
+            ?: recipe.ingredients.firstNotNullOfOrNull { ingredientIssue(it, validFoods, existingFoodServingUnits) }
     }
 
     /**
@@ -79,11 +83,11 @@ object BackupValidator {
     private fun ingredientIssue(
         ingredient: BackupIngredientDto,
         validFoods: Map<String, FoodItem>,
-        knownExistingFoodIds: Set<String>,
+        existingFoodServingUnits: Map<String, ServingUnit?>,
     ): String? =
         sourceIssue(ingredient)
             ?: amountIssue(ingredient)
-            ?: referenceIssue(ingredient, validFoods, knownExistingFoodIds)
+            ?: referenceIssue(ingredient, validFoods, existingFoodServingUnits)
 
     /** Exactly one of food reference or snapshot (mirrors `RecipeIngredient`). */
     private fun sourceIssue(ingredient: BackupIngredientDto): String? {
@@ -108,19 +112,30 @@ object BackupValidator {
         }
     }
 
-    /** The reference must resolve, either against this archive or against the target DB. */
+    /**
+     * The reference must resolve, either against this archive or against the
+     * target DB, and the serving-unit rule (W3) must hold for the food that
+     * will actually back the ingredient **after** the import: MERGE keeps a
+     * pre-existing local row on duplicates, so the target DB's serving unit
+     * wins where it exists — the same row `resolveIngredient` reads later.
+     */
     private fun referenceIssue(
         ingredient: BackupIngredientDto,
         validFoods: Map<String, FoodItem>,
-        knownExistingFoodIds: Set<String>,
+        existingFoodServingUnits: Map<String, ServingUnit?>,
     ): String? {
         val foodId = ingredient.foodItemId ?: return snapshotIssue(ingredient)
-        val food = validFoods[foodId]
-        if (food == null) {
-            return if (foodId in knownExistingFoodIds) null else "unbekannte Food-Referenz: $foodId"
-        }
+        val inArchive = foodId in validFoods
+        val inTargetDb = foodId in existingFoodServingUnits
+        if (!inArchive && !inTargetDb) return "unbekannte Food-Referenz: $foodId"
+        val servingUnit =
+            if (inTargetDb) {
+                existingFoodServingUnits.getValue(foodId)
+            } else {
+                validFoods.getValue(foodId).servingUnit
+            }
         val servingUnitMissing =
-            ingredient.servingCount != null && ingredient.rawWeightGrams == null && food.servingUnit == null
+            ingredient.servingCount != null && ingredient.rawWeightGrams == null && servingUnit == null
         return if (servingUnitMissing) "servingCount braucht eine ServingUnit des Lebensmittels" else null
     }
 

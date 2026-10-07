@@ -45,8 +45,10 @@ interface BackupDao {
     @Query("SELECT * FROM weight_logs")
     suspend fun readWeightLogs(): List<WeightLogEntity>
 
-    @Query("SELECT id FROM food_items")
-    suspend fun readFoodItemIds(): List<String>
+    @Query(
+        "SELECT id, serving_label AS servingLabel, serving_grams_equivalent AS servingGramsEquivalent FROM food_items",
+    )
+    suspend fun readFoodServingUnits(): List<FoodServingUnitRow>
 
     @Query("SELECT id FROM recipes")
     suspend fun readRecipeIds(): List<String>

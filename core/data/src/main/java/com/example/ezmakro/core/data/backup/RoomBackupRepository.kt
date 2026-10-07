@@ -25,7 +25,10 @@ class RoomBackupRepository(
         options: BackupOptions,
     ): Result<BackupExportSummary, DataError.Local> = exporter.export(uri, options)
 
-    override suspend fun preview(uri: String): Result<BackupPreview, DataError.Local> = importer.preview(uri)
+    override suspend fun preview(
+        uri: String,
+        mode: ImportMode,
+    ): Result<BackupPreview, DataError.Local> = importer.preview(uri, mode)
 
     override suspend fun import(
         uri: String,

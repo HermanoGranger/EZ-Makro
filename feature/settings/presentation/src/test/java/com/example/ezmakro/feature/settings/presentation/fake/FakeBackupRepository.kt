@@ -26,9 +26,14 @@ class FakeBackupRepository : BackupRepository {
     /** When set, `import` suspends on it instead of returning. */
     var importGate: CompletableDeferred<Unit>? = null
 
+    /** When set, `preview` suspends on it instead of returning. */
+    var previewGate: CompletableDeferred<Unit>? = null
+
     var exportCallCount = 0
         private set
     var importCallCount = 0
+        private set
+    var previewCallCount = 0
         private set
     var countsCallCount = 0
         private set
@@ -36,6 +41,7 @@ class FakeBackupRepository : BackupRepository {
     val exportUris = mutableListOf<String>()
     val exportOptions = mutableListOf<BackupOptions>()
     val importModes = mutableListOf<ImportMode>()
+    val previewModes = mutableListOf<ImportMode>()
 
     var previewResult: BackupPreview = DEFAULT_PREVIEW
     var report: ImportReport = DEFAULT_REPORT
@@ -53,7 +59,13 @@ class FakeBackupRepository : BackupRepository {
         return Result.Success(counts)
     }
 
-    override suspend fun preview(uri: String): Result<BackupPreview, DataError.Local> {
+    override suspend fun preview(
+        uri: String,
+        mode: ImportMode,
+    ): Result<BackupPreview, DataError.Local> {
+        previewCallCount++
+        previewModes += mode
+        previewGate?.await()
         error?.let { return Result.Error(it) }
         return Result.Success(previewResult)
     }

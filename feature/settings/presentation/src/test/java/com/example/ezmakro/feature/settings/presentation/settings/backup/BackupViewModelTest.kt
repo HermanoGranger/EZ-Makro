@@ -164,6 +164,35 @@ class BackupViewModelTest {
         }
 
     @Test
+    fun `OnModeChange with open preview re-runs the preview with the new mode`() =
+        runTest {
+            viewModel.onAction(BackupAction.OnBackupSelected(uri))
+            assertThat(repository.previewModes).containsExactly(ImportMode.MERGE)
+
+            viewModel.onAction(BackupAction.OnModeChange(ImportMode.REPLACE))
+
+            assertThat(repository.previewModes).containsExactly(ImportMode.MERGE, ImportMode.REPLACE)
+            assertThat(viewModel.state.value.preview).isEqualTo(repository.previewResult)
+        }
+
+    @Test
+    fun `re-preview result is dropped when the dialog closed meanwhile`() =
+        runTest {
+            viewModel.onAction(BackupAction.OnBackupSelected(uri))
+            val gate = CompletableDeferred<Unit>()
+            repository.previewGate = gate
+
+            viewModel.onAction(BackupAction.OnModeChange(ImportMode.REPLACE))
+            viewModel.onAction(BackupAction.OnDismissPreviewClick)
+
+            gate.complete(Unit)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertThat(repository.previewCallCount).isEqualTo(2)
+            assertThat(viewModel.state.value.preview).isNull()
+        }
+
+    @Test
     fun `OnDismissPreviewClick clears the preview without importing`() =
         runTest {
             viewModel.onAction(BackupAction.OnBackupSelected(uri))
@@ -245,6 +274,7 @@ class BackupViewModelTest {
             viewModel.onAction(BackupAction.OnModeChange(ImportMode.REPLACE))
 
             assertThat(viewModel.state.value.pendingMode).isEqualTo(ImportMode.REPLACE)
+            assertThat(repository.previewCallCount).isEqualTo(0)
         }
 
     private fun expectedFileName(): String {

@@ -1,6 +1,7 @@
 package com.example.ezmakro.core.data.backup
 
 import com.example.ezmakro.core.database.dao.BackupInsertReport
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.model.backup.BackupExportSummary
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
@@ -25,7 +26,13 @@ interface BackupLocalDataSource {
 
     suspend fun replaceAll(rows: BackupRows): Result<BackupInsertReport, DataError.Local>
 
-    suspend fun readFoodItemIds(): Result<Set<String>, DataError.Local>
+    /**
+     * Every existing food id mapped to its serving unit (`null` = the food has
+     * none). The stage-4 recipe validation resolves `servingCount` ingredients
+     * against exactly these target-DB rows after a MERGE import (W3), so it
+     * needs the serving unit, not just the id.
+     */
+    suspend fun readFoodServingUnits(): Result<Map<String, ServingUnit?>, DataError.Local>
 
     suspend fun readRecipeIds(): Result<Set<String>, DataError.Local>
 

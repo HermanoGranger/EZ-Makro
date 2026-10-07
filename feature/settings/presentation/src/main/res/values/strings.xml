@@ -34,9 +34,11 @@
     <string name="backup_report_duplicates">Duplikate übersprungen: %1$d</string>
     <string name="backup_report_skipped">Ungültige Zeilen: %1$d</string>
     <string name="backup_report_dropped_references">Verworfene Referenzen: %1$d</string>
+    <string name="backup_report_settings_restored">Einstellungen: %1$d wiederhergestellt</string>
     <string name="backup_report_skipped_row">%1$s/%2$s: %3$s</string>
     <string name="backup_warning_checksum">Prüfsumme fehlt oder stimmt nicht überein</string>
     <string name="backup_warning_invalid_row">Zeile übersprungen: %1$s/%2$s – %3$s</string>
+    <string name="backup_warning_settings">Daten importiert, aber die Einstellungen konnten nicht übernommen werden</string>
 
     <string name="backup_export_success">Backup wurde erstellt</string>
     <string name="backup_working">Bitte warten…</string>

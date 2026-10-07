@@ -1,11 +1,15 @@
 package com.example.ezmakro.core.data.backup
 
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import com.example.ezmakro.core.domain.model.ServingUnit
+import com.example.ezmakro.core.domain.model.backup.BackupWarning
 import com.example.ezmakro.core.domain.model.backup.ImportMode
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Error
@@ -52,7 +56,7 @@ class BackupImporterTest {
     @Test
     fun `merge resolves a reference that exists only in the local database`() =
         runTest {
-            local.existingFoodIds = setOf("db-only-food")
+            local.existingFoodServingUnits = mapOf("db-only-food" to null)
             put(BackupContentDto(diaryEntries = listOf(entryTo("db-only-food"))))
 
             val report = importer.import(DOC, ImportMode.MERGE).expectSuccess()
@@ -68,7 +72,7 @@ class BackupImporterTest {
     @Test
     fun `replace resolves references only against the archive`() =
         runTest {
-            local.existingFoodIds = setOf("db-only-food")
+            local.existingFoodServingUnits = mapOf("db-only-food" to null)
             put(BackupContentDto(diaryEntries = listOf(entryTo("db-only-food"))))
 
             val report = importer.import(DOC, ImportMode.REPLACE).expectSuccess()
@@ -110,11 +114,25 @@ class BackupImporterTest {
         }
 
     @Test
+    fun `settings restore failure keeps the committed import as a success with a warning`() =
+        runTest {
+            put(BackupContentDto(settings = seedSettings))
+            local.restoreSettingsError = DataError.Local.DISK_FULL
+
+            val report = importer.import(DOC, ImportMode.MERGE).expectSuccess()
+
+            assertThat(report.settingsRestored).isEqualTo(0)
+            assertThat(report.warnings).contains(BackupWarning.SettingsRestoreFailed)
+            assertThat(local.restoredSettings).isNull()
+            assertThat(local.insertAllCalls).isEqualTo(1)
+        }
+
+    @Test
     fun `preview never writes`() =
         runTest {
             put(seedContent())
 
-            val preview = importer.preview(DOC).expectSuccess()
+            val preview = importer.preview(DOC, ImportMode.MERGE).expectSuccess()
 
             assertThat(preview.foodItemCount).isEqualTo(4)
             assertThat(preview.recipeCount).isEqualTo(1)
@@ -122,6 +140,99 @@ class BackupImporterTest {
             assertThat(local.insertAllCalls).isEqualTo(0)
             assertThat(local.replaceAllCalls).isEqualTo(0)
             assertThat(local.restoredSettings).isNull()
+        }
+
+    @Test
+    fun `preview resolves recipe ingredients against the known ids of its mode`() =
+        runTest {
+            local.existingFoodServingUnits = mapOf("db-only-food" to null)
+            put(
+                BackupContentDto(
+                    recipes =
+                        listOf(
+                            BackupTestData
+                                .recipe()
+                                .toBackup()
+                                .copy(
+                                    ingredients =
+                                        listOf(
+                                            BackupTestData.ingredient(foodId = "db-only-food").toBackup(),
+                                        ),
+                                ),
+                        ),
+                ),
+            )
+
+            val merge = importer.preview(DOC, ImportMode.MERGE).expectSuccess()
+            val replace = importer.preview(DOC, ImportMode.REPLACE).expectSuccess()
+
+            assertThat(merge.warnings.filterIsInstance<BackupWarning.InvalidRow>()).hasSize(0)
+            val invalidRow = replace.warnings.filterIsInstance<BackupWarning.InvalidRow>().single()
+            assertThat(invalidRow.reason).isEqualTo("unbekannte Food-Referenz: db-only-food")
+        }
+
+    @Test
+    fun `merge validates the serving unit against a food that exists only in the target database`() =
+        runTest {
+            local.existingFoodServingUnits = mapOf("db-only-food" to null)
+            put(
+                recipeContent(
+                    BackupTestData
+                        .ingredient(foodId = "db-only-food", grams = null, servingCount = 2.0)
+                        .toBackup(),
+                ),
+            )
+
+            val report = importer.import(DOC, ImportMode.MERGE).expectSuccess()
+
+            assertThat(report.skippedRows.single().reason)
+                .isEqualTo("servingCount braucht eine ServingUnit des Lebensmittels")
+            assertThat(local.rows.recipes).isEmpty()
+            assertThat(local.rows.ingredients).isEmpty()
+        }
+
+    @Test
+    fun `merge accepts a target-db-only food that has a serving unit`() =
+        runTest {
+            local.existingFoodServingUnits =
+                mapOf("db-only-food" to ServingUnit(label = "Portion", gramsEquivalent = 100.0))
+            put(
+                recipeContent(
+                    BackupTestData
+                        .ingredient(foodId = "db-only-food", grams = null, servingCount = 2.0)
+                        .toBackup(),
+                ),
+            )
+
+            val report = importer.import(DOC, ImportMode.MERGE).expectSuccess()
+
+            assertThat(report.skippedRows).isEmpty()
+            assertThat(local.rows.recipes).hasSize(1)
+            assertThat(local.rows.ingredients).hasSize(1)
+        }
+
+    @Test
+    fun `the target-db serving unit wins over the archive's on merge`() =
+        runTest {
+            local.existingFoodServingUnits = mapOf("shared-food" to null)
+            val archiveFood =
+                BackupTestData
+                    .food("shared-food")
+                    .copy(servingLabel = "Portion", servingGramsEquivalent = 100.0)
+            put(
+                recipeContent(
+                    BackupTestData
+                        .ingredient(foodId = "shared-food", grams = null, servingCount = 2.0)
+                        .toBackup(),
+                    foods = listOf(archiveFood.toBackup()),
+                ),
+            )
+
+            val report = importer.import(DOC, ImportMode.MERGE).expectSuccess()
+
+            assertThat(report.skippedRows.single().reason)
+                .isEqualTo("servingCount braucht eine ServingUnit des Lebensmittels")
+            assertThat(local.rows.recipes).isEmpty()
         }
 
     @Test
@@ -144,6 +255,22 @@ class BackupImporterTest {
             .foodEntry(foodEntity = BackupTestData.food("snapshot-source"))
             .toBackup()
             .copy(foodItemId = foodId)
+
+    /** A document with one recipe whose ingredients are the given archive rows. */
+    private fun recipeContent(
+        vararg ingredients: BackupIngredientDto,
+        foods: List<BackupFoodItemDto> = emptyList(),
+    ): BackupContentDto =
+        BackupContentDto(
+            foodItems = foods,
+            recipes =
+                listOf(
+                    BackupTestData
+                        .recipe()
+                        .toBackup()
+                        .copy(ingredients = ingredients.toList()),
+                ),
+        )
 
     private val seedSettings =
         listOf(

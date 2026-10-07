@@ -364,7 +364,7 @@ class BackupRoundTripTest {
             wipeDatabase()
             settings.clear()
 
-            val preview = importer.preview(DOC).expectSuccess()
+            val preview = importer.preview(DOC, ImportMode.MERGE).expectSuccess()
 
             assertThat(preview.foodItemCount).isEqualTo(4)
             assertThat(preview.recipeCount).isEqualTo(1)

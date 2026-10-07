@@ -1,9 +1,11 @@
 package com.example.ezmakro.core.data.backup
 
 import com.example.ezmakro.core.data.datastore.SettingsDataStore
+import com.example.ezmakro.core.data.food.mapper.toServingUnit
 import com.example.ezmakro.core.data.logging.AppLogger
 import com.example.ezmakro.core.database.dao.BackupDao
 import com.example.ezmakro.core.database.dao.BackupInsertReport
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.model.backup.BackupExportSummary
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
@@ -46,8 +48,12 @@ class RoomBackupLocalDataSource(
             dao.replaceAll(rows.foods, rows.recipes, rows.ingredients, rows.diaryEntries, rows.weightLogs)
         }
 
-    override suspend fun readFoodItemIds(): Result<Set<String>, DataError.Local> =
-        runCatchingLocal { dao.readFoodItemIds().toSet() }
+    override suspend fun readFoodServingUnits(): Result<Map<String, ServingUnit?>, DataError.Local> =
+        runCatchingLocal {
+            dao
+                .readFoodServingUnits()
+                .associate { row -> row.id to toServingUnit(row.servingLabel, row.servingGramsEquivalent) }
+        }
 
     override suspend fun readRecipeIds(): Result<Set<String>, DataError.Local> =
         runCatchingLocal { dao.readRecipeIds().toSet() }

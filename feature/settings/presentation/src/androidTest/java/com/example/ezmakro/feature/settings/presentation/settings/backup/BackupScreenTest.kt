@@ -246,6 +246,7 @@ class BackupScreenTest {
         composeTestRule.onNodeWithText("Duplikate übersprungen: 1").assertExists()
         composeTestRule.onNodeWithText("Ungültige Zeilen: 2").assertExists()
         composeTestRule.onNodeWithText("Verworfene Referenzen: 4").assertExists()
+        composeTestRule.onNodeWithText("Einstellungen: 1 wiederhergestellt").assertExists()
         composeTestRule.onNodeWithText("Zeile übersprungen: food_items/f1 – kcal fehlt").assertExists()
         composeTestRule.onNodeWithText("food_items/f1: kcal fehlt").assertExists()
         composeTestRule.onNodeWithText("recipes/r1: Name fehlt").assertExists()
@@ -258,6 +259,24 @@ class BackupScreenTest {
         composeTestRule.onNodeWithText(okLabel()).performClick()
 
         assertEquals(BackupAction.OnDismissReportClick, actions.last())
+    }
+
+    @Test
+    fun reportDialog_showsSettingsRestoreFailedWarning() {
+        setScreen(
+            BackupState(
+                importReport =
+                    sampleReport().copy(
+                        settingsRestored = 0,
+                        warnings = sampleReport().warnings + BackupWarning.SettingsRestoreFailed,
+                    ),
+            ),
+        )
+
+        composeTestRule
+            .onNodeWithText("Daten importiert, aber die Einstellungen konnten nicht übernommen werden")
+            .assertExists()
+        composeTestRule.onNodeWithText("Einstellungen: 0 wiederhergestellt").assertDoesNotExist()
     }
 
     @Test

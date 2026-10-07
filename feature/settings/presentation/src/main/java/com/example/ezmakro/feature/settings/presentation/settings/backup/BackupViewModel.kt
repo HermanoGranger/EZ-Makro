@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.settings.presentation.settings.backup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.backup.BackupOptions
+import com.example.ezmakro.core.domain.model.backup.ImportMode
 import com.example.ezmakro.core.domain.repository.BackupRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.presentation.uitext.UiText
@@ -56,10 +57,18 @@ class BackupViewModel(
             BackupAction.OnImportClick -> emit(BackupEvent.RequestOpenDocument)
 
             is BackupAction.OnBackupSelected ->
-                action.uri?.let(::loadPreview)
+                action.uri?.let { loadPreview(it, _state.value.pendingMode) }
 
-            is BackupAction.OnModeChange ->
+            is BackupAction.OnModeChange -> {
                 _state.update { it.copy(pendingMode = action.mode) }
+                // The preview dialog offers the mode switch (A6) and stage 4b
+                // validates per mode (A19) — re-run the dry run so the shown
+                // warnings match what an import in this mode would do.
+                val uri = pendingUri
+                if (uri != null && _state.value.preview != null && !_state.value.isImporting) {
+                    loadPreview(uri, action.mode, revalidate = true)
+                }
+            }
 
             BackupAction.OnConfirmImportClick -> confirmImport()
 
@@ -90,12 +99,28 @@ class BackupViewModel(
         }
     }
 
-    private fun loadPreview(uri: String) {
+    /**
+     * Runs the dry run for [uri] under [mode]. A [revalidate] pass belongs to
+     * an already-open preview dialog: its result is dropped when the dialog
+     * closed, the mode changed again or the import finished meanwhile, so a
+     * late response can never resurrect or overwrite the dialog state.
+     */
+    private fun loadPreview(
+        uri: String,
+        mode: ImportMode,
+        revalidate: Boolean = false,
+    ) {
         viewModelScope.launch {
-            when (val result = repository.preview(uri)) {
+            when (val result = repository.preview(uri, mode)) {
                 is Result.Success -> {
-                    pendingUri = uri
-                    _state.update { it.copy(preview = result.data) }
+                    val current = _state.value
+                    val stillCurrent =
+                        !revalidate ||
+                            (current.preview != null && current.pendingMode == mode && !current.isImporting)
+                    if (stillCurrent) {
+                        pendingUri = uri
+                        _state.update { it.copy(preview = result.data) }
+                    }
                 }
 
                 is Result.Error ->

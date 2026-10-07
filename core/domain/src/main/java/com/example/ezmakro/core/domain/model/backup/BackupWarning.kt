@@ -15,4 +15,11 @@ sealed interface BackupWarning {
         val id: String,
         val reason: String,
     ) : BackupWarning
+
+    /**
+     * The database commit succeeded but the settings restore afterwards failed
+     * (DataStore lies outside Room, §3.4): the imported rows are valid and
+     * committed, `ImportReport.settingsRestored` is 0.
+     */
+    data object SettingsRestoreFailed : BackupWarning
 }

@@ -23,8 +23,17 @@ interface BackupRepository {
         options: BackupOptions = BackupOptions(),
     ): Result<BackupExportSummary, DataError.Local>
 
-    /** Reads [uri] without writing anything: counts, date span, warnings. */
-    suspend fun preview(uri: String): Result<BackupPreview, DataError.Local>
+    /**
+     * Reads [uri] without writing anything: counts, date span, warnings.
+     *
+     * [mode] decides which known-id set the row validation resolves against
+     * (A19), so switching the mode in the preview dialog can re-run this dry
+     * run and show mode-specific warnings.
+     */
+    suspend fun preview(
+        uri: String,
+        mode: ImportMode,
+    ): Result<BackupPreview, DataError.Local>
 
     /** Validates and imports [uri] in the given [mode]; settings follow after the commit. */
     suspend fun import(

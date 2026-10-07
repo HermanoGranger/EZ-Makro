@@ -245,7 +245,7 @@ Datei: `ezmakro-backup-<yyyy-MM-dd-HHmm>.json`, MIME `application/json`.
 bei Abbruch: `null` → nichts tun; bei Uri: Action `OnDocumentCreated(uri)` →
 `BackupRepository.exportTo(uri, options)` → Event `ShowMessage(erfolgreich)`.
 
-**Ablauf Import:** Button → `OpenDocument(arrayOf("application/json", "text/plain", "application/octet-stream"))` → Action `OnBackupSelected(uri)` → `BackupRepository.preview(uri)` → Preview-Dialog:
+**Ablauf Import:** Button → `OpenDocument(arrayOf("application/json", "text/plain", "application/octet-stream"))` → Action `OnBackupSelected(uri)` → `BackupRepository.preview(uri, pendingMode)` → Preview-Dialog (ein Moduswechsel im Dialog löst `preview(uri, mode)` mit den Known-IDs nach A19 neu aus):
 
 ```
 ┌─ Backup einspielen ─────────────────────┐
@@ -310,6 +310,11 @@ geschrieben oder unverändert. Erst **nach** erfolgreichem Commit werden die Set
 gilt für die Tabellen — ein Rollback der DB lässt die Settings unangetastet).
 Daraus folgt die Reihenfolge im Importer: dekodieren → Stufe 4 → Stufe 5 →
 Transaktion (`insertAll`/`replaceAll`) → Settings → Report.
+**Randfallregel (Review-Befund W2):** Schlägt der Settings-Schreibvorgang
+**nach** dem Commit fehl, wird der Import **nicht** zum `Result.Error` — der
+Report kommt mit `settingsRestored = 0` und der Warnung
+`BackupWarning.SettingsRestoreFailed` zurück; die Tabellen sind gültig
+übernommen. Erst Fehler **vor** oder **in** der Transaktion bleiben hart.
 
 ---
 
@@ -388,7 +393,10 @@ Room-Schicht und weiß nichts über Backup-Dateien.
        @Query("SELECT * FROM diary_entries") suspend fun readDiaryEntries(): List<DiaryEntryEntity>
        @Query("SELECT * FROM weight_logs") suspend fun readWeightLogs(): List<WeightLogEntity>
 
-       @Query("SELECT id FROM food_items") suspend fun readFoodItemIds(): List<String>
+       // Ziel-DB-Kontext für Stufe 4 (A19, W3): id + ServingUnit-Spalten, damit
+       // „servingCount braucht ServingUnit" auch gegen DB-only-Foods geprüft wird
+       @Query("SELECT id, serving_label AS servingLabel, serving_grams_equivalent AS servingGramsEquivalent FROM food_items")
+       suspend fun readFoodServingUnits(): List<FoodServingUnitRow> // row = (id, servingLabel, servingGramsEquivalent)
        @Query("SELECT id FROM recipes") suspend fun readRecipeIds(): List<String>
 
        // Schreiben — IGNORE auf den natürlichen Schlüsseln (A7)
@@ -549,19 +557,19 @@ müssen **unverändert** grün sein.
 
 ### Akzeptanzkriterien
 
-- [ ] `BackupDao` hat keine Entity-Listen-Queries mit mehr als einem Parameter;
+- [x] `BackupDao` hat keine Entity-Listen-Queries mit mehr als einem Parameter;
       keine neue `@Suppress("LongParameterList")` in diesem WP
-- [ ] Der Merge-Pfad überschreibt **keine** bestehende Zeile und setzt
+- [x] Der Merge-Pfad überschreibt **keine** bestehende Zeile und setzt
       `is_favorite`/`last_used_at` **nicht** zurück (Test)
-- [ ] Zweimal identisches `insertAll` erzeugt **keine** doppelten
+- [x] Zweimal identisches `insertAll` erzeugt **keine** doppelten
       `recipe_ingredients`-Zeilen; gefilterte Zutaten zählen als `skipped`
       (A7/A19, Test)
-- [ ] Nach `insertAll` ist der FTS-Index vollständig (`searchByName`-Test)
-- [ ] `replaceAll` ist eine einzige Transaktion und FK-sicher (Reihenfolge
+- [x] Nach `insertAll` ist der FTS-Index vollständig (`searchByName`-Test)
+- [x] `replaceAll` ist eine einzige Transaktion und FK-sicher (Reihenfolge
       Kinder vor Eltern)
-- [ ] `DatabaseModule.kt` folgt dem bestehenden Binding-Muster
-- [ ] `core:database` enthält keinerlei JSON-/Format-/`@Serializable`-Code
-- [ ] Bestehende `:core:database`-Tests unverändert grün
+- [x] `DatabaseModule.kt` folgt dem bestehenden Binding-Muster
+- [x] `core:database` enthält keinerlei JSON-/Format-/`@Serializable`-Code
+- [x] Bestehende `:core:database`-Tests unverändert grün
 
 **Commit-Vorschlag:** `feat: BackupDao - Roh-Zugriff und transaktionaler Import auf alle Tabellen`
 
@@ -832,22 +840,22 @@ Funktion `BackupContentDto` ↔ `String` und vollständig ohne Android testbar.
 
 ### Akzeptanzkriterien
 
-- [ ] `BackupCodec` ist Android-frei und ohne Room testbar
-- [ ] Alle **optionalen** Felder in `BackupArchive.kt` haben Default-Werte;
+- [x] `BackupCodec` ist Android-frei und ohne Room testbar
+- [x] Alle **optionalen** Felder in `BackupArchive.kt` haben Default-Werte;
       die Pflichtfelder (`format`, `formatVersion`, `appVersion*`,
       `exportedAtEpochMillis`, `dbSchemaVersion`, `content`) bleiben
       default-frei und enden als `Corrupted`, bei `format` als `NotAZBackup`
       (A12, Tests)
-- [ ] `decode` unterscheidet `NotAZBackup`, `UnsupportedVersion`, `Corrupted`
-- [ ] Ein Prüfsummen-Mismatch ist **kein** Abbruch (A14)
-- [ ] `backup-v1-evolved.json` wird fehlerfrei dekodiert — der
+- [x] `decode` unterscheidet `NotAZBackup`, `UnsupportedVersion`, `Corrupted`
+- [x] Ein Prüfsummen-Mismatch ist **kein** Abbruch (A14)
+- [x] `backup-v1-evolved.json` wird fehlerfrei dekodiert — der
       Vorwärtskompatibilitäts-Nachweis liegt als Test vor
-- [ ] `settings` ist eine sortierte Liste; `canonicalContent` ist bei
+- [x] `settings` ist eine sortierte Liste; `canonicalContent` ist bei
       unterschiedlicher Eingangsreihenfolge identisch
-- [ ] Kein Feld des Formats heißt `rowId`/`row_id`; `food_items_fts` kommt im
+- [x] Kein Feld des Formats heißt `rowId`/`row_id`; `food_items_fts` kommt im
       Format nicht vor (A13)
-- [ ] `ADR-007` existiert und nennt die Forward-Kompatibilitätsregeln
-- [ ] Bestehende `:core:data`-Tests unverändert grün
+- [x] `ADR-007` existiert und nennt die Forward-Kompatibilitätsregeln
+- [x] Bestehende `:core:data`-Tests unverändert grün
 
 **Commit-Vorschlag:** `feat: versioniertes Backup-Format mit Codec, Pruefsumme und Forward-Kompatibilitaets-Fixtures`
 
@@ -966,7 +974,7 @@ Integrationstest Export → Import.
            options: BackupOptions = BackupOptions(),
        ): Result<BackupExportSummary, DataError.Local>
 
-        suspend fun preview(uri: String): Result<BackupPreview, DataError.Local>
+         suspend fun preview(uri: String, mode: ImportMode): Result<BackupPreview, DataError.Local>
 
         suspend fun import(uri: String, mode: ImportMode): Result<ImportReport, DataError.Local>
 
@@ -976,8 +984,8 @@ Integrationstest Export → Import.
    ```
 
    Dazu `core/data/.../backup/BackupLocalDataSource.kt` mit
-   `readAll(): BackupRows`, `insertAll(...)`, `replaceAll(...)`,
-   `readFoodItemIds()`, `readRecipeIds()`, `countAll()` (Interface +
+`readAll(): BackupRows`, `insertAll(...)`, `replaceAll(...)`,
+    `readFoodServingUnits()`, `readRecipeIds()`, `countAll()` (Interface +
    `BackupRows` dort, Begründung siehe Vorgaben; Registrierung des Fakes in
    `core/data/src/test`). Und
    `core/domain/.../util/AppVersionProvider.kt`:
@@ -1062,17 +1070,21 @@ Integrationstest Export → Import.
      `require(name.isNotBlank())`, Nährwerte ≥ 0); bei Erfolg den
      `FoodItem` zurückgeben — die validen Ergebnisse werden vom Importer als
      `validFoods: Map<String, FoodItem>` gesammelt
-   - `fun validateRecipe(recipe: BackupRecipeDto, validFoods: Map<String, FoodItem>,
-     knownExistingFoodIds: Set<String>): Boolean` — **eigene, backup-interne
-     Prüfung**, spiegelt die Invarianten des Bestands-Mappers
-     (`RecipeEntityMapper.resolveIngredient`): pro Zutat **genau eine** Quelle
-     (`foodItemId XOR recipeSnapshot`), `rawWeight > 0` bzw.
-     `servingCount > 0`, Auflösbarkeit jeder Food-Referenz gegen
-     `validFoods` ∪ (nur MERGE) `knownExistingFoodIds`, Zutatenliste nicht
-     leer, `portions > 0`. **Niemals** `RecipeEntity.toRecipe(...)` mit
-     `foodLocalDataSource` — dieser Mapper hängt an der Ziel-DB und würde auf
-     einer leeren DB (`REPLACE`, frischer Start) **jedes** Rezept verwerfen
-     (Review-Befund 🔴)
+- `fun validateRecipe(recipe: BackupRecipeDto, validFoods: Map<String, FoodItem>,
+      existingFoodServingUnits: Map<String, ServingUnit?>): Boolean` — **eigene,
+      backup-interne Prüfung**, spiegelt die Invarianten des Bestands-Mappers
+      (`RecipeEntityMapper.resolveIngredient`): pro Zutat **genau eine** Quelle
+      (`foodItemId XOR recipeSnapshot`), `rawWeight > 0` bzw.
+      `servingCount > 0`, Auflösbarkeit jeder Food-Referenz gegen
+      `validFoods` ∪ `existingFoodServingUnits.keys` (nur MERGE; REPLACE = leere
+      Map), **ServingUnit-Regel** (`servingCount` ohne `rawWeight` braucht eine
+      ServingUnit) gegen den Eintrag, der nach dem Import gilt — Ziel-DB vor
+      Archiv, weil MERGE bei Duplikaten die lokale Zeile behält und der
+      Laufzeit-Mapper immer gegen die DB auflöst (W3); Zutatenliste nicht
+      leer, `portions > 0`. **Niemals** `RecipeEntity.toRecipe(...)` mit
+      `foodLocalDataSource` — dieser Mapper hängt an der Ziel-DB und würde auf
+      einer leeren DB (`REPLACE`, frischer Start) **jedes** Rezept verwerfen
+      (Review-Befund 🔴)
    - `fun validateDiaryEntry(entry: BackupDiaryEntryDto): Boolean` über
      `DiaryEntryEntity.toDiaryEntry()` (greift `MealSlot.valueOf`,
      `LocalDate.parse`, Snapshot-Dekodierung, Food/Recipe-XOR)
@@ -1098,14 +1110,16 @@ Integrationstest Export → Import.
     - Ergebnis `BackupExportSummary` mit den tatsächlich geschriebenen Counts
 
 11. **Importer** — `core/data/.../backup/BackupImporter.kt`:
-    - `preview(uri)`: lesen → `BackupCodec.decode` → Fehler nach `DataError.Local`
-      mappen → Counts + Datumsspanne (aus `diaryEntries.date` und `weightLogs.date`)
-      + Warnungen (Prüfsumme, Zeilenprobleme) — **kein** Schreibzugriff
+    - `preview(uri, mode)`: lesen → `BackupCodec.decode` → Fehler nach `DataError.Local`
+      mappen → Stufe 4 mit Known-IDs je Modus (A19, wie `import`) → Counts +
+      Datumsspanne (aus `diaryEntries.date` und `weightLogs.date`) + Warnungen
+      (Prüfsumme, Zeilenprobleme) — **kein** Schreibzugriff
     - `import(uri, mode)`: lesen → dekodieren → **Stufen 4–5 gemäß §3.4**:
       validen Foods sammeln (`validFoods`), Rezepte gegen `validFoods` +
       Known-IDs prüfen, Tagebucheinträge mappen. Known-IDs je Modus nach A19:
-      MERGE = bestehende IDs (per `readFoodItemIds()`/`readRecipeIds()`) ∪
-      gültige Backup-IDs, REPLACE = nur gültige Backup-IDs. Unbekannte
+      MERGE = bestehende IDs (per `readFoodServingUnits()`/`readRecipeIds()`,
+      bei Foods inkl. ServingUnit für die W3-Regel) ∪ gültige Backup-IDs,
+      REPLACE = nur gültige Backup-IDs. Unbekannte
       `foodItemId`/`recipeId` bei Tagebucheinträgen auf `null` setzen
       (Snapshot bleibt Inhalt) **und** `droppedReferences` zählen; Einträge
       ohne dekodierbaren Snapshot werden als `skippedRows` verworfen →
@@ -1208,7 +1222,7 @@ In-Memory-`BackupStorage`) ist der Kern dieses WPs:
 - **Falsche Datei** → `Result.Error(DataError.Local.INVALID_BACKUP)`;
   **Zukunftsformat** → `UNSUPPORTED_BACKUP_VERSION`; **abgeschnitten** →
   `INVALID_BACKUP`.
-- **Preview schreibt nicht:** `preview(uri)` verändert keine der fünf Tabellen.
+- **Preview schreibt nicht:** `preview(uri, mode)` verändert keine der fünf Tabellen.
 - **Settings:** `goal_*`-Keys nach `restore()` identisch; Snapshot/Restore ist
   bei leerem Store eine No-Op.
 - **Settings erst nach Commit:** das Fake-`BackupLocalDataSource` wirft beim
@@ -1238,30 +1252,37 @@ schreibt mehrere Keys, `clear()` danach leert vollständig.
 
 ### Akzeptanzkriterien
 
-- [ ] `core:domain` bleibt Android-frei; `Uri`/`Context` kommen dort nicht vor.
+- [x] `core:domain` bleibt Android-frei; `Uri`/`Context` kommen dort nicht vor.
       Backup-seitig liegen dort nur `BackupRepository`, die Domain-Modelle und
       `AppVersionProvider` — **kein** `BackupLocalDataSource`, keine
       `BackupRows`/`BackupInsertReport`, keine Entities (Vorgaben)
-- [ ] `DataError.Local` hat die zwei neuen Cases, `DataErrorUiText` ist vollständig
-- [ ] Ein Fehler im Backup führt zu `Result.Error`, nie zu einer Exception in
+- [x] `DataError.Local` hat die zwei neuen Cases, `DataErrorUiText` ist vollständig
+- [x] Ein Fehler im Backup führt zu `Result.Error`, nie zu einer Exception in
       den ViewModel
-- [ ] Der Datenbank-Import läuft vollständig in **einer** Transaktion;
+- [x] Der Datenbank-Import läuft vollständig in **einer** Transaktion;
       `restore()` wird erst **nach** erfolgreichem Commit aufgerufen (A11, A16)
-- [ ] Merge überschreibt keine bestehende Zeile und setzt `is_favorite` /
+- [x] Ein Settings-Fehler **nach** dem Commit liefert weiterhin einen
+      Erfolgsreport (`settingsRestored = 0` + `BackupWarning.SettingsRestoreFailed`),
+      nie `Result.Error` (§3.4-Randfallregel, Review-Befund W2, Test)
+- [x] Merge überschreibt keine bestehende Zeile und setzt `is_favorite` /
       `last_used_at` nicht zurück (A7)
-- [ ] Zweimal gleicher MERGE-Import erzeugt keine doppelten
+- [x] Zweimal gleicher MERGE-Import erzeugt keine doppelten
       `recipe_ingredients`-Zeilen; `ImportReport.skippedDuplicates` zählt
       Duplikate getrennt von `skippedRows` (A7/A18/A19, Test)
-- [ ] Favoriten (`is_favorite = 1`) werden immer exportiert (A5, Test)
-- [ ] Rezept-Zutaten werden backup-intern gegen `validFoods` ∪ Known-IDs
+- [x] Favoriten (`is_favorite = 1`) werden immer exportiert (A5, Test)
+- [x] Rezept-Zutaten werden backup-intern gegen `validFoods` ∪ Known-IDs
       geprüft; `RecipeEntity.toRecipe(..., foodLocalDataSource)` wird im
       Backup-Pfad nie aufgerufen (A19, Review-Befund 🔴, Test auf leerer DB)
-- [ ] `dbSchemaVersion` wird geschrieben, aber beim Import **nicht** ausgewertet (A2)
-- [ ] Settings laufen über `SettingsDataStore.snapshot()/restore()`, ohne
+- [x] Die ServingUnit-Regel wird auch gegen Foods geprüft, die nur in der
+      Ziel-DB existieren (MERGE); bei Duplikaten siegt die Ziel-DB-ServingUnit
+      über die Archiv-Version — kein „eingefügtes, aber unsichtbares" Rezept
+      (W3, Tests in `BackupImporterTest`)
+- [x] `dbSchemaVersion` wird geschrieben, aber beim Import **nicht** ausgewertet (A2)
+- [x] Settings laufen über `SettingsDataStore.snapshot()/restore()`, ohne
       hartkodierte Goal-Keys (A10)
-- [ ] `backup-v1-evolved.json` importiert erfolgreich in eine echte DB (Ende-zu-Ende)
-- [ ] Kein `FileProvider`, kein Manifest-Eintrag, kein `Context` in `:core:database`
-- [ ] Bestehende `:core:data`-/`:core:domain`-Tests unverändert grün
+- [x] `backup-v1-evolved.json` importiert erfolgreich in eine echte DB (Ende-zu-Ende)
+- [x] Kein `FileProvider`, kein Manifest-Eintrag, kein `Context` in `:core:database`
+- [x] Bestehende `:core:data`-/`:core:domain`-Tests unverändert grün
 
 **Commit-Vorschlag:** `feat: BackupRepository mit SAF-Export, Preview, Merge/Replace-Import und Validierung`
 
@@ -1382,16 +1403,20 @@ Einstieg über die Diary-TopAppBar.
      `isExporting` immer zurücksetzen
    - `OnImportClick` → Event `RequestOpenDocument`
    - `OnBackupSelected(null)` → nichts tun
-   - `OnBackupSelected(uri)` → `repository.preview(uri)` → `state.preview` oder Fehlermeldung
+    - `OnBackupSelected(uri)` → `repository.preview(uri, pendingMode)` → `state.preview` oder Fehlermeldung
    - `OnConfirmImportClick` → `isImporting = true`, `repository.import(uri,
      pendingMode)` → Erfolg: `state.importReport` (und `preview = null`) **und
      die Counts per `counts()` neu laden** (sonst zeigt der Screen nach dem
      Import alte Zahlen, 🟡-Befund); Fehler → Meldung; `isImporting` immer
      zurücksetzen
-   - Abbruch-Dialogs setzen `preview`/`importReport` auf `null`
-   - `OnModeChange` verändert **nur** `pendingMode` — die Warnung für `REPLACE`
-     ist reine UI-Zustandsableitung (`pendingMode == REPLACE`), keine zweite
-     Confirm-Action im ViewModel
+    - Abbruch-Dialogs setzen `preview`/`importReport` auf `null`
+    - `OnModeChange` setzt `pendingMode` und löst bei offenem Preview-Dialog ein
+      Re-Preview `repository.preview(uri, mode)` aus (Review-Befund W1 — die
+      Vorschau soll unter denselben Known-IDs rechnen wie der spätere Import);
+      ein verspätetes Ergebnis wird verworfen, wenn der Dialog inzwischen
+      geschlossen wurde, der Modus erneut gewechselt hat oder der Import
+      läuft. Die Warnung für `REPLACE` bleibt reine UI-Zustandsableitung
+      (`pendingMode == REPLACE`), keine zweite Confirm-Action im ViewModel
    - `ShowMessage` **nicht** verschlucken (P3.4-Lehre: Events konsistent behandeln)
 
 3. **Screen** — `BackupScreen.kt` (Root mit `koinViewModel()`, Scaffold mit
@@ -1557,6 +1582,9 @@ Fake-`BackupRepository` mit schaltbarem Fehler):
 - Nach erfolgreichem Import werden die Counts **neu geladen** (Fake zählt die
   `counts()`-Aufrufe: `init` + nach `import`, 🟡-Befund)
 - `OnModeChange(REPLACE)` → `import(uri, REPLACE)`; Abbruch setzt `preview = null`
+- `OnModeChange` bei offenem Dialog → zweiter `preview(uri, mode)`-Aufruf mit dem
+  neuen Modus; ohne offenen Dialog kein Aufruf (Review-Befund W1); ein
+  verspätetes Re-Preview-Ergebnis nach `OnDismissPreviewClick` wird verworfen
 - `ShowMessage` wird nicht verschluckt; `NavigateBack` bei `OnBackClick`
 - Doppelter Klick während `isExporting`/`isImporting` löst keinen zweiten
   Repository-Aufruf aus
@@ -1580,27 +1608,29 @@ unverändert grün (der neue Callback ist ein Default-Parameter).
 
 ### Akzeptanzkriterien
 
-- [ ] `:feature:settings:presentation` hängt **nicht** an `:core:data` oder
+- [x] `:feature:settings:presentation` hängt **nicht** an `:core:data` oder
       `:core:database` (Gradle-Abhängigkeiten prüfen)
-- [ ] Alle nutzersichtbaren Texte kommen aus `strings.xml` über `UiText`
-- [ ] Der ViewModel referenziert weder `Uri` noch `ActivityResultContracts`
-- [ ] Ein abgebrochener SAF-Dialog löst **keinen** Import/Export aus
-- [ ] Der Preview-Dialog zeigt App-Version, Format-Version, Counts und Zeitraum
-- [ ] `REPLACE` ist nur nach einem zusätzlichen Bestätigungsdialog wählbar
-- [ ] Der Report-Dialog zeigt eingefügte, duplikat-übersprungene, ungültige
+- [x] Alle nutzersichtbaren Texte kommen aus `strings.xml` über `UiText`
+- [x] Der ViewModel referenziert weder `Uri` noch `ActivityResultContracts`
+- [x] Ein abgebrochener SAF-Dialog löst **keinen** Import/Export aus
+- [x] Der Preview-Dialog zeigt App-Version, Format-Version, Counts und Zeitraum
+- [x] Ein Moduswechsel im Preview-Dialog lädt die Vorschau modusspezifisch neu;
+      verspätete Ergebnisse werden verworfen (Review-Befund W1, Test)
+- [x] `REPLACE` ist nur nach einem zusätzlichen Bestätigungsdialog wählbar
+- [x] Der Report-Dialog zeigt eingefügte, duplikat-übersprungene, ungültige
       und referenz-verworfene Zeilen getrennt (A18)
-- [ ] Nach einem erfolgreichen Import zeigen die Bestandszahlen den neuen
+- [x] Nach einem erfolgreichen Import zeigen die Bestandszahlen den neuen
       Stand (Counts-Refresh, Test)
-- [ ] `ShowMessage`-Events werden in Snackbar angezeigt (keine verschluckten
+- [x] `ShowMessage`-Events werden in Snackbar angezeigt (keine verschluckten
       Events, P3.4)
-- [ ] Der Einstieg läuft über das **bestehende** Ziele-Zahnrad →
+- [x] Der Einstieg läuft über das **bestehende** Ziele-Zahnrad →
       `SettingsScreen` mit den Zeilen „Tagesziele" und „Backup"; es existiert
       kein zweites Icon und kein `ic_settings.xml` (A9)
-- [ ] `onNavigateToSettings` ist in `DiaryRoutes.kt`, `DiaryDayScreen.kt` und
+- [x] `onNavigateToSettings` ist in `DiaryRoutes.kt`, `DiaryDayScreen.kt` und
       `MainActivity.kt` einheitlich verdrahtet; `diary_configure_goals` existiert
       nirgends mehr
-- [ ] `app/build.gradle.kts` hängt an `:feature:settings:presentation` (baut)
-- [ ] Bestehende Diary- und App-Tests unverändert grün
+- [x] `app/build.gradle.kts` hängt an `:feature:settings:presentation` (baut)
+- [x] Bestehende Diary- und App-Tests unverändert grün
 
 **Commit-Vorschlag:** `feat: Settings-Modul mit Backup-Screen (Export, Preview, Import)`
 
@@ -1748,17 +1778,17 @@ DoD-Checkliste aus `docs/definition-of-done.md`.
 
 ### Akzeptanzkriterien
 
-- [ ] Der Test „Schema-Änderung → alter Import funktioniert" existiert und ist
+- [x] Der Test „Schema-Änderung → alter Import funktioniert" existiert und ist
       benannt — er ist der Nachweis der Kernanforderung
-- [ ] Export → Import → Export ist bis auf Zeitstempel/Prüfsumme identisch
-- [ ] Eine abgebrochene Transaktion hinterlässt keine Teiländerung
-- [ ] ADR-007 stimmt mit dem implementierten Format überein
-- [ ] `coding-style.md` enthält die Default-Pflicht (A12)
-- [ ] Phasenplan und Roadmap führen Phase 12 als abgeschlossen, **ohne**
+- [x] Export → Import → Export ist bis auf Zeitstempel/Prüfsumme identisch
+- [x] Eine abgebrochene Transaktion hinterlässt keine Teiländerung
+- [x] ADR-007 stimmt mit dem implementierten Format überein
+- [x] `coding-style.md` enthält die Default-Pflicht (A12)
+- [x] Phasenplan und Roadmap führen Phase 12 als abgeschlossen, **ohne**
       Verschlüsselungs-Zusage; auch `docs/scope.md:44` und
       `docs/Scope_und_Features.md:72` sind bereinigt (WP5, Schritt 8)
-- [ ] `docs/Bugfix_Plan.md` enthält den Snapshot-Dekodier-Backlog
-- [ ] Kein `TODO` im ausgelieferten Code
+- [x] `docs/Bugfix_Plan.md` enthält den Snapshot-Dekodier-Backlog
+- [x] Kein `TODO` im ausgelieferten Code
 
 **Commit-Vorschlag:** `docs: Phase 12 abschliessen - ADR-007, Roadmap, Architektur und Forward-Kompatibilitaets-Nachweis`
 
@@ -2007,9 +2037,11 @@ Commit-Regel.
 >    `validateFood(dto): FoodItem?` über `toFoodItem()` in `runCatching`
 >    (greift `require(name.isNotBlank())`, Nährwerte ≥ 0, Rückgabe des
 >    validen `FoodItem`), `validateRecipe(dto, validFoods,
->    knownExistingFoodIds)` als **eigene backup-interne Prüfung** (genau eine
+>    existingFoodServingUnits)` als **eigene backup-interne Prüfung** (genau eine
 >    Zutatenquelle, `rawWeight`/`servingCount` > 0, Food-Auflösbarkeit gegen
->    `validFoods` ∪ Known-IDs, `portions > 0`), `validateDiaryEntry(dto)` über
+>    `validFoods` ∪ `existingFoodServingUnits.keys`, ServingUnit-Regel auch
+>    gegen Ziel-DB-Foods (W3, DB-Vorrang wie der Laufzeit-Mapper),
+>    `portions > 0`), `validateDiaryEntry(dto)` über
 >    `toDiaryEntry()` (`MealSlot.valueOf`, `LocalDate.parse`,
 >    Snapshot-Dekodierung), `validateWeightLog(dto)` (`kilograms > 0`,
 >    parsebares Datum). **Niemals** `RecipeEntity.toRecipe(…, foodLocalDataSource)`
@@ -2023,15 +2055,18 @@ Commit-Regel.
 >    Content, `appVersion*` aus `AppVersionProvider`, `exportedAt` aus einem
 >    injizierten `clock: () -> Long` mit Default, `dbSchemaVersion` nur als Info.
 >    Schreiben über `BackupStorage.openOutput(uri)` mit `use { }`.
-> 9. `BackupImporter.kt`: `preview(uri)` liest, dekodiert, prüft (A11 Stufe 1–4),
->    ermittelt Counts + Datumsspanne + Warnungen und schreibt **nichts**.
+> 9. `BackupImporter.kt`: `preview(uri, mode)` liest, dekodiert, prüft (A11 Stufe 1–4
+>    mit Known-IDs je Modus nach A19), ermittelt Counts + Datumsspanne + Warnungen
+>    und schreibt **nichts**.
 >    `import(uri, mode)` validiert (Stufe 4), bereinigt Referenzen (Stufe 5,
 >    Known-IDs nach A19: MERGE = bestehend ∪ gültige Backup-IDs, REPLACE = nur
 >    gültige Backup-IDs; unbekannte `foodItemId`/`recipeId` → `null`, zählen;
 >    Einträge ohne dekodierbaren Snapshot überspringen), ruft bei `MERGE`
 >    `insertAll`, bei `REPLACE` `replaceAll` — **jeweils in einer Transaktion** —
 >    stellt die Settings **erst nach erfolgreichem Commit** via `restore()`
->    wieder her und liefert einen `ImportReport` mit `skippedDuplicates` aus
+>    wieder her (Fehler danach → Report mit `settingsRestored = 0` +
+>    `BackupWarning.SettingsRestoreFailed`, kein `Result.Error`) und liefert
+>    einen `ImportReport` mit `skippedDuplicates` aus
 >    `BackupInsertReport` (A18).
 > 10. `RoomBackupLocalDataSource.kt` (DAO + SettingsDataStore, `runCatchingLocal`-
 >    Muster aus `RoomDiaryLocalDataSource.kt`, `CancellationException`
@@ -2098,11 +2133,12 @@ Commit-Regel.
 >    - `OnDocumentCreated(null)` bzw. `OnBackupSelected(null)` (Nutzer hat den
 >      SAF-Dialog abgebrochen) lösen **keinen** Repository-Aufruf und kein Event
 >      aus.
->    - `state.preview` wird aus `repository.preview()` gesetzt,
+>    - `state.preview` wird aus `repository.preview(uri, pendingMode)` gesetzt,
 >      `state.importReport` aus `repository.import()`; beide Dialoge werden über
 >      Dismiss-Actions geleert.
->    - `OnModeChange` verändert nur `pendingMode`; die `REPLACE`-Warnung ist
->      reine UI-Ableitung.
+>    - `OnModeChange` setzt `pendingMode` und löst bei offenem Dialog ein
+>      Re-Preview mit dem neuen Modus aus (verspätete Ergebnisse verwerfen);
+>      die `REPLACE`-Warnung ist reine UI-Ableitung.
 >    - `isExporting`/`isImporting` werden in jedem Pfad (auch im Fehlerfall)
 >      zurückgesetzt und verhindern Doppelaufrufe.
 >    - Bestandszahlen beim Start über `repository.counts()` (suspend, aus WP3)

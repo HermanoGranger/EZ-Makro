@@ -2,6 +2,7 @@ package com.example.ezmakro.core.data.backup
 
 import com.example.ezmakro.core.database.dao.BackupInsertReport
 import com.example.ezmakro.core.database.dao.TableInsertCounts
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.model.backup.BackupExportSummary
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Result
@@ -12,12 +13,13 @@ import com.example.ezmakro.core.domain.result.Result
  *
  * The insert/replace counters record which path the importer chose; [insertError]
  * lets a test simulate a failing transaction to prove that settings are only
- * restored after a successful commit (A11).
+ * restored after a successful commit (A11), and [restoreSettingsError] simulates
+ * a DataStore failure *after* the commit (§3.4 — tolerated, reported as warning).
  */
 class FakeBackupLocalDataSource(
     var rows: BackupRows = BackupRows(),
     var settings: Map<String, String> = emptyMap(),
-    var existingFoodIds: Set<String> = emptySet(),
+    var existingFoodServingUnits: Map<String, ServingUnit?> = emptyMap(),
     var existingRecipeIds: Set<String> = emptySet(),
 ) : BackupLocalDataSource {
     var insertAllCalls = 0
@@ -27,6 +29,7 @@ class FakeBackupLocalDataSource(
     var restoredSettings: Map<String, String>? = null
         private set
     var insertError: DataError.Local? = null
+    var restoreSettingsError: DataError.Local? = null
 
     override suspend fun readAll(): Result<BackupRows, DataError.Local> = Result.Success(rows)
 
@@ -51,7 +54,8 @@ class FakeBackupLocalDataSource(
         return Result.Success(insertReport(rows))
     }
 
-    override suspend fun readFoodItemIds(): Result<Set<String>, DataError.Local> = Result.Success(existingFoodIds)
+    override suspend fun readFoodServingUnits(): Result<Map<String, ServingUnit?>, DataError.Local> =
+        Result.Success(existingFoodServingUnits)
 
     override suspend fun readRecipeIds(): Result<Set<String>, DataError.Local> = Result.Success(existingRecipeIds)
 
@@ -69,6 +73,7 @@ class FakeBackupLocalDataSource(
     override suspend fun readSettings(): Result<Map<String, String>, DataError.Local> = Result.Success(settings)
 
     override suspend fun restoreSettings(values: Map<String, String>): Result<Unit, DataError.Local> {
+        restoreSettingsError?.let { return Result.Error(it) }
         restoredSettings = values
         return Result.Success(Unit)
     }

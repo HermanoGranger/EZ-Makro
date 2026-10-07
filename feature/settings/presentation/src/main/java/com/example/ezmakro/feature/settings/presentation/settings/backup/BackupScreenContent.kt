@@ -316,6 +316,9 @@ private fun ReportDialog(
                 Text(stringResource(R.string.backup_report_duplicates, report.skippedDuplicates.total()))
                 Text(stringResource(R.string.backup_report_skipped, report.skippedRows.size))
                 Text(stringResource(R.string.backup_report_dropped_references, report.droppedReferences))
+                if (report.settingsRestored > 0) {
+                    Text(stringResource(R.string.backup_report_settings_restored, report.settingsRestored))
+                }
                 WarningList(warnings = report.warnings)
                 report.skippedRows.forEach { row ->
                     Text(stringResource(R.string.backup_report_skipped_row, row.table, row.id, row.reason))
@@ -385,6 +388,7 @@ private fun WarningList(warnings: List<BackupWarning>) {
                         warning.reason,
                     ),
                 )
+            BackupWarning.SettingsRestoreFailed -> Text(stringResource(R.string.backup_warning_settings))
         }
     }
 }
