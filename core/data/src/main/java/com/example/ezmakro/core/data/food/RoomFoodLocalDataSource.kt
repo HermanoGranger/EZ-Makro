@@ -41,22 +41,45 @@ class RoomFoodLocalDataSource(
     override suspend fun getByBarcode(barcode: String): Result<FoodItem?, DataError.Local> =
         runCatchingLocal { dao.getByBarcode(barcode)?.toFoodItem() }
 
+    /**
+     * Hybrid local search over the observed table:
+     * - **Multi-term contains (in-memory):** every whitespace-separated term
+     *   must appear case-insensitively in the name — "mehl 550" finds
+     *   "Weizenmehl Type 550", independent of order and intervening words.
+     * - **FTS4 per-term prefix:** `mehl* 550*` adds umlaut folding the
+     *   in-memory part cannot do ("musli" finds "Müsli").
+     *
+     * Results are merged, deduplicated by row id and ordered by name. The
+     * in-memory part is safe because the table (a few hundred to low
+     * thousands of short names) is already fully loaded by [observeAll].
+     */
     override fun searchByName(query: String): Flow<List<FoodItem>> =
         dao
             .observeAll()
-            .map {
+            .map { all ->
                 val normalized = query.trim().lowercase()
-                val sanitized = FtsQuerySanitizer.sanitize(normalized)
-                if (sanitized.isEmpty()) {
+                val terms = normalized.split(WHITESPACE).filter { it.isNotEmpty() }
+                if (terms.isEmpty()) {
                     emptyList()
                 } else {
                     runCatching {
-                        val rowIds = dao.searchRowIds(ftsQuery(sanitized))
-                        if (rowIds.isEmpty()) {
-                            emptyList()
-                        } else {
-                            dao.getByRowIds(rowIds).map { entity -> entity.toFoodItem() }
-                        }
+                        val ftsMatches =
+                            terms
+                                .mapNotNull { term ->
+                                    FtsQuerySanitizer.sanitize(term).takeIf { sanitized -> sanitized.isNotEmpty() }
+                                }.joinToString(separator = " ") { "$it*" }
+                                .takeIf { ftsQuery -> ftsQuery.isNotEmpty() }
+                                ?.let { ftsQuery -> dao.getByRowIds(dao.searchRowIds(ftsQuery)) }
+                                .orEmpty()
+                        val containsMatches =
+                            all.filter { entity ->
+                                val name = entity.name.lowercase()
+                                terms.all { term -> name.contains(term) }
+                            }
+                        (ftsMatches + containsMatches)
+                            .distinctBy { entity -> entity.rowId }
+                            .sortedBy { entity -> entity.name.lowercase() }
+                            .map { entity -> entity.toFoodItem() }
                     }.getOrDefault(emptyList())
                 }
             }.flowOn(Dispatchers.IO)
@@ -106,7 +129,9 @@ class RoomFoodLocalDataSource(
         usedAtEpochMillis: Long,
     ): EmptyResult<DataError.Local> = runCatchingLocal { dao.markUsed(id.value, usedAtEpochMillis) }
 
-    private fun ftsQuery(sanitized: String): String = "$sanitized*"
+    private companion object {
+        val WHITESPACE = Regex("\\s+")
+    }
 }
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */
