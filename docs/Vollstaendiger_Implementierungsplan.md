@@ -37,6 +37,7 @@
 | 10 | Weight Tracking | 🔜 offen |
 | 11 | Statistics | 🔜 offen |
 | 12 | Backup | ✅ abgeschlossen (Details: `docs/Plan_Backup_System.md`) |
+| S | Seed-Daten (BLS, offline-first Erstausstattung) | ✅ abgeschlossen (ADR-008) |
 | 13 | Polish | 🔜 offen |
 | 14 | Release Candidate | 🔜 offen |
 
@@ -164,6 +165,18 @@ Vollständiger Plan samt Annahmen (A1–A19), WPs und Abnahme:
 `docs/Plan_Backup_System.md`. Format-ADR: `docs/adr/ADR-007-backup-format.md`.
 UI: `:feature:settings:presentation` (`BackupScreen`), Code: `:core:data`
 (`backup`-Package).
+
+## Seed-Daten (BLS) — offline-first Erstausstattung
+
+251 vegane Standardlebensmittel aus BLS 4.0 (CC BY 4.0) werden als
+versioniertes JSON-Asset (`core/data/src/main/assets/seed/food_seed_v1.json`)
+mitgeliefert und beim App-Start idempotent in Room eingesät
+(`BlsFoodSeeder`, Marker `seed_food_version`). User-Edits, Favoriten und
+eigene Lebensmittel werden durch einen SQL-Guard in
+`FoodItemDao.upsertSeed` geschützt; nach REPLACE-Import wird der Marker
+zurückgesetzt. Dev-Tooling: `tools/seed/` (Fetch, XLSX-Extraktion, Auswahl,
+Asset-Builder; BLS-Rohdaten liegen nur im gitignored `cache/`). UI:
+„Datenquellen"-Sektion in den Settings. Details: `docs/adr/ADR-008-bls-seed-daten.md`.
 
 ## Phase 13 -- Polish
 

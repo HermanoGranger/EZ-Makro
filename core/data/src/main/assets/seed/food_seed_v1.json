@@ -1,0 +1,2522 @@
+{
+  "seedVersion": 1,
+  "source": {
+    "name": "Bundeslebensmittelschlüssel (BLS), Version 4.0",
+    "publisher": "Max Rubner-Institut",
+    "license": "CC BY 4.0",
+    "citation": "Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0 — Deutsche Nährstoffdatenbank. Karlsruhe.",
+    "doi": "10.25826/Data20251217-134202-0"
+  },
+  "foods": [
+    {
+      "id": "bls:F110600",
+      "name": "Apfelsaft",
+      "barcode": null,
+      "kcal": 44.0,
+      "proteinG": 0.1,
+      "fatG": null,
+      "carbsG": 10.59,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:F130600",
+      "name": "Birnensaft",
+      "barcode": null,
+      "kcal": 64.0,
+      "proteinG": 0.27,
+      "fatG": 0.23,
+      "carbsG": 15.8,
+      "fiberG": 0.3
+    },
+    {
+      "id": "bls:F310600",
+      "name": "Traubensaft",
+      "barcode": null,
+      "kcal": 68.0,
+      "proteinG": 0.21,
+      "fatG": 0.0,
+      "carbsG": 16.35,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:F211600",
+      "name": "Süßkirschsaft",
+      "barcode": null,
+      "kcal": 60.0,
+      "proteinG": 0.81,
+      "fatG": 0.25,
+      "carbsG": 13.8,
+      "fiberG": 0.2
+    },
+    {
+      "id": "bls:F301600",
+      "name": "Erdbeersaft",
+      "barcode": null,
+      "kcal": 30.0,
+      "proteinG": 0.74,
+      "fatG": 0.32,
+      "carbsG": 5.33,
+      "fiberG": 0.2
+    },
+    {
+      "id": "bls:F304600",
+      "name": "Heidelbeersaft",
+      "barcode": null,
+      "kcal": 47.0,
+      "proteinG": 0.4,
+      "fatG": 0.48,
+      "carbsG": 8.73,
+      "fiberG": 0.5
+    },
+    {
+      "id": "bls:F501600",
+      "name": "Ananassaft",
+      "barcode": null,
+      "kcal": 47.0,
+      "proteinG": 0.4,
+      "fatG": 0.1,
+      "carbsG": 10.71,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:F514600",
+      "name": "Kiwisaft",
+      "barcode": null,
+      "kcal": 48.0,
+      "proteinG": 0.8,
+      "fatG": 0.4,
+      "carbsG": 9.1,
+      "fiberG": 0.4
+    },
+    {
+      "id": "bls:F603600",
+      "name": "Orangensaft",
+      "barcode": null,
+      "kcal": 41.0,
+      "proteinG": 0.75,
+      "fatG": null,
+      "carbsG": 8.5,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:F601600",
+      "name": "Zitronensaft",
+      "barcode": null,
+      "kcal": 30.0,
+      "proteinG": 0.63,
+      "fatG": 0.3,
+      "carbsG": 1.7,
+      "fiberG": 0.13
+    },
+    {
+      "id": "bls:F010600",
+      "name": "Mehrfruchtsaft",
+      "barcode": null,
+      "kcal": 48.0,
+      "proteinG": 0.4,
+      "fatG": 0.1,
+      "carbsG": 10.73,
+      "fiberG": 0.3
+    },
+    {
+      "id": "bls:B101000",
+      "name": "Vollkornbrot",
+      "barcode": null,
+      "kcal": 210.0,
+      "proteinG": 7.16,
+      "fatG": 1.01,
+      "carbsG": 38.0,
+      "fiberG": 10.04
+    },
+    {
+      "id": "bls:B111000",
+      "name": "Weizenvollkornbrot",
+      "barcode": null,
+      "kcal": 180.0,
+      "proteinG": 7.55,
+      "fatG": 0.86,
+      "carbsG": 31.9,
+      "fiberG": 6.83
+    },
+    {
+      "id": "bls:B111200",
+      "name": "Weizenvollkorntoastbrot",
+      "barcode": null,
+      "kcal": 249.0,
+      "proteinG": 8.8,
+      "fatG": 3.67,
+      "carbsG": 41.0,
+      "fiberG": 7.93
+    },
+    {
+      "id": "bls:B121000",
+      "name": "Roggenvollkornbrot",
+      "barcode": null,
+      "kcal": 193.0,
+      "proteinG": 6.04,
+      "fatG": 1.81,
+      "carbsG": 32.49,
+      "fiberG": 9.62
+    },
+    {
+      "id": "bls:B221000",
+      "name": "Roggenbrot",
+      "barcode": null,
+      "kcal": 220.0,
+      "proteinG": 6.0,
+      "fatG": 1.24,
+      "carbsG": 43.04,
+      "fiberG": 6.46
+    },
+    {
+      "id": "bls:B271000",
+      "name": "Roggenmischbrot",
+      "barcode": null,
+      "kcal": 218.0,
+      "proteinG": 7.38,
+      "fatG": 0.97,
+      "carbsG": 41.96,
+      "fiberG": 6.1
+    },
+    {
+      "id": "bls:B311000",
+      "name": "Weizenbrot (Weißbrot)",
+      "barcode": null,
+      "kcal": 272.0,
+      "proteinG": 8.69,
+      "fatG": 2.97,
+      "carbsG": 50.54,
+      "fiberG": 4.0
+    },
+    {
+      "id": "bls:B314100",
+      "name": "Weizentoastbrot mit Roggen",
+      "barcode": null,
+      "kcal": 263.0,
+      "proteinG": 8.38,
+      "fatG": 3.35,
+      "carbsG": 48.0,
+      "fiberG": 3.65
+    },
+    {
+      "id": "bls:B511000",
+      "name": "Weizenbrötchen",
+      "barcode": null,
+      "kcal": 280.0,
+      "proteinG": 10.09,
+      "fatG": 1.81,
+      "carbsG": 53.97,
+      "fiberG": 3.6
+    },
+    {
+      "id": "bls:B521000",
+      "name": "Roggenbrötchen",
+      "barcode": null,
+      "kcal": 273.0,
+      "proteinG": 8.27,
+      "fatG": 2.87,
+      "carbsG": 49.0,
+      "fiberG": 8.81
+    },
+    {
+      "id": "bls:B401000",
+      "name": "Vollkornbrötchen",
+      "barcode": null,
+      "kcal": 282.0,
+      "proteinG": 9.9,
+      "fatG": 3.18,
+      "carbsG": 48.0,
+      "fiberG": 10.67
+    },
+    {
+      "id": "bls:B6A2000",
+      "name": "Roggenknäckebrot",
+      "barcode": null,
+      "kcal": 334.0,
+      "proteinG": 9.4,
+      "fatG": 1.34,
+      "carbsG": 62.0,
+      "fiberG": 18.16
+    },
+    {
+      "id": "bls:B6A2100",
+      "name": "Roggenvollkornknäckebrot",
+      "barcode": null,
+      "kcal": 327.0,
+      "proteinG": 9.44,
+      "fatG": 1.39,
+      "carbsG": 59.32,
+      "fiberG": 19.91
+    },
+    {
+      "id": "bls:B6A4000",
+      "name": "Mehrkornvollkornknäckebrot",
+      "barcode": null,
+      "kcal": 339.0,
+      "proteinG": 10.6,
+      "fatG": 2.4,
+      "carbsG": 60.0,
+      "fiberG": 17.4
+    },
+    {
+      "id": "bls:B780500",
+      "name": "Pumpernickel",
+      "barcode": null,
+      "kcal": 176.0,
+      "proteinG": 4.84,
+      "fatG": 1.46,
+      "carbsG": 31.1,
+      "fiberG": 9.35
+    },
+    {
+      "id": "bls:B783012",
+      "name": "Weizentortilla",
+      "barcode": null,
+      "kcal": 296.0,
+      "proteinG": 8.85,
+      "fatG": 7.85,
+      "carbsG": 46.64,
+      "fiberG": 1.2
+    },
+    {
+      "id": "bls:C131000",
+      "name": "Haferkörner",
+      "barcode": null,
+      "kcal": 343.0,
+      "proteinG": 11.38,
+      "fatG": 7.09,
+      "carbsG": 53.7,
+      "fiberG": 9.3
+    },
+    {
+      "id": "bls:C133000",
+      "name": "Haferflocken",
+      "barcode": null,
+      "kcal": 348.0,
+      "proteinG": 13.22,
+      "fatG": 6.65,
+      "carbsG": 53.3,
+      "fiberG": 10.98
+    },
+    {
+      "id": "bls:C341000",
+      "name": "Mais",
+      "barcode": null,
+      "kcal": 336.0,
+      "proteinG": 8.66,
+      "fatG": 3.8,
+      "carbsG": 62.84,
+      "fiberG": 7.7
+    },
+    {
+      "id": "bls:C351000",
+      "name": "Naturreis",
+      "barcode": null,
+      "kcal": 360.0,
+      "proteinG": 8.38,
+      "fatG": 2.7,
+      "carbsG": 73.43,
+      "fiberG": 4.0
+    },
+    {
+      "id": "bls:C352000",
+      "name": "Weißreis",
+      "barcode": null,
+      "kcal": 351.0,
+      "proteinG": 7.93,
+      "fatG": 0.62,
+      "carbsG": 77.1,
+      "fiberG": 2.5
+    },
+    {
+      "id": "bls:C353100",
+      "name": "Wildreis",
+      "barcode": null,
+      "kcal": 363.0,
+      "proteinG": 13.14,
+      "fatG": 0.95,
+      "carbsG": 73.43,
+      "fiberG": 4.0
+    },
+    {
+      "id": "bls:C359000",
+      "name": "Parboiled-Reis",
+      "barcode": null,
+      "kcal": 333.0,
+      "proteinG": 8.12,
+      "fatG": 1.03,
+      "carbsG": 72.1,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:C118000",
+      "name": "Quinoa",
+      "barcode": null,
+      "kcal": 361.0,
+      "proteinG": 12.56,
+      "fatG": 6.29,
+      "carbsG": 59.65,
+      "fiberG": 7.6
+    },
+    {
+      "id": "bls:C119100",
+      "name": "Bulgur",
+      "barcode": null,
+      "kcal": 353.0,
+      "proteinG": 12.4,
+      "fatG": 2.0,
+      "carbsG": 68.0,
+      "fiberG": 6.7
+    },
+    {
+      "id": "bls:C119200",
+      "name": "Couscous",
+      "barcode": null,
+      "kcal": 350.0,
+      "proteinG": 11.69,
+      "fatG": 1.7,
+      "carbsG": 68.92,
+      "fiberG": 6.17
+    },
+    {
+      "id": "bls:C322000",
+      "name": "Buchweizen",
+      "barcode": null,
+      "kcal": 339.0,
+      "proteinG": 13.05,
+      "fatG": 3.13,
+      "carbsG": 61.86,
+      "fiberG": 5.53
+    },
+    {
+      "id": "bls:C332000",
+      "name": "Hirse",
+      "barcode": null,
+      "kcal": 352.0,
+      "proteinG": 11.79,
+      "fatG": 3.13,
+      "carbsG": 67.6,
+      "fiberG": 3.3
+    },
+    {
+      "id": "bls:C335000",
+      "name": "Amaranth",
+      "barcode": null,
+      "kcal": 377.0,
+      "proteinG": 14.04,
+      "fatG": 5.93,
+      "carbsG": 62.38,
+      "fiberG": 8.76
+    },
+    {
+      "id": "bls:C211000",
+      "name": "Weizenvollkornmehl",
+      "barcode": null,
+      "kcal": 339.0,
+      "proteinG": 12.76,
+      "fatG": 1.78,
+      "carbsG": 61.78,
+      "fiberG": 12.27
+    },
+    {
+      "id": "bls:C214100",
+      "name": "Weizenmehl Type 405",
+      "barcode": null,
+      "kcal": 348.0,
+      "proteinG": 10.46,
+      "fatG": 0.93,
+      "carbsG": 71.77,
+      "fiberG": 5.3
+    },
+    {
+      "id": "bls:C214200",
+      "name": "Weizenmehl Type 550",
+      "barcode": null,
+      "kcal": 349.0,
+      "proteinG": 11.94,
+      "fatG": 1.09,
+      "carbsG": 70.55,
+      "fiberG": 4.86
+    },
+    {
+      "id": "bls:C221000",
+      "name": "Roggenvollkornmehl",
+      "barcode": null,
+      "kcal": 312.0,
+      "proteinG": 9.0,
+      "fatG": 1.33,
+      "carbsG": 56.56,
+      "fiberG": 18.98
+    },
+    {
+      "id": "bls:C223100",
+      "name": "Roggenmehl Type 815",
+      "barcode": null,
+      "kcal": 323.0,
+      "proteinG": 7.54,
+      "fatG": 0.92,
+      "carbsG": 65.17,
+      "fiberG": 11.88
+    },
+    {
+      "id": "bls:C234100",
+      "name": "Dinkelmehl Type 812",
+      "barcode": null,
+      "kcal": 352.0,
+      "proteinG": 13.7,
+      "fatG": 1.57,
+      "carbsG": 67.58,
+      "fiberG": 6.25
+    },
+    {
+      "id": "bls:C235000",
+      "name": "Dinkenvollkornmehl",
+      "barcode": null,
+      "kcal": 335.0,
+      "proteinG": 13.42,
+      "fatG": 2.3,
+      "carbsG": 60.13,
+      "fiberG": 10.15
+    },
+    {
+      "id": "bls:C424000",
+      "name": "Buchweizenmehl",
+      "barcode": null,
+      "kcal": 350.0,
+      "proteinG": 12.52,
+      "fatG": 3.12,
+      "carbsG": 65.08,
+      "fiberG": 5.91
+    },
+    {
+      "id": "bls:C443000",
+      "name": "Maismehl",
+      "barcode": null,
+      "kcal": 330.0,
+      "proteinG": 8.66,
+      "fatG": 2.82,
+      "carbsG": 62.84,
+      "fiberG": 9.42
+    },
+    {
+      "id": "bls:C219300",
+      "name": "Hartweizengrieß",
+      "barcode": null,
+      "kcal": 352.0,
+      "proteinG": 13.36,
+      "fatG": 1.48,
+      "carbsG": 68.92,
+      "fiberG": 4.84
+    },
+    {
+      "id": "bls:C512000",
+      "name": "Müsli (ungesüßt)",
+      "barcode": null,
+      "kcal": 376.0,
+      "proteinG": 14.77,
+      "fatG": 12.33,
+      "carbsG": 45.6,
+      "fiberG": 11.8
+    },
+    {
+      "id": "bls:C515400",
+      "name": "Cornflakes (ungesüßt)",
+      "barcode": null,
+      "kcal": 376.0,
+      "proteinG": 7.18,
+      "fatG": 0.84,
+      "carbsG": 82.96,
+      "fiberG": 4.13
+    },
+    {
+      "id": "bls:C533000",
+      "name": "Popcorn (ungesüßt)",
+      "barcode": null,
+      "kcal": 338.0,
+      "proteinG": 12.0,
+      "fatG": 4.4,
+      "carbsG": 55.3,
+      "fiberG": 14.8
+    },
+    {
+      "id": "bls:C532700",
+      "name": "Reiswaffeln (ungesalzen)",
+      "barcode": null,
+      "kcal": 371.0,
+      "proteinG": 8.0,
+      "fatG": 2.42,
+      "carbsG": 77.47,
+      "fiberG": 3.63
+    },
+    {
+      "id": "bls:C559000",
+      "name": "Reisnudeln, roh",
+      "barcode": null,
+      "kcal": 365.0,
+      "proteinG": 7.2,
+      "fatG": 0.56,
+      "carbsG": 81.9,
+      "fiberG": 1.6
+    },
+    {
+      "id": "bls:C558000",
+      "name": "Seitan",
+      "barcode": null,
+      "kcal": 199.0,
+      "proteinG": 28.4,
+      "fatG": 7.2,
+      "carbsG": 4.0,
+      "fiberG": 2.1
+    },
+    {
+      "id": "bls:E401000",
+      "name": "Nudeln (Hartweizen), roh",
+      "barcode": null,
+      "kcal": 346.0,
+      "proteinG": 12.4,
+      "fatG": 1.6,
+      "carbsG": 68.83,
+      "fiberG": 3.41
+    },
+    {
+      "id": "bls:E510000",
+      "name": "Vollkornnudeln, roh",
+      "barcode": null,
+      "kcal": 356.0,
+      "proteinG": 14.3,
+      "fatG": 2.93,
+      "carbsG": 62.9,
+      "fiberG": 10.2
+    },
+    {
+      "id": "bls:E612000",
+      "name": "Nudeln (glutenfrei), roh",
+      "barcode": null,
+      "kcal": 343.0,
+      "proteinG": 8.42,
+      "fatG": 2.22,
+      "carbsG": 68.7,
+      "fiberG": 7.36
+    },
+    {
+      "id": "bls:E632000",
+      "name": "Dinkelnudeln, roh",
+      "barcode": null,
+      "kcal": 358.0,
+      "proteinG": 13.4,
+      "fatG": 1.4,
+      "carbsG": 69.53,
+      "fiberG": 6.63
+    },
+    {
+      "id": "bls:E632200",
+      "name": "Dinkelvollkornnudeln, roh",
+      "barcode": null,
+      "kcal": 347.0,
+      "proteinG": 13.88,
+      "fatG": 2.38,
+      "carbsG": 62.19,
+      "fiberG": 10.5
+    },
+    {
+      "id": "bls:E811000",
+      "name": "Frische Nudeln, roh",
+      "barcode": null,
+      "kcal": 145.0,
+      "proteinG": 6.2,
+      "fatG": 2.65,
+      "carbsG": 23.19,
+      "fiberG": 1.6
+    },
+    {
+      "id": "bls:E605000",
+      "name": "Schupfnudeln, roh",
+      "barcode": null,
+      "kcal": 151.0,
+      "proteinG": 5.0,
+      "fatG": 1.27,
+      "carbsG": 28.72,
+      "fiberG": 2.55
+    },
+    {
+      "id": "bls:K120100",
+      "name": "Kartoffel, roh",
+      "barcode": null,
+      "kcal": 86.0,
+      "proteinG": 2.05,
+      "fatG": 0.1,
+      "carbsG": 18.46,
+      "fiberG": 1.42
+    },
+    {
+      "id": "bls:K110132",
+      "name": "Kartoffel, gekocht",
+      "barcode": null,
+      "kcal": 76.0,
+      "proteinG": 2.0,
+      "fatG": 0.1,
+      "carbsG": 15.83,
+      "fiberG": 2.05
+    },
+    {
+      "id": "bls:K420100",
+      "name": "Süßkartoffel, roh",
+      "barcode": null,
+      "kcal": 119.0,
+      "proteinG": 1.63,
+      "fatG": 0.6,
+      "carbsG": 25.2,
+      "fiberG": 3.14
+    },
+    {
+      "id": "bls:K701100",
+      "name": "Champignon roh",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 3.66,
+      "fatG": 0.27,
+      "carbsG": 2.9,
+      "fiberG": 1.9
+    },
+    {
+      "id": "bls:K740100",
+      "name": "Austernpilz roh",
+      "barcode": null,
+      "kcal": 32.0,
+      "proteinG": 3.31,
+      "fatG": 0.22,
+      "carbsG": 1.27,
+      "fiberG": 5.85
+    },
+    {
+      "id": "bls:K718100",
+      "name": "Steinpilz roh",
+      "barcode": null,
+      "kcal": 46.0,
+      "proteinG": 5.4,
+      "fatG": 0.4,
+      "carbsG": 3.27,
+      "fiberG": 6.02
+    },
+    {
+      "id": "bls:K724100",
+      "name": "Shiitake",
+      "barcode": null,
+      "kcal": 30.0,
+      "proteinG": 2.5,
+      "fatG": 0.2,
+      "carbsG": 2.38,
+      "fiberG": 4.17
+    },
+    {
+      "id": "bls:K750100",
+      "name": "Mischpilze roh",
+      "barcode": null,
+      "kcal": 34.0,
+      "proteinG": 3.5,
+      "fatG": 0.3,
+      "carbsG": 2.16,
+      "fiberG": 5.1
+    },
+    {
+      "id": "bls:K762400",
+      "name": "Nährhefe",
+      "barcode": null,
+      "kcal": 305.0,
+      "proteinG": 48.7,
+      "fatG": 4.5,
+      "carbsG": 6.2,
+      "fiberG": 22.5
+    },
+    {
+      "id": "bls:G710100",
+      "name": "Grüne Bohne",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 2.24,
+      "fatG": 0.24,
+      "carbsG": 3.4,
+      "fiberG": 1.89
+    },
+    {
+      "id": "bls:G730100",
+      "name": "Dicke Bohne (frisch)",
+      "barcode": null,
+      "kcal": 63.0,
+      "proteinG": 5.4,
+      "fatG": 0.6,
+      "carbsG": 6.2,
+      "fiberG": 5.8
+    },
+    {
+      "id": "bls:G750100",
+      "name": "Edamame",
+      "barcode": null,
+      "kcal": 146.0,
+      "proteinG": 13.0,
+      "fatG": 6.8,
+      "carbsG": 6.2,
+      "fiberG": 4.2
+    },
+    {
+      "id": "bls:G760100",
+      "name": "Grüne Erbse",
+      "barcode": null,
+      "kcal": 88.0,
+      "proteinG": 5.9,
+      "fatG": 0.48,
+      "carbsG": 12.3,
+      "fiberG": 5.0
+    },
+    {
+      "id": "bls:G760400",
+      "name": "Trockenerbse",
+      "barcode": null,
+      "kcal": 311.0,
+      "proteinG": 23.02,
+      "fatG": 1.44,
+      "carbsG": 40.5,
+      "fiberG": 22.03
+    },
+    {
+      "id": "bls:G770400",
+      "name": "Kichererbsen",
+      "barcode": null,
+      "kcal": 317.0,
+      "proteinG": 18.58,
+      "fatG": 5.92,
+      "carbsG": 39.6,
+      "fiberG": 15.51
+    },
+    {
+      "id": "bls:G780400",
+      "name": "Limabohne",
+      "barcode": null,
+      "kcal": 325.0,
+      "proteinG": 20.6,
+      "fatG": 1.4,
+      "carbsG": 48.63,
+      "fiberG": 14.2
+    },
+    {
+      "id": "bls:G750400",
+      "name": "Trockensojabohne",
+      "barcode": null,
+      "kcal": 388.0,
+      "proteinG": 38.2,
+      "fatG": 18.27,
+      "carbsG": 6.6,
+      "fiberG": 21.96
+    },
+    {
+      "id": "bls:H702100",
+      "name": "Augenbohnen",
+      "barcode": null,
+      "kcal": 319.0,
+      "proteinG": 23.5,
+      "fatG": 1.26,
+      "carbsG": 45.75,
+      "fiberG": 10.6
+    },
+    {
+      "id": "bls:H739400",
+      "name": "Gartenbohnen (trocken)",
+      "barcode": null,
+      "kcal": 344.0,
+      "proteinG": 22.62,
+      "fatG": 1.6,
+      "carbsG": 45.75,
+      "fiberG": 23.24
+    },
+    {
+      "id": "bls:H742100",
+      "name": "Kidneybohnen",
+      "barcode": null,
+      "kcal": 316.0,
+      "proteinG": 22.8,
+      "fatG": 0.83,
+      "carbsG": 40.3,
+      "fiberG": 24.9
+    },
+    {
+      "id": "bls:H750100",
+      "name": "Dicke Bohne (trocken)",
+      "barcode": null,
+      "kcal": 349.0,
+      "proteinG": 27.0,
+      "fatG": 1.53,
+      "carbsG": 46.7,
+      "fiberG": 15.0
+    },
+    {
+      "id": "bls:H725100",
+      "name": "Grüne Linse",
+      "barcode": null,
+      "kcal": 323.0,
+      "proteinG": 23.36,
+      "fatG": 1.7,
+      "carbsG": 44.8,
+      "fiberG": 17.6
+    },
+    {
+      "id": "bls:H730000",
+      "name": "Rote Linse",
+      "barcode": null,
+      "kcal": 334.0,
+      "proteinG": 25.6,
+      "fatG": 2.17,
+      "carbsG": 48.8,
+      "fiberG": 8.5
+    },
+    {
+      "id": "bls:H861000",
+      "name": "Tofu",
+      "barcode": null,
+      "kcal": 115.0,
+      "proteinG": 15.51,
+      "fatG": 5.63,
+      "carbsG": 0.0,
+      "fiberG": 1.3
+    },
+    {
+      "id": "bls:H861100",
+      "name": "Seidentofu",
+      "barcode": null,
+      "kcal": 46.0,
+      "proteinG": 4.57,
+      "fatG": 2.9,
+      "carbsG": 0.0,
+      "fiberG": 0.6
+    },
+    {
+      "id": "bls:H765000",
+      "name": "Sojaschnetzel (trocken)",
+      "barcode": null,
+      "kcal": 351.0,
+      "proteinG": 50.2,
+      "fatG": 6.74,
+      "carbsG": 13.46,
+      "fiberG": 18.05
+    },
+    {
+      "id": "bls:H960000",
+      "name": "Hummus",
+      "barcode": null,
+      "kcal": 324.0,
+      "proteinG": 5.9,
+      "fatG": 28.5,
+      "carbsG": 8.0,
+      "fiberG": 5.9
+    },
+    {
+      "id": "bls:H154000",
+      "name": "Kokosmilch",
+      "barcode": null,
+      "kcal": 227.0,
+      "proteinG": 2.77,
+      "fatG": 21.9,
+      "carbsG": 2.1,
+      "fiberG": 5.0
+    },
+    {
+      "id": "bls:H510802",
+      "name": "Grüne Oliven",
+      "barcode": null,
+      "kcal": 132.0,
+      "proteinG": 1.21,
+      "fatG": 13.55,
+      "carbsG": 0.0,
+      "fiberG": 2.36
+    },
+    {
+      "id": "bls:H030400",
+      "name": "Glasnudeln",
+      "barcode": null,
+      "kcal": 350.0,
+      "proteinG": 0.24,
+      "fatG": 0.06,
+      "carbsG": 85.9,
+      "fiberG": 2.67
+    },
+    {
+      "id": "bls:H110600",
+      "name": "Erdnüsse (geröstet)",
+      "barcode": null,
+      "kcal": 620.0,
+      "proteinG": 29.0,
+      "fatG": 49.7,
+      "carbsG": 9.9,
+      "fiberG": 8.4
+    },
+    {
+      "id": "bls:H120100",
+      "name": "Walnüsse",
+      "barcode": null,
+      "kcal": 721.0,
+      "proteinG": 16.07,
+      "fatG": 70.6,
+      "carbsG": 3.0,
+      "fiberG": 4.6
+    },
+    {
+      "id": "bls:H130100",
+      "name": "Haselnüsse",
+      "barcode": null,
+      "kcal": 667.0,
+      "proteinG": 16.25,
+      "fatG": 63.3,
+      "carbsG": 4.2,
+      "fiberG": 7.6
+    },
+    {
+      "id": "bls:H160100",
+      "name": "Pekannüsse",
+      "barcode": null,
+      "kcal": 723.0,
+      "proteinG": 10.97,
+      "fatG": 72.0,
+      "carbsG": 3.0,
+      "fiberG": 9.46
+    },
+    {
+      "id": "bls:H170100",
+      "name": "Cashewkerne",
+      "barcode": null,
+      "kcal": 618.0,
+      "proteinG": 21.01,
+      "fatG": 47.1,
+      "carbsG": 26.0,
+      "fiberG": 3.0
+    },
+    {
+      "id": "bls:H180100",
+      "name": "Paranüsse",
+      "barcode": null,
+      "kcal": 704.0,
+      "proteinG": 16.96,
+      "fatG": 68.1,
+      "carbsG": 2.8,
+      "fiberG": 5.8
+    },
+    {
+      "id": "bls:H190100",
+      "name": "Macadamianüsse",
+      "barcode": null,
+      "kcal": 736.0,
+      "proteinG": 8.8,
+      "fatG": 73.0,
+      "carbsG": 5.2,
+      "fiberG": 11.43
+    },
+    {
+      "id": "bls:H210100",
+      "name": "Mandeln",
+      "barcode": null,
+      "kcal": 544.0,
+      "proteinG": 22.33,
+      "fatG": 46.6,
+      "carbsG": 3.87,
+      "fiberG": 10.0
+    },
+    {
+      "id": "bls:H230100",
+      "name": "Edelkastanien",
+      "barcode": null,
+      "kcal": 210.0,
+      "proteinG": 2.92,
+      "fatG": 1.9,
+      "carbsG": 41.2,
+      "fiberG": 8.37
+    },
+    {
+      "id": "bls:H250100",
+      "name": "Pistazien",
+      "barcode": null,
+      "kcal": 599.0,
+      "proteinG": 20.8,
+      "fatG": 51.6,
+      "carbsG": 7.6,
+      "fiberG": 10.61
+    },
+    {
+      "id": "bls:H320100",
+      "name": "Pinienkerne",
+      "barcode": null,
+      "kcal": 660.0,
+      "proteinG": 16.4,
+      "fatG": 61.9,
+      "carbsG": 6.2,
+      "fiberG": 6.4
+    },
+    {
+      "id": "bls:H410100",
+      "name": "Leinsamen",
+      "barcode": null,
+      "kcal": 470.0,
+      "proteinG": 22.27,
+      "fatG": 36.5,
+      "carbsG": 1.7,
+      "fiberG": 22.7
+    },
+    {
+      "id": "bls:H420100",
+      "name": "Sesam",
+      "barcode": null,
+      "kcal": 565.0,
+      "proteinG": 20.9,
+      "fatG": 50.4,
+      "carbsG": 1.42,
+      "fiberG": 11.18
+    },
+    {
+      "id": "bls:H430100",
+      "name": "Sonnenblumenkerne",
+      "barcode": null,
+      "kcal": 564.0,
+      "proteinG": 26.11,
+      "fatG": 47.6,
+      "carbsG": 4.8,
+      "fiberG": 5.8
+    },
+    {
+      "id": "bls:H450100",
+      "name": "Mohn",
+      "barcode": null,
+      "kcal": 528.0,
+      "proteinG": 23.82,
+      "fatG": 42.2,
+      "carbsG": 2.99,
+      "fiberG": 20.5
+    },
+    {
+      "id": "bls:H480100",
+      "name": "Chiasamen",
+      "barcode": null,
+      "kcal": 479.0,
+      "proteinG": 22.11,
+      "fatG": 32.79,
+      "carbsG": 3.66,
+      "fiberG": 40.23
+    },
+    {
+      "id": "bls:H310100",
+      "name": "Kürbiskerne",
+      "barcode": null,
+      "kcal": 588.0,
+      "proteinG": 35.49,
+      "fatG": 46.34,
+      "carbsG": 2.81,
+      "fiberG": 8.66
+    },
+    {
+      "id": "bls:H810000",
+      "name": "Studentenfutter",
+      "barcode": null,
+      "kcal": 485.0,
+      "proteinG": 12.3,
+      "fatG": 32.2,
+      "carbsG": 32.3,
+      "fiberG": 6.2
+    },
+    {
+      "id": "bls:H110800",
+      "name": "Erdnussmus",
+      "barcode": null,
+      "kcal": 620.0,
+      "proteinG": 29.0,
+      "fatG": 49.7,
+      "carbsG": 9.9,
+      "fiberG": 8.4
+    },
+    {
+      "id": "bls:H130800",
+      "name": "Haselnussmus",
+      "barcode": null,
+      "kcal": 669.0,
+      "proteinG": 16.41,
+      "fatG": 63.94,
+      "carbsG": 4.3,
+      "fiberG": 5.4
+    },
+    {
+      "id": "bls:H212800",
+      "name": "Mandelmus",
+      "barcode": null,
+      "kcal": 559.0,
+      "proteinG": 25.3,
+      "fatG": 46.6,
+      "carbsG": 4.51,
+      "fiberG": 10.3
+    },
+    {
+      "id": "bls:H880200",
+      "name": "Erdnussbutter",
+      "barcode": null,
+      "kcal": 606.0,
+      "proteinG": 24.08,
+      "fatG": 47.78,
+      "carbsG": 16.09,
+      "fiberG": 7.44
+    },
+    {
+      "id": "bls:Q901000",
+      "name": "Tahin",
+      "barcode": null,
+      "kcal": 595.0,
+      "proteinG": 18.0,
+      "fatG": 56.0,
+      "carbsG": 0.7,
+      "fiberG": 8.2
+    },
+    {
+      "id": "bls:Q120000",
+      "name": "Olivenöl",
+      "barcode": null,
+      "kcal": 899.0,
+      "proteinG": 0.0,
+      "fatG": 99.9,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q180000",
+      "name": "Rapsöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q320000",
+      "name": "Sonnenblumenöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q270000",
+      "name": "Sojaöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q160000",
+      "name": "Leinöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q170000",
+      "name": "Hanföl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q230000",
+      "name": "Sesamöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q250000",
+      "name": "Kürbiskernöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": 0.0,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q310000",
+      "name": "Walnussöl",
+      "barcode": null,
+      "kcal": 899.0,
+      "proteinG": 0.0,
+      "fatG": 99.9,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q210000",
+      "name": "Erdnussöl",
+      "barcode": null,
+      "kcal": 899.0,
+      "proteinG": 0.0,
+      "fatG": 99.9,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q550000",
+      "name": "Kokosöl",
+      "barcode": null,
+      "kcal": 900.0,
+      "proteinG": null,
+      "fatG": 100.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:Q400000",
+      "name": "Margarine (Vollfett)",
+      "barcode": null,
+      "kcal": 718.0,
+      "proteinG": 0.11,
+      "fatG": 79.6,
+      "carbsG": 0.16,
+      "fiberG": null
+    },
+    {
+      "id": "bls:Q440000",
+      "name": "Margarine (Halbfett)",
+      "barcode": null,
+      "kcal": 371.0,
+      "proteinG": 0.26,
+      "fatG": 39.66,
+      "carbsG": 3.14,
+      "fiberG": null
+    },
+    {
+      "id": "bls:N110000",
+      "name": "Trinkwasser",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N120000",
+      "name": "Mineralwasser",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N127000",
+      "name": "Mineralwasser (mit Kohlensäure)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N128000",
+      "name": "Mineralwasser (still)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N410100",
+      "name": "Kaffee",
+      "barcode": null,
+      "kcal": 1.0,
+      "proteinG": 0.12,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:N420100",
+      "name": "Kaffee (instant)",
+      "barcode": null,
+      "kcal": 2.0,
+      "proteinG": 0.33,
+      "fatG": null,
+      "carbsG": 0.0,
+      "fiberG": 0.1
+    },
+    {
+      "id": "bls:N411100",
+      "name": "Espresso",
+      "barcode": null,
+      "kcal": 2.0,
+      "proteinG": 0.4,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.42
+    },
+    {
+      "id": "bls:N415000",
+      "name": "Kaffee (entkoffeiniert)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.12,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N610100",
+      "name": "Grüner Tee",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.1,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N630000",
+      "name": "Schwarzer Tee",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N710000",
+      "name": "Früchtetee (Getränk)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N720100",
+      "name": "Kräutertee (Getränk)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N721000",
+      "name": "Pfefferminztee (Getränk)",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N601000",
+      "name": "Rooibos-Tee",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N310400",
+      "name": "Zitronenlimonade",
+      "barcode": null,
+      "kcal": 38.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 9.27,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N310300",
+      "name": "Orangenlimonade",
+      "barcode": null,
+      "kcal": 33.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 8.35,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N330000",
+      "name": "Cola",
+      "barcode": null,
+      "kcal": 41.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 10.3,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N340000",
+      "name": "Cola (koffeinfrei)",
+      "barcode": null,
+      "kcal": 41.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 10.3,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N019000",
+      "name": "Eistee (gesüßt)",
+      "barcode": null,
+      "kcal": 25.0,
+      "proteinG": 0.0,
+      "fatG": null,
+      "carbsG": 6.2,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:N4A0000",
+      "name": "Kaffee mit Haferdrink",
+      "barcode": null,
+      "kcal": 2.0,
+      "proteinG": 0.14,
+      "fatG": 0.03,
+      "carbsG": 0.14,
+      "fiberG": 0.32
+    },
+    {
+      "id": "bls:N4A1000",
+      "name": "Kaffee mit Mandeldrink",
+      "barcode": null,
+      "kcal": 2.0,
+      "proteinG": 0.14,
+      "fatG": 0.07,
+      "carbsG": 0.01,
+      "fiberG": 0.31
+    },
+    {
+      "id": "bls:N4A2000",
+      "name": "Kaffee mit Sojadrink",
+      "barcode": null,
+      "kcal": 2.0,
+      "proteinG": 0.22,
+      "fatG": 0.04,
+      "carbsG": 0.01,
+      "fiberG": 0.36
+    },
+    {
+      "id": "bls:C650000",
+      "name": "Reisdrink",
+      "barcode": null,
+      "kcal": 59.0,
+      "proteinG": 0.0,
+      "fatG": 1.04,
+      "carbsG": 12.31,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:C660000",
+      "name": "Haferdrink",
+      "barcode": null,
+      "kcal": 29.0,
+      "proteinG": 0.74,
+      "fatG": 1.01,
+      "carbsG": 4.0,
+      "fiberG": 0.45
+    },
+    {
+      "id": "bls:H800000",
+      "name": "Mandeldrink",
+      "barcode": null,
+      "kcal": 24.0,
+      "proteinG": 0.87,
+      "fatG": 2.16,
+      "carbsG": 0.2,
+      "fiberG": 0.13
+    },
+    {
+      "id": "bls:H841100",
+      "name": "Sojadrink",
+      "barcode": null,
+      "kcal": 30.0,
+      "proteinG": 3.22,
+      "fatG": 1.3,
+      "carbsG": 0.4,
+      "fiberG": 1.75
+    },
+    {
+      "id": "bls:R111000",
+      "name": "Speisesalz",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:R114000",
+      "name": "Jodsalz",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:R112000",
+      "name": "Meersalz",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:R258100",
+      "name": "Schwarzer Pfeffer",
+      "barcode": null,
+      "kcal": 304.0,
+      "proteinG": 10.92,
+      "fatG": 2.77,
+      "carbsG": 46.07,
+      "fiberG": 25.5
+    },
+    {
+      "id": "bls:R231000",
+      "name": "Basilikum (getrocknet)",
+      "barcode": null,
+      "kcal": 211.0,
+      "proteinG": 23.0,
+      "fatG": 4.07,
+      "carbsG": 1.71,
+      "fiberG": 37.7
+    },
+    {
+      "id": "bls:R123100",
+      "name": "Apfelessig",
+      "barcode": null,
+      "kcal": 18.0,
+      "proteinG": 0.2,
+      "fatG": 0.0,
+      "carbsG": 0.15,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:R121000",
+      "name": "Weinessig",
+      "barcode": null,
+      "kcal": 25.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:R125000",
+      "name": "Balsamicoessig",
+      "barcode": null,
+      "kcal": 95.0,
+      "proteinG": 0.0,
+      "fatG": null,
+      "carbsG": 20.04,
+      "fiberG": null
+    },
+    {
+      "id": "bls:R132000",
+      "name": "Senf (mittelscharf)",
+      "barcode": null,
+      "kcal": 111.0,
+      "proteinG": 5.51,
+      "fatG": 6.96,
+      "carbsG": 2.94,
+      "fiberG": 4.5
+    },
+    {
+      "id": "bls:R141100",
+      "name": "Ketchup",
+      "barcode": null,
+      "kcal": 98.0,
+      "proteinG": 1.4,
+      "fatG": 0.1,
+      "carbsG": 21.16,
+      "fiberG": 1.81
+    },
+    {
+      "id": "bls:R143000",
+      "name": "Sojasauce",
+      "barcode": null,
+      "kcal": 66.0,
+      "proteinG": 6.3,
+      "fatG": 0.88,
+      "carbsG": 5.47,
+      "fiberG": 1.14
+    },
+    {
+      "id": "bls:R160000",
+      "name": "Tomatenmark",
+      "barcode": null,
+      "kcal": 81.0,
+      "proteinG": 3.4,
+      "fatG": 0.2,
+      "carbsG": 13.2,
+      "fiberG": 4.7
+    },
+    {
+      "id": "bls:R161200",
+      "name": "Passierte Tomaten",
+      "barcode": null,
+      "kcal": 29.0,
+      "proteinG": 1.18,
+      "fatG": 0.1,
+      "carbsG": 3.94,
+      "fiberG": 1.81
+    },
+    {
+      "id": "bls:R821000",
+      "name": "Gemüsebrühe (Bouillon)",
+      "barcode": null,
+      "kcal": 195.0,
+      "proteinG": 5.82,
+      "fatG": 5.8,
+      "carbsG": 27.91,
+      "fiberG": 2.9
+    },
+    {
+      "id": "bls:R458000",
+      "name": "Trockenhefe",
+      "barcode": null,
+      "kcal": 334.0,
+      "proteinG": 40.4,
+      "fatG": 7.61,
+      "carbsG": 14.3,
+      "fiberG": 23.3
+    },
+    {
+      "id": "bls:R459000",
+      "name": "Frischhefe",
+      "barcode": null,
+      "kcal": 128.0,
+      "proteinG": 16.7,
+      "fatG": 1.2,
+      "carbsG": 10.0,
+      "fiberG": 5.18
+    },
+    {
+      "id": "bls:R421100",
+      "name": "Backpulver",
+      "barcode": null,
+      "kcal": 88.0,
+      "proteinG": 0.09,
+      "fatG": 0.12,
+      "carbsG": 21.6,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S111000",
+      "name": "Zucker (weiß)",
+      "barcode": null,
+      "kcal": 400.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 100.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S112000",
+      "name": "Brauner Zucker",
+      "barcode": null,
+      "kcal": 387.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 96.7,
+      "fiberG": null
+    },
+    {
+      "id": "bls:S111100",
+      "name": "Puderzucker",
+      "barcode": null,
+      "kcal": 400.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 100.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S114000",
+      "name": "Vanillezucker",
+      "barcode": null,
+      "kcal": 400.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 100.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S115100",
+      "name": "Traubenzucker",
+      "barcode": null,
+      "kcal": 400.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 100.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S118000",
+      "name": "Fruchtzucker",
+      "barcode": null,
+      "kcal": 400.0,
+      "proteinG": 0.0,
+      "fatG": 0.0,
+      "carbsG": 100.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S151100",
+      "name": "Ahornsirup",
+      "barcode": null,
+      "kcal": 240.0,
+      "proteinG": 0.04,
+      "fatG": 0.06,
+      "carbsG": 59.9,
+      "fiberG": null
+    },
+    {
+      "id": "bls:S170000",
+      "name": "Süßstofftabletten",
+      "barcode": null,
+      "kcal": 52.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:S171000",
+      "name": "Flüssigsüßstoff",
+      "barcode": null,
+      "kcal": 0.0,
+      "proteinG": null,
+      "fatG": 0.0,
+      "carbsG": 0.0,
+      "fiberG": 0.0
+    },
+    {
+      "id": "bls:F110100",
+      "name": "Apfel roh",
+      "barcode": null,
+      "kcal": 58.0,
+      "proteinG": 0.42,
+      "fatG": 0.5,
+      "carbsG": 11.7,
+      "fiberG": 2.27
+    },
+    {
+      "id": "bls:F130100",
+      "name": "Birne roh",
+      "barcode": null,
+      "kcal": 58.0,
+      "proteinG": 0.3,
+      "fatG": 0.29,
+      "carbsG": 13.16,
+      "fiberG": 2.8
+    },
+    {
+      "id": "bls:F503100",
+      "name": "Banane roh",
+      "barcode": null,
+      "kcal": 79.0,
+      "proteinG": 1.32,
+      "fatG": 0.4,
+      "carbsG": 15.89,
+      "fiberG": 2.0
+    },
+    {
+      "id": "bls:F203100",
+      "name": "Pfirsich roh",
+      "barcode": null,
+      "kcal": 39.0,
+      "proteinG": 0.7,
+      "fatG": 0.11,
+      "carbsG": 8.02,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:F202100",
+      "name": "Nektarine roh",
+      "barcode": null,
+      "kcal": 48.0,
+      "proteinG": 1.06,
+      "fatG": 0.2,
+      "carbsG": 9.2,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:F201100",
+      "name": "Aprikose roh",
+      "barcode": null,
+      "kcal": 42.0,
+      "proteinG": 0.8,
+      "fatG": 0.13,
+      "carbsG": 8.22,
+      "fiberG": 1.54
+    },
+    {
+      "id": "bls:F220100",
+      "name": "Pflaume roh",
+      "barcode": null,
+      "kcal": 48.0,
+      "proteinG": 0.3,
+      "fatG": 0.17,
+      "carbsG": 10.71,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:F211100",
+      "name": "Süßkirsche roh",
+      "barcode": null,
+      "kcal": 70.0,
+      "proteinG": 0.9,
+      "fatG": 0.31,
+      "carbsG": 15.33,
+      "fiberG": 1.9
+    },
+    {
+      "id": "bls:F310100",
+      "name": "Weintraube roh",
+      "barcode": null,
+      "kcal": 61.0,
+      "proteinG": 0.75,
+      "fatG": 0.28,
+      "carbsG": 12.18,
+      "fiberG": 1.6
+    },
+    {
+      "id": "bls:F601100",
+      "name": "Zitrone roh",
+      "barcode": null,
+      "kcal": 40.0,
+      "proteinG": 0.7,
+      "fatG": 0.4,
+      "carbsG": 3.16,
+      "fiberG": 1.29
+    },
+    {
+      "id": "bls:F602100",
+      "name": "Limette roh",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 0.5,
+      "fatG": 0.2,
+      "carbsG": 1.9,
+      "fiberG": 1.29
+    },
+    {
+      "id": "bls:F603100",
+      "name": "Orange roh",
+      "barcode": null,
+      "kcal": 49.0,
+      "proteinG": 1.0,
+      "fatG": 0.2,
+      "carbsG": 8.85,
+      "fiberG": 2.2
+    },
+    {
+      "id": "bls:F606100",
+      "name": "Mandarine roh",
+      "barcode": null,
+      "kcal": 53.0,
+      "proteinG": 1.0,
+      "fatG": 0.3,
+      "carbsG": 10.1,
+      "fiberG": 1.12
+    },
+    {
+      "id": "bls:F514100",
+      "name": "Kiwi roh",
+      "barcode": null,
+      "kcal": 61.0,
+      "proteinG": 0.9,
+      "fatG": 0.5,
+      "carbsG": 10.1,
+      "fiberG": 3.9
+    },
+    {
+      "id": "bls:F516100",
+      "name": "Mango roh",
+      "barcode": null,
+      "kcal": 60.0,
+      "proteinG": 0.7,
+      "fatG": 0.45,
+      "carbsG": 12.0,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:F501100",
+      "name": "Ananas roh",
+      "barcode": null,
+      "kcal": 46.0,
+      "proteinG": 0.5,
+      "fatG": 0.1,
+      "carbsG": 9.4,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:F535100",
+      "name": "Wassermelone roh",
+      "barcode": null,
+      "kcal": 35.0,
+      "proteinG": 0.6,
+      "fatG": 0.4,
+      "carbsG": 6.96,
+      "fiberG": 0.2
+    },
+    {
+      "id": "bls:F506100",
+      "name": "Granatapfel roh",
+      "barcode": null,
+      "kcal": 79.0,
+      "proteinG": 0.7,
+      "fatG": 0.6,
+      "carbsG": 16.1,
+      "fiberG": 2.24
+    },
+    {
+      "id": "bls:F502100",
+      "name": "Avocado roh",
+      "barcode": null,
+      "kcal": 132.0,
+      "proteinG": 1.37,
+      "fatG": 12.5,
+      "carbsG": 1.37,
+      "fiberG": 4.1
+    },
+    {
+      "id": "bls:F505100",
+      "name": "Feige roh",
+      "barcode": null,
+      "kcal": 52.0,
+      "proteinG": 1.3,
+      "fatG": 0.5,
+      "carbsG": 9.6,
+      "fiberG": 2.02
+    },
+    {
+      "id": "bls:F504100",
+      "name": "Dattel roh",
+      "barcode": null,
+      "kcal": 140.0,
+      "proteinG": 1.5,
+      "fatG": 0.1,
+      "carbsG": 31.6,
+      "fiberG": 1.6
+    },
+    {
+      "id": "bls:F302100",
+      "name": "Himbeere roh",
+      "barcode": null,
+      "kcal": 43.0,
+      "proteinG": 1.0,
+      "fatG": 0.3,
+      "carbsG": 5.2,
+      "fiberG": 4.7
+    },
+    {
+      "id": "bls:F303100",
+      "name": "Brombeere roh",
+      "barcode": null,
+      "kcal": 49.0,
+      "proteinG": 1.3,
+      "fatG": 0.2,
+      "carbsG": 10.2,
+      "fiberG": 3.2
+    },
+    {
+      "id": "bls:F301100",
+      "name": "Erdbeere roh",
+      "barcode": null,
+      "kcal": 38.0,
+      "proteinG": 0.82,
+      "fatG": 0.4,
+      "carbsG": 5.92,
+      "fiberG": 2.0
+    },
+    {
+      "id": "bls:F321100",
+      "name": "Rote Johannisbeere",
+      "barcode": null,
+      "kcal": 39.0,
+      "proteinG": 1.44,
+      "fatG": 0.2,
+      "carbsG": 4.3,
+      "fiberG": 3.5
+    },
+    {
+      "id": "bls:F305100",
+      "name": "Stachelbeere roh",
+      "barcode": null,
+      "kcal": 50.0,
+      "proteinG": 0.88,
+      "fatG": 0.15,
+      "carbsG": 9.84,
+      "fiberG": 2.95
+    },
+    {
+      "id": "bls:F406100",
+      "name": "Holunderbeere roh",
+      "barcode": null,
+      "kcal": 72.0,
+      "proteinG": 2.53,
+      "fatG": 1.7,
+      "carbsG": 7.83,
+      "fiberG": 3.5
+    },
+    {
+      "id": "bls:F405100",
+      "name": "Sanddornbeere roh",
+      "barcode": null,
+      "kcal": 51.0,
+      "proteinG": 1.42,
+      "fatG": 3.2,
+      "carbsG": 2.4,
+      "fiberG": 3.6
+    },
+    {
+      "id": "bls:F552100",
+      "name": "Physalis",
+      "barcode": null,
+      "kcal": 81.0,
+      "proteinG": 2.3,
+      "fatG": 1.1,
+      "carbsG": 14.12,
+      "fiberG": 2.46
+    },
+    {
+      "id": "bls:F140100",
+      "name": "Quitte roh",
+      "barcode": null,
+      "kcal": 53.0,
+      "proteinG": 0.42,
+      "fatG": 0.5,
+      "carbsG": 8.2,
+      "fiberG": 5.92
+    },
+    {
+      "id": "bls:G561100",
+      "name": "Tomate roh",
+      "barcode": null,
+      "kcal": 22.0,
+      "proteinG": 0.95,
+      "fatG": 0.11,
+      "carbsG": 3.25,
+      "fiberG": 1.3
+    },
+    {
+      "id": "bls:G520100",
+      "name": "Gurke roh",
+      "barcode": null,
+      "kcal": 16.0,
+      "proteinG": 1.06,
+      "fatG": 0.2,
+      "carbsG": 1.97,
+      "fiberG": 0.9
+    },
+    {
+      "id": "bls:G543100",
+      "name": "Paprika (rot)",
+      "barcode": null,
+      "kcal": 36.0,
+      "proteinG": 1.02,
+      "fatG": 0.2,
+      "carbsG": 6.19,
+      "fiberG": 2.2
+    },
+    {
+      "id": "bls:G542100",
+      "name": "Paprika (gelb)",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 0.8,
+      "fatG": 0.2,
+      "carbsG": 4.42,
+      "fiberG": 2.2
+    },
+    {
+      "id": "bls:G541100",
+      "name": "Paprika (grün)",
+      "barcode": null,
+      "kcal": 38.0,
+      "proteinG": 1.08,
+      "fatG": 0.24,
+      "carbsG": 6.88,
+      "fiberG": 2.0
+    },
+    {
+      "id": "bls:G480100",
+      "name": "Zwiebel",
+      "barcode": null,
+      "kcal": 34.0,
+      "proteinG": 1.16,
+      "fatG": 0.15,
+      "carbsG": 6.01,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:G482100",
+      "name": "Frühlingszwiebel",
+      "barcode": null,
+      "kcal": 27.0,
+      "proteinG": 1.9,
+      "fatG": 0.19,
+      "carbsG": 3.0,
+      "fiberG": 2.6
+    },
+    {
+      "id": "bls:G490100",
+      "name": "Knoblauch roh",
+      "barcode": null,
+      "kcal": 97.0,
+      "proteinG": 6.05,
+      "fatG": 0.42,
+      "carbsG": 3.0,
+      "fiberG": 28.3
+    },
+    {
+      "id": "bls:G620100",
+      "name": "Karotten",
+      "barcode": null,
+      "kcal": 40.0,
+      "proteinG": 0.84,
+      "fatG": 0.4,
+      "carbsG": 6.47,
+      "fiberG": 2.9
+    },
+    {
+      "id": "bls:G470100",
+      "name": "Porree",
+      "barcode": null,
+      "kcal": 36.0,
+      "proteinG": 2.14,
+      "fatG": 0.25,
+      "carbsG": 5.0,
+      "fiberG": 2.2
+    },
+    {
+      "id": "bls:G492100",
+      "name": "Bärlauch roh",
+      "barcode": null,
+      "kcal": 26.0,
+      "proteinG": 1.9,
+      "fatG": 0.19,
+      "carbsG": 2.93,
+      "fiberG": 2.18
+    },
+    {
+      "id": "bls:G220100",
+      "name": "Stangensellerie",
+      "barcode": null,
+      "kcal": 17.0,
+      "proteinG": 1.2,
+      "fatG": 0.1,
+      "carbsG": 1.5,
+      "fiberG": 2.55
+    },
+    {
+      "id": "bls:G660100",
+      "name": "Knollensellerie roh",
+      "barcode": null,
+      "kcal": 30.0,
+      "proteinG": 1.55,
+      "fatG": 0.33,
+      "carbsG": 2.77,
+      "fiberG": 4.2
+    },
+    {
+      "id": "bls:G211100",
+      "name": "Spinat roh",
+      "barcode": null,
+      "kcal": 18.0,
+      "proteinG": 2.07,
+      "fatG": 0.3,
+      "carbsG": 0.93,
+      "fiberG": 1.8
+    },
+    {
+      "id": "bls:G312100",
+      "name": "Brokkoli",
+      "barcode": null,
+      "kcal": 35.0,
+      "proteinG": 3.62,
+      "fatG": 0.6,
+      "carbsG": 2.3,
+      "fiberG": 3.0
+    },
+    {
+      "id": "bls:G311100",
+      "name": "Blumenkohl roh",
+      "barcode": null,
+      "kcal": 35.0,
+      "proteinG": 2.42,
+      "fatG": 0.28,
+      "carbsG": 5.33,
+      "fiberG": 2.9
+    },
+    {
+      "id": "bls:G341100",
+      "name": "Rotkohl roh",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 1.56,
+      "fatG": 0.18,
+      "carbsG": 3.73,
+      "fiberG": 2.5
+    },
+    {
+      "id": "bls:G342100",
+      "name": "Weißkohl roh",
+      "barcode": null,
+      "kcal": 32.0,
+      "proteinG": 1.38,
+      "fatG": 0.19,
+      "carbsG": 4.54,
+      "fiberG": 3.0
+    },
+    {
+      "id": "bls:G343100",
+      "name": "Wirsing (Savoykohl)",
+      "barcode": null,
+      "kcal": 37.0,
+      "proteinG": 2.78,
+      "fatG": 0.32,
+      "carbsG": 4.1,
+      "fiberG": 2.8
+    },
+    {
+      "id": "bls:G332100",
+      "name": "Rosenkohl roh",
+      "barcode": null,
+      "kcal": 40.0,
+      "proteinG": 4.45,
+      "fatG": 0.34,
+      "carbsG": 2.26,
+      "fiberG": 4.4
+    },
+    {
+      "id": "bls:G322100",
+      "name": "Grünkohl roh",
+      "barcode": null,
+      "kcal": 53.0,
+      "proteinG": 4.16,
+      "fatG": 0.67,
+      "carbsG": 3.32,
+      "fiberG": 8.39
+    },
+    {
+      "id": "bls:G321100",
+      "name": "Chinakohl roh",
+      "barcode": null,
+      "kcal": 18.0,
+      "proteinG": 1.8,
+      "fatG": 0.2,
+      "carbsG": 1.38,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:G611100",
+      "name": "Kohlrabi",
+      "barcode": null,
+      "kcal": 22.0,
+      "proteinG": 1.25,
+      "fatG": 0.16,
+      "carbsG": 2.3,
+      "fiberG": 2.9
+    },
+    {
+      "id": "bls:G582100",
+      "name": "Zucchini roh",
+      "barcode": null,
+      "kcal": 22.0,
+      "proteinG": 1.3,
+      "fatG": 0.29,
+      "carbsG": 3.0,
+      "fiberG": 1.1
+    },
+    {
+      "id": "bls:G510100",
+      "name": "Aubergine roh",
+      "barcode": null,
+      "kcal": 19.0,
+      "proteinG": 0.57,
+      "fatG": 0.18,
+      "carbsG": 3.02,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:G102100",
+      "name": "Endivie",
+      "barcode": null,
+      "kcal": 13.0,
+      "proteinG": 1.25,
+      "fatG": 0.2,
+      "carbsG": 0.83,
+      "fiberG": 1.22
+    },
+    {
+      "id": "bls:G106100",
+      "name": "Radicchio roh",
+      "barcode": null,
+      "kcal": 20.0,
+      "proteinG": 1.4,
+      "fatG": 0.25,
+      "carbsG": 2.6,
+      "fiberG": 0.9
+    },
+    {
+      "id": "bls:G130100",
+      "name": "Rucola roh",
+      "barcode": null,
+      "kcal": 21.0,
+      "proteinG": 3.6,
+      "fatG": 0.4,
+      "carbsG": 0.0,
+      "fiberG": 1.7
+    },
+    {
+      "id": "bls:G105100",
+      "name": "Kopfsalat",
+      "barcode": null,
+      "kcal": 18.0,
+      "proteinG": 1.5,
+      "fatG": 0.22,
+      "carbsG": 1.7,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:G691100",
+      "name": "Radieschen roh",
+      "barcode": null,
+      "kcal": 18.0,
+      "proteinG": 1.05,
+      "fatG": 0.14,
+      "carbsG": 2.31,
+      "fiberG": 1.5
+    },
+    {
+      "id": "bls:G230100",
+      "name": "Mangold roh",
+      "barcode": null,
+      "kcal": 17.0,
+      "proteinG": 1.85,
+      "fatG": 0.28,
+      "carbsG": 0.87,
+      "fiberG": 1.8
+    },
+    {
+      "id": "bls:G450100",
+      "name": "Spargel roh",
+      "barcode": null,
+      "kcal": 28.0,
+      "proteinG": 1.96,
+      "fatG": 0.16,
+      "carbsG": 3.98,
+      "fiberG": 1.4
+    },
+    {
+      "id": "bls:G410100",
+      "name": "Artischocke roh",
+      "barcode": null,
+      "kcal": 44.0,
+      "proteinG": 2.4,
+      "fatG": 0.12,
+      "carbsG": 2.69,
+      "fiberG": 10.79
+    },
+    {
+      "id": "bls:G430100",
+      "name": "Fenchel",
+      "barcode": null,
+      "kcal": 27.0,
+      "proteinG": 1.4,
+      "fatG": 0.2,
+      "carbsG": 3.43,
+      "fiberG": 3.3
+    },
+    {
+      "id": "bls:G640100",
+      "name": "Pastinake roh",
+      "barcode": null,
+      "kcal": 59.0,
+      "proteinG": 2.69,
+      "fatG": 0.43,
+      "carbsG": 9.7,
+      "fiberG": 2.13
+    },
+    {
+      "id": "bls:G101100",
+      "name": "Chicoree roh",
+      "barcode": null,
+      "kcal": 20.0,
+      "proteinG": 2.39,
+      "fatG": 0.18,
+      "carbsG": 1.3,
+      "fiberG": 1.3
+    },
+    {
+      "id": "bls:G280100",
+      "name": "Kresse",
+      "barcode": null,
+      "kcal": 31.0,
+      "proteinG": 4.2,
+      "fatG": 0.7,
+      "carbsG": 0.23,
+      "fiberG": 3.52
+    },
+    {
+      "id": "bls:G250100",
+      "name": "Petersilie",
+      "barcode": null,
+      "kcal": 33.0,
+      "proteinG": 4.09,
+      "fatG": 0.36,
+      "carbsG": 1.31,
+      "fiberG": 4.25
+    },
+    {
+      "id": "bls:G081100",
+      "name": "Schnittlauch roh",
+      "barcode": null,
+      "kcal": 29.0,
+      "proteinG": 2.6,
+      "fatG": 0.74,
+      "carbsG": 1.54,
+      "fiberG": 2.6
+    },
+    {
+      "id": "bls:G061000",
+      "name": "Basilikum roh",
+      "barcode": null,
+      "kcal": 23.0,
+      "proteinG": 3.15,
+      "fatG": 0.64,
+      "carbsG": 0.31,
+      "fiberG": 1.6
+    }
+  ]
+}

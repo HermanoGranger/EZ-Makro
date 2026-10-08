@@ -128,6 +128,38 @@ class BackupImporterTest {
         }
 
     @Test
+    fun `replace clears the seed version marker so seeds re-apply on next launch`() =
+        runTest {
+            put(seedContent())
+
+            importer.import(DOC, ImportMode.REPLACE).expectSuccess()
+
+            assertThat(local.clearSeedVersionMarkerCalls).isEqualTo(1)
+        }
+
+    @Test
+    fun `merge keeps the seed version marker untouched`() =
+        runTest {
+            put(seedContent())
+
+            importer.import(DOC, ImportMode.MERGE).expectSuccess()
+
+            assertThat(local.clearSeedVersionMarkerCalls).isEqualTo(0)
+        }
+
+    @Test
+    fun `seed marker reset failure after replace is a warning, not an error`() =
+        runTest {
+            put(seedContent())
+            local.clearSeedVersionMarkerError = DataError.Local.DISK_FULL
+
+            val report = importer.import(DOC, ImportMode.REPLACE).expectSuccess()
+
+            assertThat(report.warnings).contains(BackupWarning.SettingsRestoreFailed)
+            assertThat(local.replaceAllCalls).isEqualTo(1)
+        }
+
+    @Test
     fun `preview never writes`() =
         runTest {
             put(seedContent())

@@ -12,3 +12,7 @@ local.properties
 buildSrc/build/
 **/build/
 
+
+# BLS Rohdaten (14 MB, Download via tools/seed/fetch_bls.py)
+tools/seed/cache/
+tools/seed/__pycache__/

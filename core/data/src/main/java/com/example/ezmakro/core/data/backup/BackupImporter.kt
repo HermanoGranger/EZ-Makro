@@ -66,7 +66,15 @@ class BackupImporter(
                         decoded.document.content.settings
                             .associate { it.key to it.value }
                     val (settingsRestored, settingsWarnings) = restoreSettings(settings)
-                    buildReport(mode, insertReport, stage, settingsRestored, decoded.checksumValid, settingsWarnings)
+                    val seedWarnings = if (mode == ImportMode.REPLACE) resetSeedVersionMarker() else emptyList()
+                    buildReport(
+                        mode,
+                        insertReport,
+                        stage,
+                        settingsRestored,
+                        decoded.checksumValid,
+                        settingsWarnings + seedWarnings,
+                    )
                 }
             }
         }
@@ -277,6 +285,21 @@ class BackupImporter(
             is Result.Error -> {
                 AppLogger.w("Settings restore failed after commit: ${result.error}", tag = "BackupImporter")
                 0 to listOf(BackupWarning.SettingsRestoreFailed)
+            }
+        }
+
+    /**
+     * A REPLACE import discarded the pre-existing database, so the BLS seed
+     * must re-apply on the next startup — even when the archive carried a
+     * matching version marker (ADR-008). Failure is non-fatal, mirroring
+     * [restoreSettings]: the rows are already committed.
+     */
+    private suspend fun resetSeedVersionMarker(): List<BackupWarning> =
+        when (local.clearSeedVersionMarker()) {
+            is Result.Success -> emptyList()
+            is Result.Error -> {
+                AppLogger.w("Seed version marker reset failed after REPLACE", tag = "BackupImporter")
+                listOf(BackupWarning.SettingsRestoreFailed)
             }
         }
 

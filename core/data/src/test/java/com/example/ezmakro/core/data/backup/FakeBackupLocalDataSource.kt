@@ -30,6 +30,9 @@ class FakeBackupLocalDataSource(
         private set
     var insertError: DataError.Local? = null
     var restoreSettingsError: DataError.Local? = null
+    var clearSeedVersionMarkerCalls = 0
+        private set
+    var clearSeedVersionMarkerError: DataError.Local? = null
 
     override suspend fun readAll(): Result<BackupRows, DataError.Local> = Result.Success(rows)
 
@@ -75,6 +78,12 @@ class FakeBackupLocalDataSource(
     override suspend fun restoreSettings(values: Map<String, String>): Result<Unit, DataError.Local> {
         restoreSettingsError?.let { return Result.Error(it) }
         restoredSettings = values
+        return Result.Success(Unit)
+    }
+
+    override suspend fun clearSeedVersionMarker(): Result<Unit, DataError.Local> {
+        clearSeedVersionMarkerCalls++
+        clearSeedVersionMarkerError?.let { return Result.Error(it) }
         return Result.Success(Unit)
     }
 

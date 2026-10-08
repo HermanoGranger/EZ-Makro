@@ -41,4 +41,13 @@ interface BackupLocalDataSource {
     suspend fun readSettings(): Result<Map<String, String>, DataError.Local>
 
     suspend fun restoreSettings(values: Map<String, String>): EmptyResult<DataError.Local>
+
+    /**
+     * Clears the BLS seed version marker so the next startup re-applies the
+     * bundled seed document into the freshly restored database (ADR-008).
+     * Called only after a REPLACE import: the archive's own marker value is
+     * intentionally discarded, otherwise a same-version archive would leave
+     * the restored DB without seeds it never contained.
+     */
+    suspend fun clearSeedVersionMarker(): EmptyResult<DataError.Local>
 }

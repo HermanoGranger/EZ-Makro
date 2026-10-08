@@ -88,6 +88,58 @@ interface FoodItemDao {
         origIsUserCreated: Boolean?,
     )
 
+    /**
+     * Insert or update a bundled BLS seed food. Like [upsert] it keys on the
+     * stable [id], but the update arm is guarded: it only refreshes rows that
+     * are still untouched (`ORIGINAL`, not user-created), so a re-seed never
+     * overwrites a user edit, a favorite-only row stays intact, and a deleted
+     * seed reappears only on an insert conflict-free path. `barcode` /
+     * serving columns are never touched by the update arm — seeds carry none.
+     */
+    @Suppress("LongParameterList")
+    @Query(
+        """
+        INSERT INTO food_items (
+            id, name, barcode,
+            nutri_kcal, nutri_protein_g, nutri_fat_g, nutri_carbs_g, nutri_fiber_g,
+            is_user_created, cached_status,
+            orig_name, orig_barcode, orig_nutri_kcal, orig_nutri_protein_g,
+            orig_nutri_fat_g, orig_nutri_carbs_g, orig_nutri_fiber_g,
+            orig_is_user_created
+        ) VALUES (
+            :id, :name, NULL,
+            :nutriKcal, :nutriProteinG, :nutriFatG, :nutriCarbsG, :nutriFiberG,
+            0, 'ORIGINAL',
+            :name, NULL, :nutriKcal, :nutriProteinG,
+            :nutriFatG, :nutriCarbsG, :nutriFiberG,
+            0
+        )
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            nutri_kcal = excluded.nutri_kcal,
+            nutri_protein_g = excluded.nutri_protein_g,
+            nutri_fat_g = excluded.nutri_fat_g,
+            nutri_carbs_g = excluded.nutri_carbs_g,
+            nutri_fiber_g = excluded.nutri_fiber_g,
+            orig_name = excluded.orig_name,
+            orig_nutri_kcal = excluded.orig_nutri_kcal,
+            orig_nutri_protein_g = excluded.orig_nutri_protein_g,
+            orig_nutri_fat_g = excluded.orig_nutri_fat_g,
+            orig_nutri_carbs_g = excluded.orig_nutri_carbs_g,
+            orig_nutri_fiber_g = excluded.orig_nutri_fiber_g
+        WHERE food_items.cached_status = 'ORIGINAL' AND food_items.is_user_created = 0
+        """,
+    )
+    fun upsertSeed(
+        id: String,
+        name: String,
+        nutriKcal: Double?,
+        nutriProteinG: Double?,
+        nutriFatG: Double?,
+        nutriCarbsG: Double?,
+        nutriFiberG: Double?,
+    )
+
     /** Insert or replace many foods. Keyed on the surrogate PK; see [upsert]. */
     @androidx.room.Upsert
     fun upsertAll(entities: List<FoodItemEntity>)

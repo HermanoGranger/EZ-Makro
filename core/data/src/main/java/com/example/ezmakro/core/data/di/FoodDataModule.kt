@@ -3,9 +3,13 @@ package com.example.ezmakro.core.data.di
 import com.example.ezmakro.core.data.food.KtorFoodRemoteDataSource
 import com.example.ezmakro.core.data.food.OfflineFirstFoodRepository
 import com.example.ezmakro.core.data.food.RoomFoodLocalDataSource
+import com.example.ezmakro.core.data.food.seed.AssetSeedFoodDataSource
+import com.example.ezmakro.core.data.food.seed.BlsFoodSeeder
+import com.example.ezmakro.core.data.food.seed.SeedFoodDataSource
 import com.example.ezmakro.core.domain.datasource.FoodLocalDataSource
 import com.example.ezmakro.core.domain.datasource.FoodRemoteDataSource
 import com.example.ezmakro.core.domain.repository.FoodRepository
+import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 /**
@@ -20,4 +24,6 @@ val foodDataModule =
         single<FoodRepository> {
             OfflineFirstFoodRepository(local = get(), remote = get())
         }
+        single<SeedFoodDataSource> { AssetSeedFoodDataSource(context = androidContext()) }
+        single { BlsFoodSeeder(seedSource = get(), dao = get(), settings = get()) }
     }

@@ -2,6 +2,7 @@ package com.example.ezmakro.core.data.backup
 
 import com.example.ezmakro.core.data.datastore.SettingsDataStore
 import com.example.ezmakro.core.data.food.mapper.toServingUnit
+import com.example.ezmakro.core.data.food.seed.BlsFoodSeeder
 import com.example.ezmakro.core.data.logging.AppLogger
 import com.example.ezmakro.core.database.dao.BackupDao
 import com.example.ezmakro.core.database.dao.BackupInsertReport
@@ -76,6 +77,9 @@ class RoomBackupLocalDataSource(
 
     override suspend fun restoreSettings(values: Map<String, String>): EmptyResult<DataError.Local> =
         runCatchingLocal { settings.restore(values) }
+
+    override suspend fun clearSeedVersionMarker(): EmptyResult<DataError.Local> =
+        runCatchingLocal { settings.remove(BlsFoodSeeder.SEED_FOOD_VERSION_KEY) }
 }
 
 /**

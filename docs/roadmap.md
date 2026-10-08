@@ -20,6 +20,7 @@ Acceptance → Commit nur nach Freigabe).
 | **10** | Weight Tracking | 🔜 | Gewicht, Trend, Charts |
 | **11** | Statistics | 🔜 | Wochen-/Monats-/Jahresstatistiken |
 | **12** | Backup | ✅ | JSON Export/Import, Validierung, **ohne** Verschlüsselung (Details: `docs/Plan_Backup_System.md`) |
+| **S** | Seed-Daten (BLS) | ✅ | 251 vegane Standardlebensmittel offline ab Werk, User-Edits geschützt (ADR-008) |
 | **13** | Polish | 🔜 | Accessibility, Performance, Tablets |
 | **14** | Release Candidate | 🔜 | Alle Tests grün, Release Build, crashfrei |
 

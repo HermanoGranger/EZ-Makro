@@ -25,14 +25,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.ezmakro.feature.settings.presentation.R
 
 /**
  * Settings hub (A9): the single gear of the diary opens this screen, which
- * lists the settings areas. Only two exist today — more (dark mode, units)
- * are expected to be added as further rows.
+ * lists the settings areas (today: goals and backup) plus the static
+ * „Datenquellen" attribution section required by the BLS (CC BY 4.0) and
+ * OpenFoodFacts (ODbL) seed/cache data (ADR-008).
  */
 @Composable
 fun SettingsRoot(
@@ -90,9 +94,67 @@ fun SettingsScreen(
                 subtitleRes = R.string.settings_backup_subtitle,
                 onClick = onNavigateToBackup,
             )
+            HorizontalDivider()
+            DataSourcesSection()
         }
     }
 }
+
+/**
+ * Static attribution for the bundled BLS seed and the OpenFoodFacts cache
+ * (CC BY 4.0 / ODbL). The source names and the DOI are links; everything else
+ * is plain legal text.
+ */
+@Composable
+private fun DataSourcesSection() {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(R.string.settings_datasources_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
+        )
+        Text(
+            buildAnnotatedString {
+                append(stringResource(R.string.settings_datasource_bls_prefix))
+                withLink(LinkAnnotation.Url(BLS_URL)) {
+                    append(stringResource(R.string.settings_datasource_bls_name))
+                }
+                append(stringResource(R.string.settings_datasource_bls_suffix))
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Text(
+            buildAnnotatedString {
+                append(stringResource(R.string.settings_datasource_bls_citation))
+                append(" ")
+                withLink(LinkAnnotation.Url(BLS_DOI_URL)) {
+                    append(stringResource(R.string.settings_datasource_bls_doi))
+                }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        Text(
+            buildAnnotatedString {
+                append(stringResource(R.string.settings_datasource_off_prefix))
+                withLink(LinkAnnotation.Url(OFF_URL)) {
+                    append(stringResource(R.string.settings_datasource_off_name))
+                }
+                append(stringResource(R.string.settings_datasource_off_suffix))
+                withLink(LinkAnnotation.Url(OFF_ODBL_URL)) {
+                    append(stringResource(R.string.settings_datasource_off_license))
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+private const val BLS_URL = "https://www.blsdb.de/"
+private const val BLS_DOI_URL = "https://doi.org/10.25826/Data20251217-134202-0"
+private const val OFF_URL = "https://world.openfoodfacts.org/"
+private const val OFF_ODBL_URL = "https://opendatacommons.org/licenses/odbl/1-0/"
 
 /**
  * One entry of the settings list. The icons are decorative — the row label is
