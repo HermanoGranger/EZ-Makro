@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.foodpicker.presentation.picker
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.ezmakro.core.domain.calculation.createRecipeSnapshot
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
@@ -13,7 +14,12 @@ import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
+import com.example.ezmakro.core.presentation.recipe.RECIPE_SERVING_LABEL
+import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.uitext.toUiText
+import com.example.ezmakro.core.presentation.util.formatValue
+import com.example.ezmakro.core.presentation.util.servingAmountLabel
+import com.example.ezmakro.feature.foodpicker.presentation.R
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +58,11 @@ class FoodPickerViewModel(
             FoodPickerState(
                 activeTab = savedTab ?: FoodPickerTab.SEARCH,
                 searchQuery = savedStateHandle.get<String>(KEY_QUERY).orEmpty(),
+                lastDiaryAmount = savedStateHandle.get<String>(KEY_LAST_DIARY_AMOUNT),
+                lastDiaryIsGrams = savedStateHandle.get<Boolean>(KEY_LAST_DIARY_IS_GRAMS) ?: true,
+                slot = savedStateHandle.get<String>(KEY_LAST_DIARY_SLOT)?.let(MealSlot::valueOf),
+                lastIngredientRawWeight = savedStateHandle.get<String>(KEY_LAST_INGREDIENT_RAW_WEIGHT),
+                lastIngredientServingCount = savedStateHandle.get<String>(KEY_LAST_INGREDIENT_SERVING_COUNT),
                 targetContext = target,
                 targetDate = targetDate,
             ),
@@ -111,8 +122,12 @@ class FoodPickerViewModel(
                         selectedItemId = null,
                         selectedItemIsRecipe = false,
                         selectedItemHasServingUnit = false,
+                        pendingIngredient = null,
                     )
                 }
+
+            FoodPickerAction.OnSheetDismissed ->
+                _state.update { it.copy(addedItemIds = emptySet()) }
 
             FoodPickerAction.OnDismissDetail -> dismissDetail()
 
@@ -122,6 +137,8 @@ class FoodPickerViewModel(
 
             is FoodPickerAction.OnConfirmAddToDiary -> confirmAddToDiary(action)
 
+            is FoodPickerAction.OnConfirmAddAsIngredient -> confirmAddAsIngredient(action)
+
             FoodPickerAction.OnMyFoodsToggle ->
                 _state.update { it.copy(showFoods = !it.showFoods) }
 
@@ -129,9 +146,6 @@ class FoodPickerViewModel(
 
             is FoodPickerAction.OnPermissionResult ->
                 _state.update { it.copy(isCameraPermissionGranted = action.granted) }
-
-            FoodPickerAction.OnDismiss ->
-                viewModelScope.launch { _events.send(FoodPickerEvent.Dismissed) }
 
             FoodPickerAction.OnScanBarcodeClick ->
                 _state.update { it.copy(activeTab = FoodPickerTab.BARCODE) }
@@ -298,15 +312,19 @@ class FoodPickerViewModel(
                 } else {
                     foodRepository.markUsed(FoodId(foodId))
                 }
-                _state.update { it.copy(selectionError = null) }
-                _events.send(
-                    FoodPickerEvent.AddAsIngredient(
-                        itemId = foodId,
-                        itemName = food.name,
-                        servingLabel = food.servingLabel,
-                        isRecipe = false,
-                    ),
-                )
+                _state.update {
+                    it.copy(
+                        selectionError = null,
+                        pendingIngredient =
+                            PendingIngredient(
+                                itemId = foodId,
+                                itemName = food.name,
+                                servingLabel = food.servingLabel,
+                                servingAmount = resolveFood(foodId)?.servingUnit?.servingAmountLabel(),
+                                isRecipe = false,
+                            ),
+                    )
+                }
             }
             return
         }
@@ -331,14 +349,22 @@ class FoodPickerViewModel(
             val recipe = findRecipe(recipeId) ?: return
             viewModelScope.launch {
                 recipeRepository.markUsed(RecipeId(recipeId))
-                _events.send(
-                    FoodPickerEvent.AddAsIngredient(
-                        itemId = recipeId,
-                        itemName = recipe.name,
-                        servingLabel = null,
-                        isRecipe = true,
-                    ),
-                )
+                val gramsPerPortion =
+                    resolveRecipe(recipeId)
+                        ?.let { createRecipeSnapshot(it).gramsPerPortion }
+                        ?.takeIf { it > 0.0 }
+                _state.update {
+                    it.copy(
+                        pendingIngredient =
+                            PendingIngredient(
+                                itemId = recipeId,
+                                itemName = recipe.name,
+                                servingLabel = RECIPE_SERVING_LABEL,
+                                servingAmount = gramsPerPortion?.let { g -> "${g.formatValue()} g" },
+                                isRecipe = true,
+                            ),
+                    )
+                }
             }
             return
         }
@@ -358,9 +384,14 @@ class FoodPickerViewModel(
     private fun confirmAddToDiary(action: FoodPickerAction.OnConfirmAddToDiary) {
         val s = _state.value
         val selectedId = s.selectedItemId ?: return
+        val selectedName = findFood(selectedId)?.name ?: selectedId
         val date = s.targetDate ?: LocalDate.now().toString()
         val isRecipe = s.selectedItemIsRecipe
-        val slot = s.slot ?: action.slot
+        val slot = action.slot
+        savedStateHandle[KEY_LAST_DIARY_AMOUNT] = action.amount.toString()
+        savedStateHandle[KEY_LAST_DIARY_IS_GRAMS] = action.isGrams
+        savedStateHandle[KEY_LAST_DIARY_SLOT] = slot.name
+        dismissDetail()
         _state.update {
             it.copy(
                 selectedItemReady = false,
@@ -384,6 +415,12 @@ class FoodPickerViewModel(
                     is Result.Success -> { /* proceed */ }
                 }
             }
+            _state.update {
+                it.copy(
+                    slot = slot,
+                    addedItemIds = it.addedItemIds + selectedId,
+                )
+            }
             _events.send(
                 FoodPickerEvent.AddToDiary(
                     foodId = resolved?.id?.value ?: selectedId,
@@ -392,6 +429,41 @@ class FoodPickerViewModel(
                     slot = slot,
                     amount = action.amount,
                     isGrams = action.isGrams,
+                ),
+            )
+            _events.send(
+                FoodPickerEvent.ShowMessage(
+                    UiText.StringResource(R.string.foodpicker_added_message, arrayOf<Any>(selectedName)),
+                ),
+            )
+        }
+    }
+
+    private fun confirmAddAsIngredient(action: FoodPickerAction.OnConfirmAddAsIngredient) {
+        val pending = _state.value.pendingIngredient ?: return
+        savedStateHandle[KEY_LAST_INGREDIENT_RAW_WEIGHT] = action.rawWeight
+        savedStateHandle[KEY_LAST_INGREDIENT_SERVING_COUNT] = action.servingCount
+        dismissDetail()
+        _state.update {
+            it.copy(
+                pendingIngredient = null,
+                addedItemIds = it.addedItemIds + pending.itemId,
+            )
+        }
+        viewModelScope.launch {
+            _events.send(
+                FoodPickerEvent.AddAsIngredient(
+                    itemId = pending.itemId,
+                    itemName = pending.itemName,
+                    servingLabel = pending.servingLabel,
+                    isRecipe = pending.isRecipe,
+                    rawWeight = action.rawWeight,
+                    servingCount = action.servingCount,
+                ),
+            )
+            _events.send(
+                FoodPickerEvent.ShowMessage(
+                    UiText.StringResource(R.string.foodpicker_added_message, arrayOf<Any>(pending.itemName)),
                 ),
             )
         }
@@ -428,14 +500,18 @@ class FoodPickerViewModel(
 
                         FoodPickerTarget.RECIPE_INGREDIENT -> {
                             if (food != null) {
-                                _events.send(
-                                    FoodPickerEvent.AddAsIngredient(
-                                        itemId = food.id.value,
-                                        itemName = food.name,
-                                        servingLabel = food.servingUnit?.label,
-                                        isRecipe = false,
-                                    ),
-                                )
+                                _state.update {
+                                    it.copy(
+                                        pendingIngredient =
+                                            PendingIngredient(
+                                                itemId = food.id.value,
+                                                itemName = food.name,
+                                                servingLabel = food.servingUnit?.label,
+                                                servingAmount = food.servingUnit?.servingAmountLabel(),
+                                                isRecipe = false,
+                                            ),
+                                    )
+                                }
                             } else {
                                 _events.send(FoodPickerEvent.NavigateToFoodCreate(barcode))
                             }
@@ -569,6 +645,11 @@ class FoodPickerViewModel(
     companion object {
         private const val KEY_TAB = "foodpicker_tab"
         private const val KEY_QUERY = "foodpicker_query"
+        private const val KEY_LAST_DIARY_AMOUNT = "foodpicker_last_diary_amount"
+        private const val KEY_LAST_DIARY_IS_GRAMS = "foodpicker_last_diary_is_grams"
+        private const val KEY_LAST_DIARY_SLOT = "foodpicker_last_diary_slot"
+        private const val KEY_LAST_INGREDIENT_RAW_WEIGHT = "foodpicker_last_ingredient_raw_weight"
+        private const val KEY_LAST_INGREDIENT_SERVING_COUNT = "foodpicker_last_ingredient_serving_count"
 
         /** Max age of a handled barcode-scan result that still suppresses a re-detected scan. */
         private const val BARCODE_SETTLE_WINDOW_MS = 3_000L

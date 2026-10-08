@@ -12,10 +12,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -59,9 +61,19 @@ fun MyFoodsTab(
         Spacer(modifier = Modifier.height(8.dp))
 
         if (state.showFoods) {
-            FoodList(foods = state.favoriteFoods, onAction = onAction, onAddClick = onAddClick)
+            FoodList(
+                foods = state.favoriteFoods,
+                onAction = onAction,
+                onAddClick = onAddClick,
+                addedIds = state.addedItemIds,
+            )
         } else {
-            RecipeList(recipes = state.favoriteRecipes, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
+            RecipeList(
+                recipes = state.favoriteRecipes,
+                onAction = onAction,
+                onAddRecipeClick = onAddRecipeClick,
+                addedIds = state.addedItemIds,
+            )
         }
     }
 }
@@ -71,6 +83,7 @@ private fun FoodList(
     foods: List<PickerFoodUi>,
     onAction: (FoodPickerAction) -> Unit,
     onAddClick: (String) -> Unit,
+    addedIds: Set<String>,
 ) {
     if (foods.isEmpty()) {
         Text(
@@ -100,7 +113,18 @@ private fun FoodList(
                 }
                 IconButton(onClick = { onAddClick(food.id) }) {
                     Icon(
-                        imageVector = Icons.Filled.Add,
+                        imageVector =
+                            if (food.id in addedIds) {
+                                Icons.Filled.Check
+                            } else {
+                                Icons.Filled.Add
+                            },
+                        tint =
+                            if (food.id in addedIds) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
                         contentDescription = stringResource(R.string.foodpicker_add),
                     )
                 }
@@ -122,6 +146,7 @@ private fun RecipeList(
     recipes: List<PickerRecipeUi>,
     onAction: (FoodPickerAction) -> Unit,
     onAddRecipeClick: (String) -> Unit,
+    addedIds: Set<String>,
 ) {
     if (recipes.isEmpty()) {
         Text(
@@ -151,7 +176,18 @@ private fun RecipeList(
                 }
                 IconButton(onClick = { onAddRecipeClick(recipe.id) }) {
                     Icon(
-                        imageVector = Icons.Filled.Add,
+                        imageVector =
+                            if (recipe.id in addedIds) {
+                                Icons.Filled.Check
+                            } else {
+                                Icons.Filled.Add
+                            },
+                        tint =
+                            if (recipe.id in addedIds) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
                         contentDescription = stringResource(R.string.foodpicker_add),
                     )
                 }

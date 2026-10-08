@@ -3,10 +3,12 @@ package com.example.ezmakro.feature.foodpicker.presentation.picker
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
@@ -21,6 +23,7 @@ import com.example.ezmakro.core.domain.model.RawWeight
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
+import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.DataError
@@ -319,6 +322,7 @@ class FoodPickerViewModelTest {
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -379,7 +383,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `confirmAddToDiary prefers slot from state over action slot`() =
+    fun `confirmAddToDiary uses action slot and remembers it in state`() =
         runTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(targetDate = "2026-07-19")
@@ -401,11 +405,14 @@ class FoodPickerViewModelTest {
                         foodId = "f1",
                         isRecipe = false,
                         date = "2026-07-19",
-                        slot = MealSlot.SNACKS,
+                        slot = MealSlot.BREAKFAST,
                         amount = 100.0,
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
+                assertThat(vm.state.value.slot).isEqualTo(MealSlot.BREAKFAST)
+                assertThat(vm.state.value.addedItemIds).contains("f1")
             }
         }
 
@@ -438,6 +445,7 @@ class FoodPickerViewModelTest {
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -468,6 +476,7 @@ class FoodPickerViewModelTest {
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -502,6 +511,7 @@ class FoodPickerViewModelTest {
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -533,7 +543,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `recipe ingredient add on online item caches before AddAsIngredient`() =
+    fun `recipe ingredient add on online item caches before awaiting amount confirmation`() =
         runTest {
             fakeFoodRepository.searchResult = Result.Success(listOf(testFood("f1")))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
@@ -541,17 +551,30 @@ class FoodPickerViewModelTest {
             vm.onAction(FoodPickerAction.OnSearchQueryChange("milch"))
             vm.onAction(FoodPickerAction.OnSearchOnlineClick)
 
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+            assertThat(fakeFoodRepository.lastCachedItem?.id).isEqualTo(FoodId("f1"))
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemId,
+            ).isEqualTo("f1")
+            assertThat(vm.state.value.addedItemIds).isEmpty()
+
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnAddClick("f1"))
-                assertThat(fakeFoodRepository.lastCachedItem?.id).isEqualTo(FoodId("f1"))
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("100", ""))
+
                 assertThat(awaitItem()).isEqualTo(
                     FoodPickerEvent.AddAsIngredient(
                         itemId = "f1",
                         itemName = "Food f1",
                         servingLabel = null,
                         isRecipe = false,
+                        rawWeight = "100",
+                        servingCount = "",
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
+                assertThat(vm.state.value.pendingIngredient).isNull()
+                assertThat(vm.state.value.addedItemIds).contains("f1")
             }
         }
 
@@ -561,18 +584,28 @@ class FoodPickerViewModelTest {
             fakeFoodRepository.emitFoods(listOf(testFood("f1")))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
 
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+            assertThat(fakeFoodRepository.lastCachedItem).isNull()
+            assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemId,
+            ).isEqualTo("f1")
+
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnAddClick("f1"))
-                assertThat(fakeFoodRepository.lastCachedItem).isNull()
-                assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("250", "3"))
+
                 assertThat(awaitItem()).isEqualTo(
                     FoodPickerEvent.AddAsIngredient(
                         itemId = "f1",
                         itemName = "Food f1",
                         servingLabel = null,
                         isRecipe = false,
+                        rawWeight = "250",
+                        servingCount = "3",
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -810,6 +843,7 @@ class FoodPickerViewModelTest {
                         isGrams = true,
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
             }
         }
 
@@ -872,13 +906,23 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `recipe ingredient barcode hit emits AddAsIngredient`() =
+    fun `recipe ingredient barcode hit sets pending ingredient before amount confirmation`() =
         runTest {
             fakeFoodRepository.lookupResult = Result.Success(testFood("f1", name = "Milch"))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
 
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemId,
+            ).isEqualTo("f1")
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemName,
+            ).isEqualTo("Milch")
+
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("100", ""))
 
                 assertThat(awaitItem()).isEqualTo(
                     FoodPickerEvent.AddAsIngredient(
@@ -886,8 +930,12 @@ class FoodPickerViewModelTest {
                         itemName = "Milch",
                         servingLabel = null,
                         isRecipe = false,
+                        rawWeight = "100",
+                        servingCount = "",
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
+                assertThat(vm.state.value.pendingIngredient).isNull()
             }
         }
 
@@ -923,25 +971,25 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `duplicate barcode in recipe ingredient context emits only one AddAsIngredient`() =
+    fun `duplicate barcode in recipe ingredient context keeps a single pending ingredient`() =
         runTest {
             fakeFoodRepository.lookupResult = Result.Success(testFood("f1", name = "Milch"))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
 
-            vm.events.test {
-                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
-                assertThat(awaitItem()).isEqualTo(
-                    FoodPickerEvent.AddAsIngredient(
-                        itemId = "f1",
-                        itemName = "Milch",
-                        servingLabel = null,
-                        isRecipe = false,
-                    ),
-                )
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemId,
+            ).isEqualTo("f1")
 
-                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
-                vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
-                expectNoEvents()
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("100", ""))
+
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.AddAsIngredient::class)
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
+                assertThat(vm.state.value.addedItemIds).contains("f1")
             }
         }
 
@@ -979,7 +1027,7 @@ class FoodPickerViewModelTest {
         }
 
     @Test
-    fun `detailAddClick for recipe in RECIPE_INGREDIENT emits AddAsIngredient`() =
+    fun `detailAddClick for recipe in RECIPE_INGREDIENT sets pending ingredient`() =
         runTest {
             fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
             val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
@@ -987,18 +1035,81 @@ class FoodPickerViewModelTest {
             vm.onAction(FoodPickerAction.OnRecipeClick("r1"))
             assertThat(vm.state.value.detailRecipe).isNotNull()
 
+            vm.onAction(FoodPickerAction.OnDetailAddClick)
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.itemId,
+            ).isEqualTo("r1")
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.isRecipe == true,
+            ).isTrue()
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.servingLabel,
+            ).isEqualTo("Portionen")
+            assertThat(
+                vm.state.value.pendingIngredient
+                    ?.servingAmount,
+            ).isEqualTo("200 g")
+
             vm.events.test {
-                vm.onAction(FoodPickerAction.OnDetailAddClick)
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("100", ""))
 
                 assertThat(awaitItem()).isEqualTo(
                     FoodPickerEvent.AddAsIngredient(
                         itemId = "r1",
                         itemName = "Recipe r1",
-                        servingLabel = null,
+                        servingLabel = "Portionen",
                         isRecipe = true,
+                        rawWeight = "100",
+                        servingCount = "",
                     ),
                 )
+                assertThat(awaitItem()).isInstanceOf(FoodPickerEvent.ShowMessage::class)
+                assertThat(vm.state.value.addedItemIds).contains("r1")
             }
+        }
+
+    @Test
+    fun `recipe ingredient add on food with serving unit exposes portion amount hint`() =
+        runTest {
+            fakeFoodRepository.emitFoods(
+                listOf(
+                    testFood(
+                        "f1",
+                        name = "Eigenes Brot",
+                        servingUnit = ServingUnit(label = "1 Portion (300 g)", gramsEquivalent = 300.0),
+                    ),
+                ),
+            )
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+
+            val pending = vm.state.value.pendingIngredient
+            assertThat(pending?.servingLabel).isEqualTo("1 Portion (300 g)")
+            assertThat(pending?.servingAmount).isEqualTo("300 g")
+        }
+
+    @Test
+    fun `recipe ingredient barcode hit on food with serving unit exposes portion amount hint`() =
+        runTest {
+            fakeFoodRepository.lookupResult =
+                Result.Success(
+                    testFood(
+                        "f1",
+                        name = "Milch",
+                        servingUnit = ServingUnit(label = "1 Portion", gramsEquivalent = 250.0),
+                    ),
+                )
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.onAction(FoodPickerAction.OnBarcodeDetected("4000000000000"))
+
+            val pending = vm.state.value.pendingIngredient
+            assertThat(pending?.servingLabel).isEqualTo("1 Portion")
+            assertThat(pending?.servingAmount).isEqualTo("250 g")
         }
 
     @Test
@@ -1123,19 +1234,92 @@ class FoodPickerViewModelTest {
             }
         }
 
+    @Test
+    fun `OnConfirmAddAsIngredient without pending ingredient emits nothing`() =
+        runTest {
+            val vm = createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT)
+
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnConfirmAddAsIngredient("100", ""))
+
+                expectNoEvents()
+                assertThat(vm.state.value.addedItemIds).isEmpty()
+            }
+        }
+
+    @Test
+    fun `OnSheetDismissed resets marked-as-added item ids`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val vm = createViewModel(targetDate = "2026-07-19")
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+            vm.events.test {
+                vm.onAction(FoodPickerAction.OnConfirmAddToDiary(MealSlot.BREAKFAST, 100.0, true))
+                awaitItem()
+                awaitItem()
+                assertThat(vm.state.value.addedItemIds).contains("f1")
+
+                vm.onAction(FoodPickerAction.OnSheetDismissed)
+                assertThat(vm.state.value.addedItemIds).isEmpty()
+            }
+        }
+
+    @Test
+    fun `confirmAddToDiary remembers slot and amount for the next picker instance`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val savedStateHandle = SavedStateHandle()
+
+            val first = createViewModel(targetDate = "2026-07-19", savedStateHandle = savedStateHandle)
+            first.onAction(FoodPickerAction.OnAddClick("f1"))
+            first.events.test {
+                first.onAction(FoodPickerAction.OnConfirmAddToDiary(MealSlot.LUNCH, 200.0, true))
+                awaitItem()
+                awaitItem()
+            }
+
+            val second = createViewModel(targetDate = "2026-07-19", savedStateHandle = savedStateHandle)
+            assertThat(second.state.value.lastDiaryAmount).isEqualTo("200.0")
+            assertThat(second.state.value.lastDiaryIsGrams).isTrue()
+            assertThat(second.state.value.slot).isEqualTo(MealSlot.LUNCH)
+        }
+
+    @Test
+    fun `confirmAddAsIngredient remembers raw weight and serving count for the next picker instance`() =
+        runTest {
+            fakeFoodRepository.emitFoods(listOf(testFood("f1")))
+            val savedStateHandle = SavedStateHandle()
+
+            val first =
+                createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT, savedStateHandle = savedStateHandle)
+            first.onAction(FoodPickerAction.OnAddClick("f1"))
+            first.events.test {
+                first.onAction(FoodPickerAction.OnConfirmAddAsIngredient("250", "3"))
+                awaitItem()
+                awaitItem()
+            }
+
+            val second =
+                createViewModel(target = FoodPickerTarget.RECIPE_INGREDIENT, savedStateHandle = savedStateHandle)
+            assertThat(second.state.value.lastIngredientRawWeight).isEqualTo("250")
+            assertThat(second.state.value.lastIngredientServingCount).isEqualTo("3")
+        }
+
     private fun testFood(
         id: String,
         name: String = "Food $id",
         isFavorite: Boolean = false,
         lastUsedAt: Long? = null,
         kcalPer100g: Double = 100.0,
+        servingUnit: ServingUnit? = null,
     ): FoodItem =
         FoodItem(
             id = FoodId(id),
             name = name,
             barcode = null,
             nutritionPer100g = NutritionValues(kcalPer100g, 10.0, 5.0, 20.0, 2.0),
-            servingUnit = null,
+            servingUnit = servingUnit,
             isUserCreated = true,
             cachedStatus = CachedFoodItemStatus.Original,
             originalSnapshot = null,

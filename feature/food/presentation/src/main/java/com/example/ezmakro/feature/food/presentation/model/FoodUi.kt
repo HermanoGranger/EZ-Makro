@@ -4,6 +4,7 @@ import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.ServingUnit
 import com.example.ezmakro.core.presentation.util.formatValue
+import com.example.ezmakro.core.presentation.util.servingAmountLabel
 
 /**
  * Presentation model for a [FoodItem] in lists and detail. Nutrition values are
@@ -95,23 +96,3 @@ private fun perServing(
     if (serving == null) return DASH
     return (value?.times(serving.gramsEquivalent / 100.0))?.formatValue() ?: DASH
 }
-
-/**
- * Human-readable size of one serving for "Pro Portion (…)". Prefers an amount
- * already present in the label: OFF provides serving sizes like "100 ml"
- * directly, user-created servings build labels like "1 Portion (150 g)". For a
- * bare generic label such as "1 Portion" the gram equivalent is used instead.
- */
-private fun ServingUnit.servingAmountLabel(): String {
-    val amount =
-        AMOUNT_IN_PARENS
-            .find(label)
-            ?.groupValues
-            ?.get(1)
-            ?.trim()
-    if (amount != null) return amount
-    if (label.equals("1 Portion", ignoreCase = true)) return "${gramsEquivalent.formatValue()} g"
-    return label
-}
-
-private val AMOUNT_IN_PARENS = Regex("\\(([^)]+)\\)")

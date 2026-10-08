@@ -22,6 +22,12 @@ import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
 import com.example.ezmakro.core.presentation.R
 import com.example.ezmakro.core.presentation.util.formatValue
 
+/**
+ * Generic portion label shown for recipe-as-ingredient amount fields
+ * (editor rows and the picker's ingredient amount dialog alike).
+ */
+const val RECIPE_SERVING_LABEL = "Portionen"
+
 @Composable
 fun RecipeIngredientRow(
     ingredient: RecipeIngredientDraft,

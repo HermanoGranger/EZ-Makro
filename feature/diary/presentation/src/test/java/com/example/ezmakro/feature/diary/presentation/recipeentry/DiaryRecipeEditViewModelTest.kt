@@ -286,7 +286,7 @@ class DiaryRecipeEditViewModelTest {
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientClick)
         assertThat(vm.state.value.isAddPickerOpen).isTrue()
 
-        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null))
+        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null, "", ""))
 
         val state = vm.state.value
         assertThat(state.ingredients).hasSize(2)
@@ -304,7 +304,7 @@ class DiaryRecipeEditViewModelTest {
 
         vm.onAction(DiaryRecipeEditAction.OnRemoveIngredient(0))
         vm.onAction(DiaryRecipeEditAction.OnAddIngredientClick)
-        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null))
+        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("f2", "Tomatenmark", null, "", ""))
 
         val names =
             vm.state.value.ingredients
@@ -338,7 +338,7 @@ class DiaryRecipeEditViewModelTest {
     fun `unknown food surfaces an ingredient error and clears the total`() {
         val vm = viewModel()
 
-        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("does-not-exist", "Phantom", null))
+        vm.onAction(DiaryRecipeEditAction.OnAddIngredientWithData("does-not-exist", "Phantom", null, "", ""))
 
         val state = vm.state.value
         assertThat(state.ingredientError).isNotNull()

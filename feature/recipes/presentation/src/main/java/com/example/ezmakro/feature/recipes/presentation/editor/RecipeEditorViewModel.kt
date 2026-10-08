@@ -22,6 +22,7 @@ import com.example.ezmakro.core.domain.util.NumberInput
 import com.example.ezmakro.core.domain.util.parsePositiveDecimalInput
 import com.example.ezmakro.core.domain.util.parsePositiveInt
 import com.example.ezmakro.core.domain.util.valueOrNull
+import com.example.ezmakro.core.presentation.recipe.RECIPE_SERVING_LABEL
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.recipes.presentation.R
@@ -125,7 +126,8 @@ class RecipeEditorViewModel(
 
             is RecipeEditorAction.OnAddIngredientClick -> addIngredient(action)
 
-            is RecipeEditorAction.OnAddRecipeIngredientClick -> addRecipeIngredient(action.recipeId)
+            is RecipeEditorAction.OnAddRecipeIngredientClick ->
+                addRecipeIngredient(action.recipeId, action.rawWeight, action.servingCount)
 
             is RecipeEditorAction.OnIngredientRawWeightChange -> {
                 _state.update {
@@ -203,15 +205,20 @@ class RecipeEditorViewModel(
                             foodId = action.foodId,
                             foodName = foodName,
                             servingLabel = servingLabel,
+                            rawWeight = action.rawWeight,
+                            servingCount = action.servingCount,
                         ),
                 ingredientError = null,
             )
         }
         recomputeNutrition()
-        viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
-    private fun addRecipeIngredient(recipeId: String) {
+    private fun addRecipeIngredient(
+        recipeId: String,
+        rawWeight: String,
+        servingCount: String,
+    ) {
         val recipe = recipesState.value.firstOrNull { it.id.value == recipeId } ?: return
         _state.update {
             it.copy(
@@ -220,14 +227,15 @@ class RecipeEditorViewModel(
                         RecipeIngredientDraft(
                             foodId = recipeId,
                             foodName = recipe.name,
-                            servingLabel = null,
+                            servingLabel = RECIPE_SERVING_LABEL,
+                            rawWeight = rawWeight,
+                            servingCount = servingCount,
                             recipeId = recipeId,
                         ),
                 ingredientError = null,
             )
         }
         recomputeNutrition()
-        viewModelScope.launch { _events.send(RecipeEditorEvent.ShowIngredientPicker(false)) }
     }
 
     /**
@@ -268,7 +276,7 @@ class RecipeEditorViewModel(
                                     foodName = ing.food?.name ?: ing.recipeSnapshot?.recipeName.orEmpty(),
                                     servingLabel =
                                         ing.food?.servingUnit?.label
-                                            ?: if (ing.recipeSnapshot != null) GENERIC_SERVING_LABEL else null,
+                                            ?: if (ing.recipeSnapshot != null) RECIPE_SERVING_LABEL else null,
                                     rawWeight =
                                         ing.rawWeight
                                             ?.grams
@@ -460,7 +468,5 @@ class RecipeEditorViewModel(
         const val KEY_CATEGORY = "recipe_edit_category"
         const val KEY_PORTIONS = "recipe_edit_portions"
         const val KEY_FINAL_WEIGHT = "recipe_edit_final_weight"
-
-        const val GENERIC_SERVING_LABEL = "Portionen"
     }
 }

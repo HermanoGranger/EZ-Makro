@@ -284,14 +284,15 @@ fun DiaryRecipeEditScreen(
         FoodPickerSheet(
             isVisible = true,
             viewModel = foodPickerViewModel,
-            onAddAsIngredient = { id, name, servingLabel, isRecipe ->
+            onAddAsIngredient = { id, name, servingLabel, isRecipe, rawWeight, servingCount ->
                 if (isRecipe) {
                     onAction(DiaryRecipeEditAction.OnPickerRecipeNotAllowed)
                     onAction(DiaryRecipeEditAction.OnDismissPicker)
                     return@FoodPickerSheet
                 }
-                onAction(DiaryRecipeEditAction.OnAddIngredientWithData(id, name, servingLabel))
-                onAction(DiaryRecipeEditAction.OnDismissPicker)
+                onAction(
+                    DiaryRecipeEditAction.OnAddIngredientWithData(id, name, servingLabel, rawWeight, servingCount),
+                )
             },
             onAddToDiary = { _, _, _, _, _, _ -> },
             onNavigateToFoodCreate = onNavigateToFoodCreate,

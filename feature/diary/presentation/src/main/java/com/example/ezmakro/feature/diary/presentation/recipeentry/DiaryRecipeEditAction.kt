@@ -23,6 +23,8 @@ sealed interface DiaryRecipeEditAction {
         val foodId: String,
         val foodName: String,
         val servingLabel: String?,
+        val rawWeight: String,
+        val servingCount: String,
     ) : DiaryRecipeEditAction
 
     data class OnIngredientClick(

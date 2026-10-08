@@ -43,6 +43,11 @@ sealed interface FoodPickerAction {
         val isGrams: Boolean,
     ) : FoodPickerAction
 
+    data class OnConfirmAddAsIngredient(
+        val rawWeight: String,
+        val servingCount: String,
+    ) : FoodPickerAction
+
     data object OnMyFoodsToggle : FoodPickerAction
 
     data class OnBarcodeDetected(
@@ -52,8 +57,6 @@ sealed interface FoodPickerAction {
     data class OnPermissionResult(
         val granted: Boolean,
     ) : FoodPickerAction
-
-    data object OnDismiss : FoodPickerAction
 
     data object OnScanBarcodeClick : FoodPickerAction
 
@@ -72,4 +75,7 @@ sealed interface FoodPickerAction {
     data class OnToggleFavorite(
         val foodId: String,
     ) : FoodPickerAction
+
+    /** Fired when the sheet is dismissed, resets the session-local add-markers. */
+    data object OnSheetDismissed : FoodPickerAction
 }

@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -25,8 +27,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -37,6 +42,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.R
 import com.example.ezmakro.feature.foodpicker.presentation.picker.barcode.BarcodeTab
 import com.example.ezmakro.feature.foodpicker.presentation.picker.myfoods.MyFoodsTab
 import com.example.ezmakro.feature.foodpicker.presentation.picker.search.SearchTab
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +58,14 @@ fun FoodPickerSheet(
         amount: Double,
         isGrams: Boolean,
     ) -> Unit,
-    onAddAsIngredient: (itemId: String, itemName: String, servingLabel: String?, isRecipe: Boolean) -> Unit,
+    onAddAsIngredient: (
+        itemId: String,
+        itemName: String,
+        servingLabel: String?,
+        isRecipe: Boolean,
+        rawWeight: String,
+        servingCount: String,
+    ) -> Unit,
     onNavigateToFoodCreate: (barcode: String?) -> Unit,
     onNavigateToQuickAdd: (date: String, slot: MealSlot) -> Unit = { _, _ -> },
     onNavigateToFoodDetail: (String) -> Unit = {},
@@ -64,6 +77,9 @@ fun FoodPickerSheet(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(initialSlot, date) {
         initialSlot?.let { viewModel.onAction(FoodPickerAction.OnSlotSet(it)) }
@@ -76,29 +92,44 @@ fun FoodPickerSheet(
                 onAddToDiary(event.foodId, event.isRecipe, event.date, event.slot, event.amount, event.isGrams)
 
             is FoodPickerEvent.AddAsIngredient ->
-                onAddAsIngredient(event.itemId, event.itemName, event.servingLabel, event.isRecipe)
+                onAddAsIngredient(
+                    event.itemId,
+                    event.itemName,
+                    event.servingLabel,
+                    event.isRecipe,
+                    event.rawWeight,
+                    event.servingCount,
+                )
 
             is FoodPickerEvent.NavigateToFoodDetail -> onNavigateToFoodDetail(event.foodId)
             is FoodPickerEvent.NavigateToRecipeDetail -> onNavigateToRecipeDetail(event.recipeId)
             is FoodPickerEvent.NavigateToFoodCreate -> onNavigateToFoodCreate(event.barcode)
             is FoodPickerEvent.NavigateToQuickAdd -> onNavigateToQuickAdd(event.date, event.slot)
-            FoodPickerEvent.Dismissed -> onDismiss()
+            is FoodPickerEvent.ShowMessage ->
+                scope.launch { snackbarHostState.showSnackbar(event.message.asString(context)) }
         }
     }
 
     ModalBottomSheet(
         onDismissRequest = {
             onDismiss()
+            viewModel.onAction(FoodPickerAction.OnSheetDismissed)
             viewModel.onAction(FoodPickerAction.OnDismissSelection)
         },
         sheetState = sheetState,
         shape = remember { RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp) },
     ) {
-        FoodPickerContent(
-            state = state,
-            onAction = viewModel::onAction,
-            modifier = Modifier.fillMaxWidth().height(500.dp),
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            FoodPickerContent(
+                state = state,
+                onAction = viewModel::onAction,
+                modifier = Modifier.fillMaxWidth().height(500.dp),
+            )
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+            )
+        }
     }
 }
 
@@ -115,11 +146,30 @@ fun FoodPickerContent(
         AddToDiarySheet(
             isRecipe = state.selectedItemIsRecipe,
             hasServingUnit = state.selectedItemHasServingUnit,
-            fixedSlot = state.slot,
+            initialSlot = state.slot ?: MealSlot.BREAKFAST,
+            initialAmount =
+                state.lastDiaryAmount
+                    ?: if (state.selectedItemIsRecipe || state.selectedItemHasServingUnit) "1" else "100",
             onDismiss = { onAction(FoodPickerAction.OnDismissSelection) },
             onConfirm = { slot, amount, isGrams ->
                 onAction(
                     FoodPickerAction.OnConfirmAddToDiary(slot = slot, amount = amount, isGrams = isGrams),
+                )
+            },
+        )
+    }
+
+    if (state.pendingIngredient != null) {
+        IngredientAmountDialog(
+            itemName = state.pendingIngredient.itemName,
+            servingLabel = state.pendingIngredient.servingLabel,
+            servingAmount = state.pendingIngredient.servingAmount,
+            initialRawWeight = state.lastIngredientRawWeight ?: "100",
+            initialServingCount = state.lastIngredientServingCount.orEmpty(),
+            onDismiss = { onAction(FoodPickerAction.OnDismissSelection) },
+            onConfirm = { rawWeight, servingCount ->
+                onAction(
+                    FoodPickerAction.OnConfirmAddAsIngredient(rawWeight = rawWeight, servingCount = servingCount),
                 )
             },
         )
@@ -133,6 +183,7 @@ fun FoodPickerContent(
             onToggleFavorite = { id -> onAction(FoodPickerAction.OnToggleFavorite(id)) },
             onAddClick = { onAction(FoodPickerAction.OnDetailAddClick) },
             onOpenFullscreen = { onAction(FoodPickerAction.OnDetailFullscreenClick) },
+            added = (state.detailFoodId ?: state.detailRecipeId) in state.addedItemIds,
             modifier = modifier,
         )
         return

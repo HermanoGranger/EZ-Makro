@@ -4,11 +4,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.model.MealSlot
@@ -20,6 +25,7 @@ import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerEven
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerState
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -35,6 +41,9 @@ fun FoodSearchRoot(
         },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
@@ -46,11 +55,16 @@ fun FoodSearchRoot(
 
             is FoodPickerEvent.AddAsIngredient -> Unit
             is FoodPickerEvent.NavigateToQuickAdd -> Unit
-            FoodPickerEvent.Dismissed -> Unit
+            is FoodPickerEvent.ShowMessage ->
+                scope.launch { snackbarHostState.showSnackbar(event.message.asString(context)) }
         }
     }
 
-    FoodSearchScreen(state = state, onAction = viewModel::onAction)
+    FoodSearchScreen(
+        state = state,
+        onAction = viewModel::onAction,
+        snackbarHostState = snackbarHostState,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,9 +72,11 @@ fun FoodSearchRoot(
 fun FoodSearchScreen(
     state: FoodPickerState,
     onAction: (FoodPickerAction) -> Unit,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.food_search_title)) }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         FoodPickerContent(
             state = state,

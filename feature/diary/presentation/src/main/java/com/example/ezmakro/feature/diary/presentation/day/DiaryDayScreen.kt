@@ -167,7 +167,7 @@ private fun FoodPickerDialog(
             initialSlot = pickerSlot,
             date = date,
             onAddToDiary = onAddToDiaryFromPicker,
-            onAddAsIngredient = { _, _, _, _ -> },
+            onAddAsIngredient = { _, _, _, _, _, _ -> },
             onNavigateToFoodCreate = onNavigateToFoodCreate,
             onNavigateToQuickAdd = { quickAddDate, slot ->
                 onDismiss()

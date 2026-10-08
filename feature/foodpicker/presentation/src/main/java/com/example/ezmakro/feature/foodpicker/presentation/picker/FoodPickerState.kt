@@ -53,9 +53,43 @@ data class FoodPickerState(
     val selectedItemId: String? = null,
     val selectedItemIsRecipe: Boolean = false,
     val selectedItemHasServingUnit: Boolean = false,
+    /**
+     * Set while the recipe-ingredient amount dialog is open: the item is
+     * awaiting a raw weight / serving count before it is emitted as
+     * `AddAsIngredient`.
+     */
+    val pendingIngredient: PendingIngredient? = null,
+    /**
+     * Ids of foods/recipes added during the current picker session. Rows show a
+     * checkmark instead of the add icon for these; reset when the sheet is
+     * dismissed.
+     */
+    val addedItemIds: Set<String> = emptySet(),
+    /** Last confirmed diary amount for this session, reused as dialog default. */
+    val lastDiaryAmount: String? = null,
+    /** Whether [lastDiaryAmount] referred to grams (true) or portions (false). */
+    val lastDiaryIsGrams: Boolean = true,
+    /** Last confirmed recipe-ingredient raw weight, reused as dialog default. */
+    val lastIngredientRawWeight: String? = null,
+    /** Last confirmed recipe-ingredient serving count, reused as dialog default. */
+    val lastIngredientServingCount: String? = null,
     val targetContext: FoodPickerTarget = FoodPickerTarget.DIARY,
     val targetDate: String? = null,
     val slot: MealSlot? = null,
+)
+
+/**
+ * Item awaiting its amount before it can be added as a recipe ingredient.
+ *
+ * [servingAmount] is the human-readable size of one portion (e.g. "300 g"),
+ * shown as a hint above the serving-count field; null when unknown.
+ */
+data class PendingIngredient(
+    val itemId: String,
+    val itemName: String,
+    val servingLabel: String?,
+    val servingAmount: String? = null,
+    val isRecipe: Boolean,
 )
 
 enum class FoodPickerTab { BARCODE, SEARCH, FAVORITES }

@@ -1,6 +1,7 @@
 package com.example.ezmakro.feature.foodpicker.presentation.picker
 
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.presentation.uitext.UiText
 
 sealed interface FoodPickerEvent {
     data class NavigateToFoodDetail(
@@ -34,7 +35,12 @@ sealed interface FoodPickerEvent {
         val itemName: String,
         val servingLabel: String?,
         val isRecipe: Boolean,
+        val rawWeight: String,
+        val servingCount: String,
     ) : FoodPickerEvent
 
-    data object Dismissed : FoodPickerEvent
+    /** One-shot success feedback, shown as a snackbar by the hosting screen. */
+    data class ShowMessage(
+        val message: UiText,
+    ) : FoodPickerEvent
 }

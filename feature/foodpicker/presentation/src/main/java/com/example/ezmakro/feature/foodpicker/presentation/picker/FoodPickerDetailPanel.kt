@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
@@ -39,6 +40,7 @@ fun FoodPickerDetailPanel(
     onToggleFavorite: (String) -> Unit,
     onAddClick: () -> Unit,
     onOpenFullscreen: () -> Unit,
+    added: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val name = food?.name ?: recipe?.name.orEmpty()
@@ -68,6 +70,14 @@ fun FoodPickerDetailPanel(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(onClick = onAddClick, modifier = Modifier.fillMaxWidth()) {
+            if (added) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.padding(start = 4.dp))
+            }
             Text(stringResource(R.string.foodpicker_detail_add))
         }
         OutlinedButton(onClick = onOpenFullscreen, modifier = Modifier.fillMaxWidth()) {

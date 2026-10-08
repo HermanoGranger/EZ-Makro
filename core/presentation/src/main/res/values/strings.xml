@@ -33,6 +33,7 @@
 
     <string name="recipe_editor_ingredient_raw_weight">Rohgewicht (g)</string>
     <string name="recipe_editor_ingredient_serving_count">Anzahl (%1$s)</string>
+    <string name="ingredient_serving_amount_hint">Pro Portion (%1$s)</string>
     <string name="recipe_editor_recipe_snapshot_changed">Rezept geändert</string>
     <string name="recipe_editor_add_ingredient">Zutat hinzufügen</string>
     <string name="recipe_editor_portions">Portionen</string>

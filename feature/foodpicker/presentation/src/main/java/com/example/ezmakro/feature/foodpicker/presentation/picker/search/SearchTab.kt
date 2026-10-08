@@ -8,15 +8,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -97,14 +100,24 @@ private fun RecentSection(
             item { EmptyRow(stringResource(R.string.foodpicker_empty)) }
         } else {
             items(state.recentFoods, key = { "recent-food-${it.id}" }) { food ->
-                FoodRow(food = food, onAction = onAction, onAddClick = onAddClick)
+                FoodRow(
+                    food = food,
+                    onAction = onAction,
+                    onAddClick = onAddClick,
+                    added = food.id in state.addedItemIds,
+                )
             }
         }
 
         if (state.recentRecipes.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recent_recipes)) }
             items(state.recentRecipes, key = { "recent-recipe-${it.id}" }) { recipe ->
-                RecipeRow(recipe = recipe, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
+                RecipeRow(
+                    recipe = recipe,
+                    onAction = onAction,
+                    onAddRecipeClick = onAddRecipeClick,
+                    added = recipe.id in state.addedItemIds,
+                )
             }
         }
     }
@@ -125,50 +138,73 @@ private fun SearchResultsSection(
             item { EmptyRow(stringResource(R.string.foodpicker_empty_search)) }
         } else {
             items(state.localSearchResults, key = { "local-food-${it.id}" }) { food ->
-                FoodRow(food = food, onAction = onAction, onAddClick = onAddClick)
+                FoodRow(
+                    food = food,
+                    onAction = onAction,
+                    onAddClick = onAddClick,
+                    added = food.id in state.addedItemIds,
+                )
             }
         }
 
         if (state.localRecipeResults.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.foodpicker_section_recipes)) }
             items(state.localRecipeResults, key = { "local-recipe-${it.id}" }) { recipe ->
-                RecipeRow(recipe = recipe, onAction = onAction, onAddRecipeClick = onAddRecipeClick)
-            }
-        }
-
-        item {
-            Button(
-                onClick = { onAction(FoodPickerAction.OnSearchOnlineClick) },
-                enabled = !state.isSearchingOnline,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-            ) {
-                if (state.isSearchingOnline) {
-                    CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
-                }
-                Text(stringResource(R.string.foodpicker_search_online))
-            }
-        }
-
-        state.onlineError?.let { error ->
-            item { EmptyRow(error.asString()) }
-        }
-
-        state.selectionError?.let { error ->
-            item { EmptyRow(error.asString()) }
-        }
-
-        if (state.onlineSearchResults.isNotEmpty()) {
-            item {
-                SectionHeader(stringResource(R.string.foodpicker_section_online))
-            }
-            items(state.onlineSearchResults, key = { "online-food-${it.id}" }) { food ->
-                FoodRow(
-                    food = food,
+                RecipeRow(
+                    recipe = recipe,
                     onAction = onAction,
-                    onAddClick = onAddClick,
-                    showFavorite = false,
+                    onAddRecipeClick = onAddRecipeClick,
+                    added = recipe.id in state.addedItemIds,
                 )
             }
+        }
+
+        onlineSection(
+            state = state,
+            onAction = onAction,
+            onAddClick = onAddClick,
+        )
+    }
+}
+
+private fun LazyListScope.onlineSection(
+    state: FoodPickerState,
+    onAction: (FoodPickerAction) -> Unit,
+    onAddClick: (String) -> Unit,
+) {
+    item {
+        Button(
+            onClick = { onAction(FoodPickerAction.OnSearchOnlineClick) },
+            enabled = !state.isSearchingOnline,
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+        ) {
+            if (state.isSearchingOnline) {
+                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp))
+            }
+            Text(stringResource(R.string.foodpicker_search_online))
+        }
+    }
+
+    state.onlineError?.let { error ->
+        item { EmptyRow(error.asString()) }
+    }
+
+    state.selectionError?.let { error ->
+        item { EmptyRow(error.asString()) }
+    }
+
+    if (state.onlineSearchResults.isNotEmpty()) {
+        item {
+            SectionHeader(stringResource(R.string.foodpicker_section_online))
+        }
+        items(state.onlineSearchResults, key = { "online-food-${it.id}" }) { food ->
+            FoodRow(
+                food = food,
+                onAction = onAction,
+                onAddClick = onAddClick,
+                showFavorite = false,
+                added = food.id in state.addedItemIds,
+            )
         }
     }
 }
@@ -179,6 +215,7 @@ private fun FoodRow(
     onAction: (FoodPickerAction) -> Unit,
     onAddClick: (String) -> Unit,
     showFavorite: Boolean = true,
+    added: Boolean = false,
 ) {
     Row(
         modifier =
@@ -196,9 +233,16 @@ private fun FoodRow(
             )
             Text(text = "${food.kcalPer100g.formatValue()} kcal / 100 g")
         }
+        val addTint =
+            if (added) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                LocalContentColor.current
+            }
         IconButton(onClick = { onAddClick(food.id) }) {
             Icon(
-                imageVector = Icons.Filled.Add,
+                imageVector = if (added) Icons.Filled.Check else Icons.Filled.Add,
+                tint = addTint,
                 contentDescription = stringResource(R.string.foodpicker_add),
             )
         }
@@ -226,6 +270,7 @@ private fun RecipeRow(
     recipe: PickerRecipeUi,
     onAction: (FoodPickerAction) -> Unit,
     onAddRecipeClick: (String) -> Unit,
+    added: Boolean = false,
 ) {
     Row(
         modifier =
@@ -245,7 +290,8 @@ private fun RecipeRow(
         }
         IconButton(onClick = { onAddRecipeClick(recipe.id) }) {
             Icon(
-                imageVector = Icons.Filled.Add,
+                imageVector = if (added) Icons.Filled.Check else Icons.Filled.Add,
+                tint = if (added) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                 contentDescription = stringResource(R.string.foodpicker_add),
             )
         }

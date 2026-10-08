@@ -21,10 +21,14 @@ sealed interface RecipeEditorAction {
         val foodId: String,
         val foodName: String = "",
         val servingLabel: String? = null,
+        val rawWeight: String = "",
+        val servingCount: String = "",
     ) : RecipeEditorAction
 
     data class OnAddRecipeIngredientClick(
         val recipeId: String,
+        val rawWeight: String = "",
+        val servingCount: String = "",
     ) : RecipeEditorAction
 
     data class OnIngredientRawWeightChange(
@@ -56,8 +60,4 @@ sealed interface RecipeEditorEvent {
     data object Saved : RecipeEditorEvent
 
     data object NavigateBack : RecipeEditorEvent
-
-    data class ShowIngredientPicker(
-        val show: Boolean,
-    ) : RecipeEditorEvent
 }

@@ -60,7 +60,6 @@ fun RecipeEditorRoot(
         when (event) {
             RecipeEditorEvent.Saved -> onSaved()
             RecipeEditorEvent.NavigateBack -> onNavigateBack()
-            is RecipeEditorEvent.ShowIngredientPicker -> showFoodPicker = event.show
         }
     }
 
@@ -72,19 +71,26 @@ fun RecipeEditorRoot(
         FoodPickerSheet(
             isVisible = showFoodPicker,
             onAddToDiary = { _, _, _, _, _, _ -> },
-            onAddAsIngredient = { itemId, itemName, servingLabel, isRecipe ->
+            onAddAsIngredient = { itemId, itemName, servingLabel, isRecipe, rawWeight, servingCount ->
                 if (isRecipe) {
-                    viewModel.onAction(RecipeEditorAction.OnAddRecipeIngredientClick(itemId))
+                    viewModel.onAction(
+                        RecipeEditorAction.OnAddRecipeIngredientClick(
+                            recipeId = itemId,
+                            rawWeight = rawWeight,
+                            servingCount = servingCount,
+                        ),
+                    )
                 } else {
                     viewModel.onAction(
                         RecipeEditorAction.OnAddIngredientClick(
                             foodId = itemId,
                             foodName = itemName,
                             servingLabel = servingLabel,
+                            rawWeight = rawWeight,
+                            servingCount = servingCount,
                         ),
                     )
                 }
-                showFoodPicker = false
             },
             onNavigateToFoodCreate = onNavigateToFoodCreate,
             onNavigateToFoodDetail = onNavigateToFoodDetail,

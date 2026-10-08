@@ -91,6 +91,8 @@ class DiaryRecipeEditViewModel(
                     action.foodId,
                     action.foodName,
                     action.servingLabel,
+                    action.rawWeight,
+                    action.servingCount,
                 )
             is DiaryRecipeEditAction.OnIngredientClick -> onIngredientClick(action.index)
             is DiaryRecipeEditAction.OnAmountModeChange -> onAmountModeChange(action.mode)
@@ -263,6 +265,8 @@ class DiaryRecipeEditViewModel(
         foodId: String,
         foodName: String,
         servingLabel: String?,
+        rawWeight: String,
+        servingCount: String,
     ) {
         val list =
             _state.value.ingredients +
@@ -270,6 +274,8 @@ class DiaryRecipeEditViewModel(
                     foodId = foodId,
                     foodName = foodName,
                     servingLabel = servingLabel,
+                    rawWeight = rawWeight,
+                    servingCount = servingCount,
                 )
         _state.update { it.copy(ingredients = list, ingredientError = null) }
         recompute()

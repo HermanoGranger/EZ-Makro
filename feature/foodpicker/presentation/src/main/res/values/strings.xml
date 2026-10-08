@@ -31,4 +31,6 @@
     <string name="foodpicker_detail_fiber">Ballaststoffe</string>
     <string name="foodpicker_detail_add">+ Hinzufügen</string>
     <string name="foodpicker_detail_open_fullscreen">Vollbild öffnen</string>
+    <string name="foodpicker_ingredient_amount_title">Zutat hinzufügen</string>
+    <string name="foodpicker_added_message">%1$s hinzugefügt</string>
 </resources>

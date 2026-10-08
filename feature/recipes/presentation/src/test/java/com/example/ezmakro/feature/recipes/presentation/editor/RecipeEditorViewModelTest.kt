@@ -575,6 +575,35 @@ class RecipeEditorViewModelTest {
         }
 
     @Test
+    fun `freshly added recipe draft gets generic serving label`() =
+        runTest {
+            val subRecipe =
+                Recipe(
+                    id = RecipeId("r2"),
+                    name = "Unter",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = FakeFoodRepository.food("f1", "Hafer"),
+                                rawWeight = RawWeight(50.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 2,
+                )
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(subRecipe)
+            val vm = viewModel(recipeId = null, recipeRepo = recipeRepo)
+
+            vm.onAction(RecipeEditorAction.OnAddRecipeIngredientClick("r2", rawWeight = "100"))
+
+            val draft = vm.state.value.ingredients[0]
+            assertThat(draft.recipeId).isEqualTo("r2")
+            assertThat(draft.servingLabel).isEqualTo("Portionen")
+        }
+
+    @Test
     fun `ingredient drafts have unique and stable ids`() =
         runTest {
             val foodRepo = FakeFoodRepository()
