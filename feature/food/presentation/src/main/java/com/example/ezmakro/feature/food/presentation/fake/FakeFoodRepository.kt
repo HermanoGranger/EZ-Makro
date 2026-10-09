@@ -35,6 +35,8 @@ class FakeFoodRepository : FoodRepository {
 
     var shouldFailRefetch = false
 
+    var shouldFailSave = false
+
     fun emitFoods(foods: List<FoodItem>) {
         items.value = foods
     }
@@ -66,6 +68,7 @@ class FakeFoodRepository : FoodRepository {
     override suspend fun lookupByBarcode(barcode: String): Result<FoodItem?, DataError> = lookupResult
 
     override suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local> {
+        if (shouldFailSave) return Result.Error(DataError.Local.UNKNOWN)
         savedEdits += foodItem
         items.value = items.value.filter { it.id != foodItem.id } + foodItem
         return Result.Success(Unit)

@@ -376,11 +376,121 @@ class FoodEditViewModelTest {
             assertTrue(repository.savedEdits.single().isFavorite)
         }
 
-    private fun newViewModel(foodId: String?): FoodEditViewModel =
+    @Test
+    fun saveFailure_setsSaveError_andDoesNotPersist() =
+        runTest {
+            repository.shouldFailSave = true
+            val viewModel = newViewModel(foodId = null)
+            viewModel.onAction(FoodEditAction.OnNameChange("Banana"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            assertTrue(viewModel.state.value.saveError != null)
+            assertFalse(viewModel.state.value.isSaving)
+            assertTrue(repository.savedEdits.isEmpty())
+        }
+
+    @Test
+    fun retryAfterFailure_clearsSaveError_onSuccess() =
+        runTest {
+            repository.shouldFailSave = true
+            val viewModel = newViewModel(foodId = null)
+            viewModel.onAction(FoodEditAction.OnNameChange("Banana"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+            assertTrue(viewModel.state.value.saveError != null)
+
+            repository.shouldFailSave = false
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals(null, viewModel.state.value.saveError)
+        }
+
+    @Test
+    fun userInput_clearsSaveError() =
+        runTest {
+            repository.shouldFailSave = true
+            val viewModel = newViewModel(foodId = null)
+            viewModel.onAction(FoodEditAction.OnNameChange("Banana"))
+            viewModel.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+            assertTrue(viewModel.state.value.saveError != null)
+
+            viewModel.onAction(FoodEditAction.OnKcalChange("10"))
+
+            assertEquals(null, viewModel.state.value.saveError)
+        }
+
+    @Test
+    fun processDeath_restoresAllDraftFields() {
+        val handle = SavedStateHandle()
+        val first = newViewModel(foodId = null, savedStateHandle = handle)
+        first.onAction(FoodEditAction.OnNameChange("Banana"))
+        first.onAction(FoodEditAction.OnBarcodeChange("123"))
+        first.onAction(FoodEditAction.OnKcalChange("89"))
+        first.onAction(FoodEditAction.OnProteinChange("1,1"))
+        first.onAction(FoodEditAction.OnFatChange("0.3"))
+        first.onAction(FoodEditAction.OnCarbsChange("22"))
+        first.onAction(FoodEditAction.OnFiberChange("2.6"))
+        first.onAction(FoodEditAction.OnPortionGramsChange("120"))
+        first.onAction(FoodEditAction.OnToggleFavorite)
+
+        val restored = newViewModel(foodId = null, savedStateHandle = handle)
+
+        assertEquals("Banana", restored.state.value.name)
+        assertEquals("123", restored.state.value.barcode)
+        assertEquals("89", restored.state.value.kcal)
+        assertEquals("1,1", restored.state.value.protein)
+        assertEquals("0.3", restored.state.value.fat)
+        assertEquals("22", restored.state.value.carbs)
+        assertEquals("2.6", restored.state.value.fiber)
+        assertEquals("120", restored.state.value.portionGrams)
+        assertTrue(restored.state.value.isFavorite)
+        assertTrue(restored.state.value.isDirty)
+    }
+
+    @Test
+    fun processDeath_ofPartiallyEditedExistingFood_restoresSeededFields() =
+        runTest {
+            repository.emitFoods(listOf(FakeFoodRepository.food(id = "1", name = "Apple", kcal = 52.0)))
+            val handle = SavedStateHandle()
+            val first = newViewModel(foodId = "1", savedStateHandle = handle)
+            dispatcher.scheduler.runCurrent()
+            first.onAction(FoodEditAction.OnKcalChange("99"))
+
+            val restored = newViewModel(foodId = "1", savedStateHandle = handle)
+            dispatcher.scheduler.runCurrent()
+
+            assertEquals("Apple", restored.state.value.name)
+            assertEquals("99", restored.state.value.kcal)
+        }
+
+    @Test
+    fun processDeath_restoresSaveError() =
+        runTest {
+            repository.shouldFailSave = true
+            val handle = SavedStateHandle()
+            val first = newViewModel(foodId = null, savedStateHandle = handle)
+            first.onAction(FoodEditAction.OnNameChange("Banana"))
+            first.onAction(FoodEditAction.OnSaveClick)
+            dispatcher.scheduler.runCurrent()
+            val expected = first.state.value.saveError
+            assertTrue(expected != null)
+
+            val restored = newViewModel(foodId = null, savedStateHandle = handle)
+
+            assertEquals(expected, restored.state.value.saveError)
+        }
+
+    private fun newViewModel(
+        foodId: String?,
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+    ): FoodEditViewModel =
         FoodEditViewModel(
             foodId = foodId,
             prefillBarcode = null,
             repository = repository,
-            savedStateHandle = SavedStateHandle(),
+            savedStateHandle = savedStateHandle,
         )
 }

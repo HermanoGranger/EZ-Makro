@@ -12,8 +12,8 @@ import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
-import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.core.presentation.uitext.toUiText
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.food.presentation.R
 import kotlinx.coroutines.channels.Channel
@@ -54,23 +54,31 @@ private fun FoodEditState.mergedWith(food: FoodItem): FoodEditState =
  * barcode field (scope/Phase 4 fallback). Form fields survive process death via
  * [SavedStateHandle].
  */
+@Suppress("TooManyFunctions")
 class FoodEditViewModel(
     private val foodId: String?,
     private val prefillBarcode: String?,
     private val repository: FoodRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
-    private val _state =
-        MutableStateFlow(
-            FoodEditState(
-                isEditingExisting = foodId != null,
-                barcode = savedStateHandle[KEY_BARCODE] ?: prefillBarcode.orEmpty(),
-                name = savedStateHandle[KEY_NAME] ?: "",
-                // A restored draft (process death) is user input and must survive the
-                // first emission, so it claims ownership of the form fields.
-                isDirty = hasRestoredDraft,
-            ),
+    private val _state = MutableStateFlow(createInitialState())
+
+    private fun createInitialState(): FoodEditState =
+        FoodEditState(
+            isEditingExisting = foodId != null,
+            barcode = savedStateHandle[KEY_BARCODE] ?: prefillBarcode.orEmpty(),
+            name = savedStateHandle[KEY_NAME] ?: "",
+            kcal = savedStateHandle[KEY_KCAL] ?: "",
+            protein = savedStateHandle[KEY_PROTEIN] ?: "",
+            fat = savedStateHandle[KEY_FAT] ?: "",
+            carbs = savedStateHandle[KEY_CARBS] ?: "",
+            fiber = savedStateHandle[KEY_FIBER] ?: "",
+            portionGrams = savedStateHandle[KEY_PORTION_GRAMS] ?: "",
+            isFavorite = savedStateHandle[KEY_FAVORITE] ?: false,
+            isDirty = isDraftRestored(),
+            saveError = getRestoredSaveError(),
         )
+
     val state = _state.asStateFlow()
 
     private val _events = Channel<FoodEditEvent>()
@@ -80,33 +88,25 @@ class FoodEditViewModel(
         if (foodId != null) observeExisting(FoodId(foodId))
     }
 
-    private val hasRestoredDraft: Boolean
-        get() =
-            savedStateHandle.contains(KEY_DIRTY) ||
-                savedStateHandle.contains(KEY_NAME) ||
-                savedStateHandle.contains(KEY_BARCODE)
+    private fun isDraftRestored(): Boolean =
+        savedStateHandle.contains(KEY_DIRTY) ||
+            savedStateHandle.contains(KEY_NAME) ||
+            savedStateHandle.contains(KEY_BARCODE)
+
+    private fun getRestoredSaveError(): UiText? =
+        savedStateHandle.get<Int>(KEY_SAVE_ERROR)?.let { UiText.StringResource(it) }
 
     fun onAction(action: FoodEditAction) {
         when (action) {
-            is FoodEditAction.OnNameChange -> {
-                savedStateHandle[KEY_NAME] = action.value
-                onUserInput { copy(name = action.value, nameError = null) }
-            }
-
-            is FoodEditAction.OnBarcodeChange -> {
-                savedStateHandle[KEY_BARCODE] = action.value
-                onUserInput { copy(barcode = action.value) }
-            }
-
+            is FoodEditAction.OnNameChange -> onUserInput { copy(name = action.value, nameError = null) }
+            is FoodEditAction.OnBarcodeChange -> onUserInput { copy(barcode = action.value) }
             is FoodEditAction.OnKcalChange -> onUserInput { copy(kcal = action.value, numberError = null) }
             is FoodEditAction.OnProteinChange -> onUserInput { copy(protein = action.value, numberError = null) }
             is FoodEditAction.OnFatChange -> onUserInput { copy(fat = action.value, numberError = null) }
             is FoodEditAction.OnCarbsChange -> onUserInput { copy(carbs = action.value, numberError = null) }
             is FoodEditAction.OnFiberChange -> onUserInput { copy(fiber = action.value, numberError = null) }
             is FoodEditAction.OnPortionGramsChange -> onUserInput { copy(portionGrams = action.value) }
-
             FoodEditAction.OnToggleFavorite -> toggleFavorite()
-
             FoodEditAction.OnSaveClick -> save()
             FoodEditAction.OnBackClick ->
                 viewModelScope.launch { _events.send(FoodEditEvent.NavigateBack) }
@@ -130,8 +130,30 @@ class FoodEditViewModel(
 
     /** Marks the form as user-owned so later emissions no longer seed the fields. */
     private fun onUserInput(update: FoodEditState.() -> FoodEditState) {
+        val updated = _state.value.copy(isDirty = true, saveError = null).update()
+        _state.value = updated
+        persistDraft(updated)
+    }
+
+    /**
+     * Persists every form field, not just the one being edited, so a partially
+     * edited existing food still restores its untouched (seeded) values after
+     * process death. [FoodEditState.isDirty] then keeps the whole draft from being
+     * overwritten by the observed food.
+     */
+    private fun persistDraft(state: FoodEditState) {
+        val draft = state.toDraft()
         savedStateHandle[KEY_DIRTY] = true
-        _state.update { it.copy(isDirty = true).update() }
+        savedStateHandle[KEY_NAME] = draft.name
+        savedStateHandle[KEY_BARCODE] = draft.barcode
+        savedStateHandle[KEY_KCAL] = draft.kcal
+        savedStateHandle[KEY_PROTEIN] = draft.protein
+        savedStateHandle[KEY_FAT] = draft.fat
+        savedStateHandle[KEY_CARBS] = draft.carbs
+        savedStateHandle[KEY_FIBER] = draft.fiber
+        savedStateHandle[KEY_PORTION_GRAMS] = draft.portionGrams
+        savedStateHandle[KEY_FAVORITE] = draft.isFavorite
+        savedStateHandle.remove<Int>(KEY_SAVE_ERROR)
     }
 
     /**
@@ -150,6 +172,8 @@ class FoodEditViewModel(
     }
 
     private fun save() {
+        savedStateHandle.remove<Int>(KEY_SAVE_ERROR)
+        _state.update { it.copy(saveError = null) }
         val name = _state.value.name.trim()
         if (name.isBlank()) {
             _state.update { it.copy(nameError = UiText.StringResource(R.string.food_edit_error_name_blank)) }
@@ -157,106 +181,82 @@ class FoodEditViewModel(
         }
         val nutrition = parseNutrition()
         if (_state.value.numberError != null) return
-
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
-            val id = foodId ?: UUID.randomUUID().toString()
-            val trimmedBarcode = _state.value.barcode.trim()
-            val barcode = trimmedBarcode.ifBlank { null }
-            val servingUnit = parseServingUnit()
-            val existingFood =
-                if (foodId != null) {
-                    (repository.getById(FoodId(foodId)) as? Result.Success)?.data
-                } else {
-                    null
+            performSave(name, nutrition)
+        }
+    }
+
+    private suspend fun performSave(
+        name: String,
+        nutrition: NutritionValues?,
+    ) {
+        val trimmedBarcode = _state.value.barcode.trim()
+        val barcode = trimmedBarcode.ifBlank { null }
+        val servingUnit = NutritionParser.parseServingUnit(_state.value.portionGrams)
+        val item = buildFoodToSave(name, barcode, nutrition, servingUnit)
+        val savedId = item.id.value
+        repository
+            .saveUserEdit(item)
+            .onSuccess {
+                savedStateHandle.remove<Int>(KEY_SAVE_ERROR)
+                _state.update { it.copy(isSaving = false, saveError = null) }
+                _events.send(FoodEditEvent.Saved(savedId))
+            }.onFailure { error ->
+                val saveError = error.toUiText()
+                if (saveError is UiText.StringResource) {
+                    savedStateHandle[KEY_SAVE_ERROR] = saveError.id
                 }
-            // The favorite flag is owned by [toggleFavorite] and mirrored into the
-            // state via the observed flow. Writing the (possibly stale) draft value
-            // back here would revert a favorite toggled elsewhere in the meantime.
-            val draftFavorite = _state.value.isFavorite
-            val item =
-                if (existingFood != null) {
-                    existingFood.copy(
+                _state.update { it.copy(isSaving = false, saveError = saveError) }
+            }
+    }
+
+    private suspend fun buildFoodToSave(
+        name: String,
+        barcode: String?,
+        nutrition: NutritionValues?,
+        servingUnit: ServingUnit?,
+    ): FoodItem {
+        val draftFavorite = _state.value.isFavorite
+        val existingFood =
+            if (foodId != null) {
+                (repository.getById(FoodId(foodId)) as? Result.Success)?.data
+            } else {
+                null
+            }
+        return when {
+            existingFood != null -> {
+                existingFood.copy(
+                    name = name,
+                    barcode = barcode,
+                    nutritionPer100g = nutrition,
+                    servingUnit = servingUnit,
+                )
+            }
+            foodId != null -> {
+                val sessionItem = repository.getSessionItem(FoodId(foodId))
+                if (sessionItem != null) {
+                    sessionItem.copy(
                         name = name,
                         barcode = barcode,
                         nutritionPer100g = nutrition,
                         servingUnit = servingUnit,
                     )
-                } else if (foodId != null) {
-                    val sessionItem = repository.getSessionItem(FoodId(foodId))
-                    if (sessionItem != null) {
-                        sessionItem.copy(
-                            name = name,
-                            barcode = barcode,
-                            nutritionPer100g = nutrition,
-                            servingUnit = servingUnit,
-                        )
-                    } else {
-                        newFood(id, name, barcode, nutrition, servingUnit, draftFavorite)
-                    }
                 } else {
-                    newFood(id, name, barcode, nutrition, servingUnit, draftFavorite)
+                    newFood(foodId, name, barcode, nutrition, servingUnit, draftFavorite)
                 }
-            repository
-                .saveUserEdit(item)
-                .onSuccess {
-                    _state.update { it.copy(isSaving = false) }
-                    _events.send(FoodEditEvent.Saved(id))
-                }.onFailure {
-                    _state.update { it.copy(isSaving = false) }
-                }
-        }
-    }
-
-    private fun parseNutrition(): NutritionValues? {
-        val allBlank =
-            _state.value.kcal.isBlank() &&
-                _state.value.protein.isBlank() &&
-                _state.value.fat.isBlank() &&
-                _state.value.carbs.isBlank() &&
-                _state.value.fiber.isBlank()
-        if (allBlank) return null
-
-        val anyInvalid =
-            listOf(
-                _state.value.kcal,
-                _state.value.protein,
-                _state.value.fat,
-                _state.value.carbs,
-                _state.value.fiber,
-            ).any { it.isNotBlank() && !it.isValidNonNegativeNumber() }
-        if (anyInvalid) {
-            _state.update {
-                it.copy(numberError = UiText.StringResource(R.string.food_edit_error_invalid_number))
             }
-            return null
-        }
-
-        return NutritionValues(
-            kcal = _state.value.kcal.parseOrZero(),
-            proteinG = _state.value.protein.parseOrZero(),
-            fatG = _state.value.fat.parseOrZero(),
-            carbsG = _state.value.carbs.parseOrZero(),
-            fiberG = _state.value.fiber.parseOrZero(),
-        )
-    }
-
-    private fun parseServingUnit(): ServingUnit? {
-        val gramsText = _state.value.portionGrams.trim()
-        if (gramsText.isBlank()) return null
-        val grams = gramsText.parseDecimalFlexible() ?: return null
-        return if (grams > 0.0) {
-            val label = "1 Portion (${grams.formatValue()} g)"
-            ServingUnit(label = label, gramsEquivalent = grams)
-        } else {
-            null
+            else -> {
+                val id = UUID.randomUUID().toString()
+                newFood(id, name, barcode, nutrition, servingUnit, draftFavorite)
+            }
         }
     }
 
-    private fun String.isValidNonNegativeNumber(): Boolean =
-        trim().ifBlank { "0" }.parseDecimalFlexible()?.let { it >= 0.0 } == true
-
-    private fun String.parseOrZero(): Double = trim().ifBlank { "0" }.parseDecimalFlexible() ?: 0.0
+    private fun parseNutrition(): NutritionValues? =
+        NutritionParser.parseNutrition(_state.value) { error ->
+            _state.update { it.copy(numberError = error) }
+        }
 
     private fun newFood(
         id: String,
@@ -277,9 +277,42 @@ class FoodEditViewModel(
         originalSnapshot = null,
     )
 
+    private data class DraftState(
+        val name: String,
+        val barcode: String,
+        val kcal: String,
+        val protein: String,
+        val fat: String,
+        val carbs: String,
+        val fiber: String,
+        val portionGrams: String,
+        val isFavorite: Boolean,
+    )
+
+    private fun FoodEditState.toDraft() =
+        DraftState(
+            name = name,
+            barcode = barcode,
+            kcal = kcal,
+            protein = protein,
+            fat = fat,
+            carbs = carbs,
+            fiber = fiber,
+            portionGrams = portionGrams,
+            isFavorite = isFavorite,
+        )
+
     private companion object {
         const val KEY_NAME = "food_edit_name"
         const val KEY_BARCODE = "food_edit_barcode"
         const val KEY_DIRTY = "food_edit_dirty"
+        const val KEY_KCAL = "food_edit_kcal"
+        const val KEY_PROTEIN = "food_edit_protein"
+        const val KEY_FAT = "food_edit_fat"
+        const val KEY_CARBS = "food_edit_carbs"
+        const val KEY_FIBER = "food_edit_fiber"
+        const val KEY_PORTION_GRAMS = "food_edit_portion_grams"
+        const val KEY_FAVORITE = "food_edit_favorite"
+        const val KEY_SAVE_ERROR = "food_edit_save_error"
     }
 }

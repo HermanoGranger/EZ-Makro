@@ -28,5 +28,11 @@ data class FoodEditState(
     val cachedStatus: CachedFoodItemStatus? = null,
     val nameError: UiText? = null,
     val numberError: UiText? = null,
+    /**
+     * Failure of the last [com.example.ezmakro.core.domain.repository.FoodRepository.saveUserEdit]
+     * attempt. Cleared on every user input and on a new save, so it never lingers
+     * after the user addressed the cause. Restored across process death.
+     */
+    val saveError: UiText? = null,
     val isSaving: Boolean = false,
 )

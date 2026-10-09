@@ -162,6 +162,8 @@ private fun FoodEditForm(
             enabled = !state.isSaving,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.food_edit_save)) }
+
+        state.saveError?.let { Text(it.asString()) }
     }
 }
 
