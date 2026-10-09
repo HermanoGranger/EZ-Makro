@@ -68,5 +68,25 @@ class QuickAddViewModelTest {
             }
         }
 
+    @Test
+    fun `german decimal commas in amount and nutrition fields are parsed`() =
+        runTest {
+            val vm = createViewModel(savedStateHandle("date" to "2026-08-03"))
+            vm.onAction(QuickAddAction.OnNameChange("Snack"))
+            vm.onAction(QuickAddAction.OnAmountChange("1,5"))
+            vm.onAction(QuickAddAction.OnKcalChange("12,5"))
+            vm.onAction(QuickAddAction.OnProteinChange("2,5"))
+
+            vm.events.test {
+                vm.onAction(QuickAddAction.OnSaveClick)
+
+                awaitItem()
+                val entry = repository.entries.value.single()
+                assertThat(entry.amountGrams).isEqualTo(1.5)
+                assertThat(entry.food?.nutritionPer100g?.kcal).isEqualTo(12.5)
+                assertThat(entry.food?.nutritionPer100g?.proteinG).isEqualTo(2.5)
+            }
+        }
+
     private fun savedStateHandle(vararg pairs: Pair<String, String>): SavedStateHandle = SavedStateHandle(mapOf(*pairs))
 }

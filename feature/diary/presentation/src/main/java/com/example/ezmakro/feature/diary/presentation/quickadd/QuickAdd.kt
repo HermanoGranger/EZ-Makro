@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.usecase.diary.QuickAddUseCase
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.feature.diary.presentation.R
 import kotlinx.coroutines.channels.Channel
@@ -109,7 +110,7 @@ class QuickAddViewModel(
             _state.update { it.copy(error = errorMsg) }
             return
         }
-        val amount = s.amountGrams.toDoubleOrNull()
+        val amount = s.amountGrams.parseDecimalFlexible()
         if (amount == null || amount <= 0.0) {
             val errorMsg = UiText.StringResource(R.string.quick_add_error_amount)
             _state.update { it.copy(error = errorMsg) }
@@ -122,11 +123,11 @@ class QuickAddViewModel(
                     name = s.name.trim(),
                     nutritionPer100g =
                         com.example.ezmakro.core.domain.model.NutritionValues(
-                            kcal = s.kcal.toDoubleOrNull() ?: 0.0,
-                            proteinG = s.protein.toDoubleOrNull() ?: 0.0,
-                            fatG = s.fat.toDoubleOrNull() ?: 0.0,
-                            carbsG = s.carbs.toDoubleOrNull() ?: 0.0,
-                            fiberG = s.fiber.toDoubleOrNull() ?: 0.0,
+                            kcal = s.kcal.parseDecimalFlexible() ?: 0.0,
+                            proteinG = s.protein.parseDecimalFlexible() ?: 0.0,
+                            fatG = s.fat.parseDecimalFlexible() ?: 0.0,
+                            carbsG = s.carbs.parseDecimalFlexible() ?: 0.0,
+                            fiberG = s.fiber.parseDecimalFlexible() ?: 0.0,
                         ),
                     slot = s.slot,
                     date = date,

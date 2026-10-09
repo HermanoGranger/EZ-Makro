@@ -12,6 +12,7 @@ import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.result.Result
 import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.result.onSuccess
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.uitext.UiText
 import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.food.presentation.R
@@ -243,7 +244,7 @@ class FoodEditViewModel(
     private fun parseServingUnit(): ServingUnit? {
         val gramsText = _state.value.portionGrams.trim()
         if (gramsText.isBlank()) return null
-        val grams = gramsText.replace(',', '.').toDoubleOrNull() ?: return null
+        val grams = gramsText.parseDecimalFlexible() ?: return null
         return if (grams > 0.0) {
             val label = "1 Portion (${grams.formatValue()} g)"
             ServingUnit(label = label, gramsEquivalent = grams)
@@ -253,18 +254,9 @@ class FoodEditViewModel(
     }
 
     private fun String.isValidNonNegativeNumber(): Boolean =
-        try {
-            val value = trim().replace(',', '.').ifBlank { "0" }.toDouble()
-            value >= 0.0
-        } catch (_: NumberFormatException) {
-            false
-        }
+        trim().ifBlank { "0" }.parseDecimalFlexible()?.let { it >= 0.0 } == true
 
-    private fun String.parseOrZero(): Double =
-        trim()
-            .replace(',', '.')
-            .ifBlank { "0" }
-            .toDouble()
+    private fun String.parseOrZero(): Double = trim().ifBlank { "0" }.parseDecimalFlexible() ?: 0.0
 
     private fun newFood(
         id: String,

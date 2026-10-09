@@ -4,6 +4,7 @@ import com.example.ezmakro.core.domain.calculation.consumedNutrition
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.util.formatValue
 
 /**
@@ -77,10 +78,10 @@ fun List<DiaryEntryUi>.sumNutrition(): NutritionValues =
     fold(NutritionValues.ZERO) { acc, entry ->
         acc +
             NutritionValues(
-                kcal = entry.kcal.toDoubleOrNull() ?: 0.0,
-                proteinG = entry.protein.toDoubleOrNull() ?: 0.0,
-                fatG = entry.fat.toDoubleOrNull() ?: 0.0,
-                carbsG = entry.carbs.toDoubleOrNull() ?: 0.0,
-                fiberG = entry.fiber.toDoubleOrNull() ?: 0.0,
+                kcal = entry.kcal.parseDecimalFlexible() ?: 0.0,
+                proteinG = entry.protein.parseDecimalFlexible() ?: 0.0,
+                fatG = entry.fat.parseDecimalFlexible() ?: 0.0,
+                carbsG = entry.carbs.parseDecimalFlexible() ?: 0.0,
+                fiberG = entry.fiber.parseDecimalFlexible() ?: 0.0,
             )
     }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.feature.foodpicker.presentation.R
 import com.example.ezmakro.core.presentation.R as CoreR
 
@@ -43,7 +44,7 @@ fun IngredientAmountDialog(
     var rawWeight by remember { mutableStateOf(initialRawWeight) }
     var servingCount by remember { mutableStateOf(initialServingCount) }
 
-    fun isValid(value: String): Boolean = value.toDoubleOrNull()?.let { it >= 0.0 } == true
+    fun isValid(value: String): Boolean = value.parseDecimalFlexible()?.let { it >= 0.0 } == true
 
     val canConfirm =
         (rawWeight.isNotBlank() && isValid(rawWeight)) ||

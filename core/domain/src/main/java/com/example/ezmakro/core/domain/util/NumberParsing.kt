@@ -7,19 +7,24 @@ fun String?.parsePositiveInt(): Int? =
         ?.toIntOrNull()
         ?.takeIf { it > 0 }
 
-fun String?.parsePositiveDouble(): Double? =
-    this
-        ?.trim()
-        ?.ifBlank { null }
-        ?.toDoubleOrNull()
-        ?.takeIf { it > 0.0 }
-
-fun String?.parseNonNegativeDouble(): Double? =
+/**
+ * Dezimalzahl aus Text lesen: akzeptiert Komma und Punkt als Dezimaltrennzeichen
+ * (deutsche Tastatur erzeugt `,`). Kein Tausenderpunkt-Heuristik: `1,2,3` ist
+ * ungültig und liefert `null`.
+ */
+fun String?.parseDecimalFlexible(): Double? =
     this
         ?.trim()
         ?.ifBlank { null }
         ?.replace(',', '.')
         ?.toDoubleOrNull()
+
+fun String?.parsePositiveDouble(): Double? =
+    parseDecimalFlexible()
+        ?.takeIf { it > 0.0 }
+
+fun String?.parseNonNegativeDouble(): Double? =
+    parseDecimalFlexible()
         ?.takeIf { it >= 0.0 }
 
 /**

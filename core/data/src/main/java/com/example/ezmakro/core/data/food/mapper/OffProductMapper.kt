@@ -6,6 +6,7 @@ import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.ServingUnit
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 
 private const val KJ_PER_KCAL = 4.184
 
@@ -56,7 +57,7 @@ private fun OffProductDto.nutritments(): NutritionValues {
 }
 
 private fun OffProductDto.servingUnit(): ServingUnit? {
-    val grams = servingQuantity?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: return null
+    val grams = servingQuantity.parseDecimalFlexible()?.takeIf { it > 0.0 } ?: return null
     val label = servingSize?.takeIf { it.isNotBlank() } ?: "1 Portion"
     return ServingUnit(label = label, gramsEquivalent = grams)
 }

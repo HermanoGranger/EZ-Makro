@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.R
 import com.example.ezmakro.core.presentation.util.formatValue
 
@@ -53,7 +54,7 @@ fun EditPortionDialog(
     var amountMode by remember {
         mutableStateOf(if (initialIsPortions) EditAmountMode.PORTIONS else EditAmountMode.GRAMS)
     }
-    val amountError = amountText.toDoubleOrNull()?.let { it <= 0.0 } ?: true
+    val amountError = amountText.parseDecimalFlexible()?.let { it <= 0.0 } ?: true
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -62,7 +63,7 @@ fun EditPortionDialog(
             TextButton(
                 enabled = !amountError,
                 onClick = {
-                    amountText.toDoubleOrNull()?.let { amount ->
+                    amountText.parseDecimalFlexible()?.let { amount ->
                         if (showModeSelector && amountMode == EditAmountMode.PORTIONS) {
                             onConfirm(null, amount)
                         } else {

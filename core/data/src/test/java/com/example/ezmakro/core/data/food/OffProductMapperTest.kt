@@ -100,4 +100,25 @@ class OffProductMapperTest {
 
         assertThat(dto.toFoodItem()?.servingUnit).isNull()
     }
+
+    @Test
+    fun `serving quantity with a decimal comma is mapped`() {
+        val dto =
+            OffProductDto(
+                productName = "Yoghurt",
+                servingQuantity = "1,5",
+                servingSize = "1 Becher",
+            )
+
+        val food = dto.toFoodItem()
+        requireNotNull(food)
+        assertThat(food.servingUnit?.gramsEquivalent).isEqualTo(1.5)
+    }
+
+    @Test
+    fun `serving quantity with multiple separators yields no serving unit`() {
+        val dto = OffProductDto(productName = "Weird", servingQuantity = "1,2,3")
+
+        assertThat(dto.toFoodItem()?.servingUnit).isNull()
+    }
 }

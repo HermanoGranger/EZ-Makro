@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.ezmakro.core.domain.model.MealSlot
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import com.example.ezmakro.core.presentation.R
 
 private enum class RecipeAmountMode { PORTIONS, GRAMS }
@@ -43,7 +44,7 @@ fun AddToDiarySheet(
     var amountMode by remember {
         mutableStateOf(if (isRecipe || hasServingUnit) RecipeAmountMode.PORTIONS else RecipeAmountMode.GRAMS)
     }
-    val amountError = amountText.toDoubleOrNull()?.let { it <= 0.0 } ?: true
+    val amountError = amountText.parseDecimalFlexible()?.let { it <= 0.0 } ?: true
     val showModeSelector = isRecipe || hasServingUnit
 
     AlertDialog(
@@ -52,7 +53,7 @@ fun AddToDiarySheet(
             TextButton(
                 enabled = !amountError,
                 onClick = {
-                    amountText.toDoubleOrNull()?.let { amount ->
+                    amountText.parseDecimalFlexible()?.let { amount ->
                         onConfirm(selectedSlot, amount, amountMode == RecipeAmountMode.GRAMS)
                     }
                 },

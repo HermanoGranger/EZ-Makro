@@ -4,6 +4,7 @@ import com.example.ezmakro.core.data.datastore.SettingsDataStore
 import com.example.ezmakro.core.domain.model.DefaultNutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.core.domain.repository.GoalRepository
+import com.example.ezmakro.core.domain.util.parseDecimalFlexible
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -32,11 +33,11 @@ class DataStoreGoalRepository(
                 DefaultNutritionGoal
             } else {
                 NutritionGoal(
-                    kcal = kcal?.toDoubleOrNull() ?: DefaultNutritionGoal.kcal,
-                    proteinG = protein?.toDoubleOrNull() ?: DefaultNutritionGoal.proteinG,
-                    fatG = fat?.toDoubleOrNull() ?: DefaultNutritionGoal.fatG,
-                    carbsG = carbs?.toDoubleOrNull() ?: DefaultNutritionGoal.carbsG,
-                    fiberG = fiber?.toDoubleOrNull() ?: DefaultNutritionGoal.fiberG,
+                    kcal = kcal.parseDecimalFlexible() ?: DefaultNutritionGoal.kcal,
+                    proteinG = protein.parseDecimalFlexible() ?: DefaultNutritionGoal.proteinG,
+                    fatG = fat.parseDecimalFlexible() ?: DefaultNutritionGoal.fatG,
+                    carbsG = carbs.parseDecimalFlexible() ?: DefaultNutritionGoal.carbsG,
+                    fiberG = fiber.parseDecimalFlexible() ?: DefaultNutritionGoal.fiberG,
                 )
             }
         }
