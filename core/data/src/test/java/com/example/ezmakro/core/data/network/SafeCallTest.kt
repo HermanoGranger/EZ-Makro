@@ -8,11 +8,14 @@ import com.example.ezmakro.core.domain.result.Result
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.get
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import org.junit.jupiter.api.Test
@@ -179,5 +182,82 @@ class SafeCallTest {
 
             assertThat(result).isInstanceOf(Result.Error::class)
             assertThat((result as Result.Error).error).isEqualTo(DataError.Network.SERIALIZATION)
+        }
+
+    @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun `GET IOException is retried with backoff and maps to UNKNOWN`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    throw java.io.IOException("broken pipe")
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/flaky")
+
+            assertThat(calls).isEqualTo(4)
+            assertThat(testScheduler.currentTime).isEqualTo(700L)
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.UNKNOWN))
+        }
+
+    @Test
+    fun `DELETE IOException is not retried`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    throw java.io.IOException("broken pipe")
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.delete<SampleDto>("/x")
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.UNKNOWN))
+            assertThat(calls).isEqualTo(1)
+        }
+
+    @Test
+    fun `request timeout is retried and maps to REQUEST_TIMEOUT`() =
+        runTest {
+            var calls = 0
+            val engine =
+                MockEngine { _ ->
+                    calls++
+                    throw HttpRequestTimeoutException("https://example.com/slow", 15_000L)
+                }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/slow")
+
+            assertThat(calls).isEqualTo(4)
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.REQUEST_TIMEOUT))
+        }
+
+    @Test
+    fun `connect timeout maps to REQUEST_TIMEOUT`() =
+        runTest {
+            val engine =
+                MockEngine { _ -> throw ConnectTimeoutException("Connect timeout has expired", null) }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/connect")
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.REQUEST_TIMEOUT))
+        }
+
+    @Test
+    fun `socket timeout maps to REQUEST_TIMEOUT`() =
+        runTest {
+            val engine =
+                MockEngine { _ -> throw java.net.SocketTimeoutException("Socket timeout has expired") }
+            val client = HttpClientFactory.create(engine)
+
+            val result = client.get<SampleDto>("/socket")
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.REQUEST_TIMEOUT))
         }
 }

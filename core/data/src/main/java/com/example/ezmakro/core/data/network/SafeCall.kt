@@ -5,6 +5,9 @@ import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -12,6 +15,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.utils.unwrapCancellationException
 import io.ktor.serialization.ContentConvertException
 import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.coroutines.CancellationException
@@ -68,14 +72,29 @@ suspend inline fun <reified T> safeCall(
             } catch (e: UnknownHostException) {
                 AppLogger.e("No internet", e, tag = "safeCall")
                 return Result.Error(DataError.Network.NO_INTERNET)
+            } catch (e: HttpRequestTimeoutException) {
+                AppLogger.e("Request timed out", e, tag = "safeCall")
+                return Result.Error(DataError.Network.REQUEST_TIMEOUT)
+            } catch (e: ConnectTimeoutException) {
+                AppLogger.e("Connect timed out", e, tag = "safeCall")
+                return Result.Error(DataError.Network.REQUEST_TIMEOUT)
+            } catch (e: SocketTimeoutException) {
+                AppLogger.e("Socket timed out", e, tag = "safeCall")
+                return Result.Error(DataError.Network.REQUEST_TIMEOUT)
             } catch (e: SerializationException) {
                 AppLogger.e("Serialization failed", e, tag = "safeCall")
                 return Result.Error(DataError.Network.SERIALIZATION)
             } catch (e: ContentConvertException) {
                 AppLogger.e("Serialization failed", e, tag = "safeCall")
                 return Result.Error(DataError.Network.SERIALIZATION)
+            } catch (e: CancellationException) {
+                val cause = e.unwrapCancellationException()
+                if (cause.isTimeoutException()) {
+                    AppLogger.e("Request timed out", cause, tag = "safeCall")
+                    return Result.Error(DataError.Network.REQUEST_TIMEOUT)
+                }
+                throw e
             } catch (e: Exception) {
-                if (e is CancellationException) throw e
                 AppLogger.e("Unknown network error", e, tag = "safeCall")
                 return Result.Error(DataError.Network.UNKNOWN)
             }
@@ -88,6 +107,12 @@ suspend inline fun <reified T> safeCall(
         delay(retryPolicy.backoffDelay(attempt))
     }
 }
+
+@PublishedApi
+internal fun Throwable.isTimeoutException(): Boolean =
+    this is HttpRequestTimeoutException ||
+        this is ConnectTimeoutException ||
+        this is SocketTimeoutException
 
 @Suppress("MagicNumber")
 suspend inline fun <reified T> responseToResult(response: HttpResponse): Result<T, DataError.Network> =
