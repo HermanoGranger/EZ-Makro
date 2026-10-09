@@ -18,7 +18,9 @@ import java.util.concurrent.ConcurrentHashMap
  * OFF results are persisted into Room and never observed directly.
  *
  * ADR-004: a remote refresh never overwrites a [CachedFoodItemStatus.UserModified]
- * entry automatically. [refetchFromOff] is the explicit, user-confirmed override.
+ * entry automatically. [refetchFromOff] is the explicit, user-confirmed override
+ * for untouched entries; it still never replaces user content — UserModified and
+ * user-created entries are returned unchanged.
  */
 @Suppress("TooManyFunctions")
 class OfflineFirstFoodRepository(
@@ -95,20 +97,43 @@ class OfflineFirstFoodRepository(
                 is Result.Success -> result.data
                 is Result.Error -> return Result.Error(result.error)
             }
-        val barcode =
-            existing?.barcode
-                ?: return Result.Error(DataError.Local.NOT_FOUND)
-        return when (val remoteHit = remote.getByBarcode(barcode)) {
-            is Result.Success -> {
-                remoteHit.data?.let { fresh ->
-                    // Explicit user-confirmed override: replace local entry as ORIGINAL.
-                    local.upsert(fresh.copy(id = id))
-                }
-                Result.Success(remoteHit.data)
-            }
-            is Result.Error -> Result.Error(remoteHit.error)
+        val barcode = existing?.barcode
+        return when {
+            // Option A: never overwrite user content, not even on an explicit,
+            // user-confirmed refetch. The local entry is returned unchanged so
+            // the caller keeps the state it already observes (idempotent).
+            existing != null && existing.isProtectedFromRefetch() -> Result.Success(existing)
+            barcode == null -> Result.Error(DataError.Local.NOT_FOUND)
+            else -> replaceWithFreshOffEntry(id, barcode)
         }
     }
+
+    /**
+     * Explicit user-confirmed override: replace the local entry with the fresh
+     * OFF payload, stored as [CachedFoodItemStatus.Original] with its own snapshot.
+     * A failed remote call leaves the local entry untouched.
+     */
+    private suspend fun replaceWithFreshOffEntry(
+        id: FoodId,
+        barcode: String,
+    ): Result<FoodItem?, DataError> =
+        when (val remoteHit = remote.getByBarcode(barcode)) {
+            is Result.Success ->
+                remoteHit.data
+                    ?.let { fresh ->
+                        val replaced = fresh.copy(id = id)
+                        local.upsert(replaced)
+                        Result.Success(replaced)
+                    } ?: Result.Success(null)
+            is Result.Error -> Result.Error(remoteHit.error)
+        }
+
+    /**
+     * ADR-004 / Option A: user content must survive a refetch. That covers
+     * locally edited entries and foods the user created themselves.
+     */
+    private fun FoodItem.isProtectedFromRefetch(): Boolean =
+        isUserCreated || cachedStatus == CachedFoodItemStatus.UserModified
 
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> =
         when (val result = local.getById(id)) {

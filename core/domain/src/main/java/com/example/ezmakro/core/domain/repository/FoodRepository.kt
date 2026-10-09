@@ -64,8 +64,9 @@ interface FoodRepository {
     suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local>
 
     /**
-     * ADR-004: re-fetch the current OFF version and replace the local entry,
-     * discarding local edits. Callers confirm with the user beforehand.
+     * ADR-004: re-fetch the current OFF version and replace the local entry.
+     * A user-modified or user-created entry is never overwritten — it is
+     * returned unchanged instead. Callers confirm with the user beforehand.
      */
     suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError>
 

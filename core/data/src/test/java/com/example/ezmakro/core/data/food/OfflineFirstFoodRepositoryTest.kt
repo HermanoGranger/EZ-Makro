@@ -318,7 +318,7 @@ class OfflineFirstFoodRepositoryTest {
     fun `refetchFromOff replaces the local entry with the fresh OFF version`() =
         runTest {
             val local = FakeLocal()
-            local.upsert(food("1", "Edited", barcode = "999", status = CachedFoodItemStatus.UserModified))
+            local.upsert(food("1", "Stale", barcode = "999", status = CachedFoodItemStatus.UpdateAvailable))
             val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Latest", barcode = "999")))
             val repo = OfflineFirstFoodRepository(local, remote)
 
@@ -327,6 +327,50 @@ class OfflineFirstFoodRepositoryTest {
             assertThat((result as Result.Success).data?.name).isEqualTo("OFF Latest")
             assertThat(local.store.value["1"]?.name).isEqualTo("OFF Latest")
             assertThat(local.store.value["1"]?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `refetchFromOff keeps a UserModified entry untouched`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Edit", barcode = "999", status = CachedFoodItemStatus.UserModified))
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Latest", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+            val before = local.store.value["1"]
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat((result as Result.Success).data).isEqualTo(before)
+            assertThat(local.store.value["1"]).isEqualTo(before)
+            assertThat(local.store.value["1"]?.cachedStatus)
+                .isEqualTo(CachedFoodItemStatus.UserModified)
+        }
+
+    @Test
+    fun `refetchFromOff keeps a user-created entry untouched`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Food", barcode = "999").copy(isUserCreated = true))
+            val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Latest", barcode = "999")))
+            val repo = OfflineFirstFoodRepository(local, remote)
+            val before = local.store.value["1"]
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat((result as Result.Success).data).isEqualTo(before)
+            assertThat(local.store.value["1"]).isEqualTo(before)
+        }
+
+    @Test
+    fun `refetchFromOff returns a user-created entry without barcode instead of an error`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Food", barcode = null).copy(isUserCreated = true))
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat((result as Result.Success).data?.name).isEqualTo("My Food")
         }
 
     @Test
