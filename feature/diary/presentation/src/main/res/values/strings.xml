@@ -32,6 +32,7 @@
     <string name="goals_save">Speichern</string>
     <string name="goals_reset_default">Auf Standard zurücksetzen</string>
     <string name="goals_error_invalid">Bitte gültige, nicht-negative Werte eingeben</string>
+    <string name="goals_error_save_failed">Fehler beim Speichern</string>
 
     <string name="quick_add_title">Quick Add</string>
     <string name="quick_add_name">Name</string>

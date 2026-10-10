@@ -18,5 +18,7 @@ data class GoalsState(
      */
     val isDirty: Boolean = false,
     val numberError: UiText? = null,
+    /** Persistence error — set when [GoalsAction.OnSaveClick]/[GoalsAction.OnResetToDefaultClick] fails. */
+    val saveError: UiText? = null,
     val isSaving: Boolean = false,
 )

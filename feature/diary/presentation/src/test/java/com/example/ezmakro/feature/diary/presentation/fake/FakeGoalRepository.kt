@@ -10,10 +10,12 @@ class FakeGoalRepository(
 ) : GoalRepository {
     private val goal = MutableStateFlow(initial)
     val savedGoals = mutableListOf<NutritionGoal>()
+    var saveError: Throwable? = null
 
     override fun observeGoal(): Flow<NutritionGoal> = goal
 
     override suspend fun saveGoal(goal: NutritionGoal) {
+        saveError?.let { throw it }
         savedGoals += goal
         this.goal.value = goal
     }

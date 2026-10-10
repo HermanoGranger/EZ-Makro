@@ -89,6 +89,7 @@ private fun GoalsForm(
         NumberField(state.fiber, R.string.goals_fiber) { onAction(GoalsAction.OnFiberChange(it)) }
 
         state.numberError?.let { Text(it.asString()) }
+        state.saveError?.let { Text(it.asString()) }
 
         Button(
             onClick = { onAction(GoalsAction.OnSaveClick) },

@@ -1,10 +1,13 @@
 package com.example.ezmakro.feature.diary.presentation.goals
 
+import app.cash.turbine.expectNoEvents
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isNull
 import com.example.ezmakro.core.domain.model.DefaultNutritionGoal
 import com.example.ezmakro.core.domain.model.NutritionGoal
 import com.example.ezmakro.feature.diary.presentation.fake.FakeGoalRepository
@@ -128,6 +131,56 @@ class GoalsViewModelTest {
             assertThat(state.kcal).isEqualTo("1234")
             // Draft ownership: once the user typed, no field of the draft is overwritten.
             assertThat(state.protein).isEqualTo("150")
+        }
+
+    @Test
+    fun `save error surfaces the error and does not navigate back`() =
+        runTest {
+            repository.saveError = java.io.IOException("disk full")
+            viewModel.onAction(GoalsAction.OnKcalChange("1800"))
+
+            viewModel.events.test {
+                viewModel.onAction(GoalsAction.OnSaveClick)
+                expectNoEvents()
+            }
+
+            assertThat(repository.savedGoals).isEmpty()
+            val state = viewModel.state.value
+            assertThat(state.isSaving).isFalse()
+            assertThat(state.saveError).isEqualTo(
+                com.example.ezmakro.core.presentation.uitext.UiText
+                    .StringResource(com.example.ezmakro.feature.diary.presentation.R.string.goals_error_save_failed),
+            )
+        }
+
+    @Test
+    fun `reset to default error surfaces the error and does not navigate back`() =
+        runTest {
+            repository.saveError = java.io.IOException("disk full")
+
+            viewModel.events.test {
+                viewModel.onAction(GoalsAction.OnResetToDefaultClick)
+                expectNoEvents()
+            }
+
+            assertThat(repository.savedGoals).isEmpty()
+            val state = viewModel.state.value
+            assertThat(state.isSaving).isFalse()
+            assertThat(state.saveError).isEqualTo(
+                com.example.ezmakro.core.presentation.uitext.UiText
+                    .StringResource(com.example.ezmakro.feature.diary.presentation.R.string.goals_error_save_failed),
+            )
+        }
+
+    @Test
+    fun `typing clears the previous save error`() =
+        runTest {
+            repository.saveError = java.io.IOException("disk full")
+            viewModel.onAction(GoalsAction.OnSaveClick)
+
+            viewModel.onAction(GoalsAction.OnKcalChange("1800"))
+
+            assertThat(viewModel.state.value.saveError).isNull()
         }
 
     @Test

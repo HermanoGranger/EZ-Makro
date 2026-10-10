@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 /**
  * Edits the active [NutritionGoal]. The form is pre-filled from the currently
@@ -62,15 +63,50 @@ class GoalsViewModel(
 
     fun onAction(action: GoalsAction) {
         when (action) {
-            is GoalsAction.OnKcalChange -> onUserInput { copy(kcal = action.value, numberError = null) }
+            is GoalsAction.OnKcalChange ->
+                onUserInput {
+                    copy(
+                        kcal = action.value,
+                        numberError = null,
+                        saveError = null,
+                    )
+                }
 
-            is GoalsAction.OnProteinChange -> onUserInput { copy(protein = action.value, numberError = null) }
+            is GoalsAction.OnProteinChange ->
+                onUserInput {
+                    copy(
+                        protein = action.value,
+                        numberError = null,
+                        saveError = null,
+                    )
+                }
 
-            is GoalsAction.OnFatChange -> onUserInput { copy(fat = action.value, numberError = null) }
+            is GoalsAction.OnFatChange ->
+                onUserInput {
+                    copy(
+                        fat = action.value,
+                        numberError = null,
+                        saveError = null,
+                    )
+                }
 
-            is GoalsAction.OnCarbsChange -> onUserInput { copy(carbs = action.value, numberError = null) }
+            is GoalsAction.OnCarbsChange ->
+                onUserInput {
+                    copy(
+                        carbs = action.value,
+                        numberError = null,
+                        saveError = null,
+                    )
+                }
 
-            is GoalsAction.OnFiberChange -> onUserInput { copy(fiber = action.value, numberError = null) }
+            is GoalsAction.OnFiberChange ->
+                onUserInput {
+                    copy(
+                        fiber = action.value,
+                        numberError = null,
+                        saveError = null,
+                    )
+                }
 
             GoalsAction.OnSaveClick -> save()
             GoalsAction.OnResetToDefaultClick -> resetToDefault()
@@ -92,19 +128,30 @@ class GoalsViewModel(
                     return
                 }
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true) }
-            repository.saveGoal(goal)
-            _state.update { it.copy(isSaving = false) }
-            emit(GoalsEvent.NavigateBack)
+            _state.update { it.copy(isSaving = true, numberError = null, saveError = null) }
+            persist(goal)
         }
     }
 
     private fun resetToDefault() {
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true) }
-            repository.saveGoal(DefaultNutritionGoal)
+            _state.update { it.copy(isSaving = true, numberError = null, saveError = null) }
+            persist(DefaultNutritionGoal)
+        }
+    }
+
+    private suspend fun persist(goal: NutritionGoal) {
+        try {
+            repository.saveGoal(goal)
             _state.update { it.copy(isSaving = false) }
             emit(GoalsEvent.NavigateBack)
+        } catch (_: IOException) {
+            _state.update {
+                it.copy(
+                    isSaving = false,
+                    saveError = UiText.StringResource(R.string.goals_error_save_failed),
+                )
+            }
         }
     }
 
