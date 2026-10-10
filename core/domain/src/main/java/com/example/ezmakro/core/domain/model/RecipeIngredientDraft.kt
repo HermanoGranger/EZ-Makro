@@ -1,5 +1,6 @@
 package com.example.ezmakro.core.domain.model
 
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
@@ -8,6 +9,7 @@ import java.util.UUID
  * typed [RecipeIngredient]s is the job of
  * `BuildRecipeFromDraftsUseCase`.
  */
+@Serializable
 data class RecipeIngredientDraft(
     val id: String = UUID.randomUUID().toString(),
     val foodId: String,

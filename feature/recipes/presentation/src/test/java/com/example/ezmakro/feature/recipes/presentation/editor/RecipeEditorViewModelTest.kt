@@ -1,5 +1,6 @@
 package com.example.ezmakro.feature.recipes.presentation.editor
 
+import androidx.lifecycle.SavedStateHandle
 import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@Suppress("LargeClass")
 class RecipeEditorViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -49,13 +51,14 @@ class RecipeEditorViewModelTest {
         recipeId: String? = null,
         foodRepo: FakeFoodRepository = FakeFoodRepository(),
         recipeRepo: FakeRecipeRepository = FakeRecipeRepository(),
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
     ): RecipeEditorViewModel =
         RecipeEditorViewModel(
             recipeId = recipeId,
             recipeRepository = recipeRepo,
             foodRepository = foodRepo,
             buildRecipeFromDraftsUseCase = BuildRecipeFromDraftsUseCase(),
-            savedStateHandle = androidx.lifecycle.SavedStateHandle(),
+            savedStateHandle = savedStateHandle,
         )
 
     @Test
@@ -674,5 +677,128 @@ class RecipeEditorViewModelTest {
             } finally {
                 Dispatchers.setMain(testDispatcher)
             }
+        }
+
+    @Test
+    fun `process death restores ingredients with quantities and stable ids`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val handle = SavedStateHandle()
+            val first = viewModel(foodRepo = foodRepo, savedStateHandle = handle)
+            first.onAction(RecipeEditorAction.OnNameChange("Müsli"))
+            first.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            first.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "100"))
+            first.onAction(RecipeEditorAction.OnIngredientServingCountChange(0, "2"))
+
+            val restored = viewModel(foodRepo = foodRepo, savedStateHandle = handle)
+
+            assertThat(restored.state.value.name).isEqualTo("Müsli")
+            assertThat(restored.state.value.ingredients.size).isEqualTo(1)
+            val draft = restored.state.value.ingredients[0]
+            assertThat(draft.foodId).isEqualTo("f1")
+            assertThat(draft.foodName).isEqualTo("Apple")
+            assertThat(draft.rawWeight).isEqualTo("100")
+            assertThat(draft.servingCount).isEqualTo("2")
+            assertThat(draft.id).isEqualTo(
+                first.state.value.ingredients[0]
+                    .id,
+            )
+        }
+
+    @Test
+    fun `adding and removing ingredients after restore keeps unique stable ids`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(
+                listOf(
+                    FakeFoodRepository.food("f1", "Apple"),
+                    FakeFoodRepository.food("f2", "Banane"),
+                ),
+            )
+            val handle = SavedStateHandle()
+            val first = viewModel(foodRepo = foodRepo, savedStateHandle = handle)
+            first.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            first.onAction(RecipeEditorAction.OnIngredientRawWeightChange(0, "50"))
+
+            val restored = viewModel(foodRepo = foodRepo, savedStateHandle = handle)
+            val restoredId =
+                restored.state.value.ingredients[0]
+                    .id
+            restored.onAction(RecipeEditorAction.OnAddIngredientClick("f2"))
+            restored.onAction(RecipeEditorAction.OnIngredientRawWeightChange(1, "120"))
+
+            assertThat(restored.state.value.ingredients.size).isEqualTo(2)
+            val ids =
+                restored.state.value.ingredients
+                    .map { it.id }
+            assertThat(ids.distinct().size).isEqualTo(2)
+            assertThat(ids[0]).isEqualTo(restoredId)
+
+            restored.onAction(RecipeEditorAction.OnRemoveIngredientClick(0))
+            assertThat(restored.state.value.ingredients.size).isEqualTo(1)
+            assertThat(
+                restored.state.value.ingredients[0]
+                    .id,
+            ).isEqualTo(ids[1])
+        }
+
+    @Test
+    fun `restored ingredients are not overwritten by reseeding existing recipe`() =
+        runTest {
+            val foodRepo = FakeFoodRepository()
+            foodRepo.emitFoods(listOf(FakeFoodRepository.food("f1", "Apple")))
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(brotRecipe())
+            val handle = SavedStateHandle()
+            val first =
+                viewModel(
+                    recipeId = "r1",
+                    foodRepo = foodRepo,
+                    recipeRepo = recipeRepo,
+                    savedStateHandle = handle,
+                )
+            first.onAction(RecipeEditorAction.OnAddIngredientClick("f1"))
+            first.onAction(RecipeEditorAction.OnIngredientRawWeightChange(1, "120"))
+
+            val restored =
+                viewModel(
+                    recipeId = "r1",
+                    foodRepo = foodRepo,
+                    recipeRepo = recipeRepo,
+                    savedStateHandle = handle,
+                )
+
+            assertThat(restored.state.value.ingredients.size).isEqualTo(2)
+            assertThat(
+                restored.state.value.ingredients[0]
+                    .foodName,
+            ).isEqualTo("Mehl")
+            assertThat(
+                restored.state.value.ingredients[0]
+                    .rawWeight,
+            ).isEqualTo("200")
+            assertThat(
+                restored.state.value.ingredients[1]
+                    .foodName,
+            ).isEqualTo("Apple")
+            assertThat(
+                restored.state.value.ingredients[1]
+                    .rawWeight,
+            ).isEqualTo("120")
+        }
+
+    @Test
+    fun `restored favorite survives process death when editing existing recipe`() =
+        runTest {
+            val recipeRepo = FakeRecipeRepository()
+            recipeRepo.emitRecipe(brotRecipe())
+            val handle = SavedStateHandle()
+            val first = viewModel(recipeId = "r1", recipeRepo = recipeRepo, savedStateHandle = handle)
+            first.onAction(RecipeEditorAction.OnToggleFavorite)
+
+            val restored = viewModel(recipeId = "r1", recipeRepo = recipeRepo, savedStateHandle = handle)
+
+            assertThat(restored.state.value.isFavorite).isTrue()
         }
 }

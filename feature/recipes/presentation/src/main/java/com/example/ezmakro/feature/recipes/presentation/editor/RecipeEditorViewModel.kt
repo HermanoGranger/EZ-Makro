@@ -35,6 +35,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
 
 @Suppress("TooManyFunctions")
@@ -45,6 +48,8 @@ class RecipeEditorViewModel(
     private val buildRecipeFromDraftsUseCase: BuildRecipeFromDraftsUseCase,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+    private val restoredIngredients: List<RecipeIngredientDraft>? = restoreIngredients()
+
     private val _state =
         MutableStateFlow(
             RecipeEditorState(
@@ -54,6 +59,8 @@ class RecipeEditorViewModel(
                 category = (savedStateHandle[KEY_CATEGORY] as String?).orEmpty(),
                 portions = (savedStateHandle[KEY_PORTIONS] as String?) ?: "1",
                 finalWeight = (savedStateHandle[KEY_FINAL_WEIGHT] as String?).orEmpty(),
+                ingredients = restoredIngredients.orEmpty(),
+                isFavorite = savedStateHandle[KEY_FAVORITE] ?: false,
             ),
         )
     val state = _state.asStateFlow()
@@ -139,6 +146,7 @@ class RecipeEditorViewModel(
                         ingredientError = null,
                     )
                 }
+                persistIngredients()
                 recomputeNutrition()
             }
 
@@ -152,6 +160,7 @@ class RecipeEditorViewModel(
                         ingredientError = null,
                     )
                 }
+                persistIngredients()
                 recomputeNutrition()
             }
 
@@ -162,6 +171,7 @@ class RecipeEditorViewModel(
                         expandedIngredientIndex = null,
                     )
                 }
+                persistIngredients()
                 recomputeNutrition()
             }
 
@@ -173,8 +183,10 @@ class RecipeEditorViewModel(
                     )
                 }
 
-            RecipeEditorAction.OnToggleFavorite ->
+            RecipeEditorAction.OnToggleFavorite -> {
                 _state.update { it.copy(isFavorite = !it.isFavorite) }
+                savedStateHandle[KEY_FAVORITE] = _state.value.isFavorite
+            }
 
             RecipeEditorAction.OnSaveClick ->
                 viewModelScope.launch { save() }
@@ -211,6 +223,7 @@ class RecipeEditorViewModel(
                 ingredientError = null,
             )
         }
+        persistIngredients()
         recomputeNutrition()
     }
 
@@ -235,6 +248,7 @@ class RecipeEditorViewModel(
                 ingredientError = null,
             )
         }
+        persistIngredients()
         recomputeNutrition()
     }
 
@@ -257,16 +271,21 @@ class RecipeEditorViewModel(
                 _state.update {
                     it.copy(
                         name = it.name.ifEmpty { recipe.name },
-                        category = recipe.category ?: "",
-                        portions = recipe.portions.toString(),
+                        category =
+                            if (restoredField(KEY_CATEGORY)) it.category else recipe.category ?: "",
+                        portions = if (restoredField(KEY_PORTIONS)) it.portions else recipe.portions.toString(),
                         finalWeight =
-                            recipe.finalWeight
-                                ?.grams
-                                ?.formatValue()
-                                .orEmpty(),
-                        isFavorite = recipe.isFavorite,
+                            if (restoredField(KEY_FINAL_WEIGHT)) {
+                                it.finalWeight
+                            } else {
+                                recipe.finalWeight
+                                    ?.grams
+                                    ?.formatValue()
+                                    .orEmpty()
+                            },
+                        isFavorite = if (restoredField(KEY_FAVORITE)) it.isFavorite else recipe.isFavorite,
                         ingredients =
-                            recipe.ingredients.map { ing ->
+                            restoredIngredients ?: recipe.ingredients.map { ing ->
                                 RecipeIngredientDraft(
                                     foodId =
                                         ing.food
@@ -463,10 +482,26 @@ class RecipeEditorViewModel(
         block: (T) -> T,
     ): List<T> = mapIndexed { i, item -> if (i == index) block(item) else item }
 
+    private fun restoredField(key: String): Boolean = savedStateHandle.contains(key)
+
+    private fun restoreIngredients(): List<RecipeIngredientDraft>? =
+        savedStateHandle.get<String>(KEY_INGREDIENTS)?.let { raw ->
+            runCatching {
+                INGREDIENTS_JSON.decodeFromString<List<RecipeIngredientDraft>>(raw)
+            }.getOrNull()
+        }
+
+    private fun persistIngredients() {
+        savedStateHandle[KEY_INGREDIENTS] = INGREDIENTS_JSON.encodeToString(_state.value.ingredients)
+    }
+
     private companion object {
         const val KEY_NAME = "recipe_edit_name"
         const val KEY_CATEGORY = "recipe_edit_category"
         const val KEY_PORTIONS = "recipe_edit_portions"
         const val KEY_FINAL_WEIGHT = "recipe_edit_final_weight"
+        const val KEY_INGREDIENTS = "recipe_edit_ingredients"
+        const val KEY_FAVORITE = "recipe_edit_favorite"
+        val INGREDIENTS_JSON: Json = Json { ignoreUnknownKeys = true }
     }
 }
