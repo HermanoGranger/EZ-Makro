@@ -10,11 +10,13 @@ import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.repository.GoalRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.Result
+import com.example.ezmakro.core.domain.result.onFailure
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
 import com.example.ezmakro.core.presentation.date.CurrentDateProvider
 import com.example.ezmakro.core.presentation.uitext.UiText
+import com.example.ezmakro.core.presentation.uitext.toUiText
 import com.example.ezmakro.feature.diary.presentation.R
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnConfirmDelete
 import com.example.ezmakro.feature.diary.presentation.day.DiaryDayAction.OnCopyYesterdayClick
@@ -99,7 +101,7 @@ class DiaryDayViewModel(
             OnCopyYesterdayClick -> copyYesterday()
             is OnDeleteEntry -> emit(DiaryDayEvent.ConfirmDelete(action.entryId, action.slot))
             is OnConfirmDelete -> delete(action.entryId)
-            OnMessageShown -> _state.update { it.copy(copyYesterdayMessage = null) }
+            OnMessageShown -> _state.update { it.copy(copyYesterdayMessage = null, actionError = null) }
             is OnToggleSlot -> {
                 _state.update {
                     it.copy(
@@ -156,7 +158,10 @@ class DiaryDayViewModel(
     }
 
     private fun delete(entryId: String) {
-        viewModelScope.launch { deleteEntryUseCase(DiaryEntryId(entryId)) }
+        viewModelScope.launch {
+            deleteEntryUseCase(DiaryEntryId(entryId))
+                .onFailure { error -> _state.update { it.copy(actionError = error.toUiText()) } }
+        }
     }
 
     private fun updateEntry(
@@ -164,7 +169,10 @@ class DiaryDayViewModel(
         amountGrams: Double?,
         portionCount: Double?,
     ) {
-        viewModelScope.launch { updateEntryUseCase(DiaryEntryId(entryId), amountGrams, portionCount) }
+        viewModelScope.launch {
+            updateEntryUseCase(DiaryEntryId(entryId), amountGrams, portionCount)
+                .onFailure { error -> _state.update { it.copy(actionError = error.toUiText()) } }
+        }
     }
 
     private fun macroLabel(macro: Macro): String =

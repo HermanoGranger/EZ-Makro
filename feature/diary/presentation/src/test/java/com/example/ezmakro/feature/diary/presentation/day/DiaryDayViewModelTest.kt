@@ -10,6 +10,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.DiaryEntry
@@ -24,6 +25,7 @@ import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.model.RecipeIngredient
 import com.example.ezmakro.core.domain.model.ServingUnit
+import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.usecase.diary.CopyYesterdayUseCase
 import com.example.ezmakro.core.domain.usecase.diary.DeleteDiaryEntryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.UpdateDiaryEntryUseCase
@@ -444,5 +446,40 @@ class DiaryDayViewModelTest {
                     .single()
                     .isSourceRecipeOutdated,
             ).isTrue()
+        }
+
+    @Test
+    fun `delete failure surfaces an action error`() =
+        runTest {
+            repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 100.0))
+            repository.deleteError = DataError.Local.NOT_FOUND
+
+            viewModel.onAction(DiaryDayAction.OnConfirmDelete("a", MealSlot.BREAKFAST))
+
+            assertThat(viewModel.state.value.actionError).isNotNull()
+        }
+
+    @Test
+    fun `update failure surfaces an action error`() =
+        runTest {
+            repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 100.0))
+            repository.saveError = DataError.Local.NOT_FOUND
+
+            viewModel.onAction(DiaryDayAction.OnSaveEdit("a", amountGrams = 200.0, portionCount = null))
+
+            assertThat(viewModel.state.value.actionError).isNotNull()
+        }
+
+    @Test
+    fun `OnMessageShown clears a pending action error`() =
+        runTest {
+            repository.emitEntry(entry("a", MealSlot.BREAKFAST, "f1", 100.0))
+            repository.deleteError = DataError.Local.NOT_FOUND
+            viewModel.onAction(DiaryDayAction.OnConfirmDelete("a", MealSlot.BREAKFAST))
+            assertThat(viewModel.state.value.actionError).isNotNull()
+
+            viewModel.onAction(DiaryDayAction.OnMessageShown)
+
+            assertThat(viewModel.state.value.actionError).isNull()
         }
 }

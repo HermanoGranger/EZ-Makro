@@ -27,6 +27,12 @@ class FakeDiaryRepository : DiaryRepository {
      */
     var getByIdGate: CompletableDeferred<Unit>? = null
 
+    /** Wenn gesetzt, schlägt [delete] mit diesem Fehler fehl. */
+    var deleteError: DataError.Local? = null
+
+    /** Wenn gesetzt, schlägt [save] mit diesem Fehler fehl. */
+    var saveError: DataError.Local? = null
+
     fun emitEntry(entry: DiaryEntry) {
         entries.value = entries.value.filter { it.id != entry.id } + entry
     }
@@ -46,12 +52,14 @@ class FakeDiaryRepository : DiaryRepository {
     }
 
     override suspend fun save(entry: DiaryEntry): com.example.ezmakro.core.domain.result.EmptyResult<DataError.Local> {
+        saveError?.let { return Result.Error(it) }
         saved.add(entry)
         entries.value = entries.value.filter { it.id != entry.id } + entry
         return Result.Success(Unit)
     }
 
     override suspend fun delete(id: DiaryEntryId): com.example.ezmakro.core.domain.result.EmptyResult<DataError.Local> {
+        deleteError?.let { return Result.Error(it) }
         deleted.add(id)
         entries.value = entries.value.filter { it.id != id }
         return Result.Success(Unit)

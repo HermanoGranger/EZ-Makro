@@ -15,6 +15,8 @@ data class DiaryDayState(
     val summary: DiarySummaryUi? = null,
     val isCopyingYesterday: Boolean = false,
     val copyYesterdayMessage: UiText? = null,
+    /** Fehler aus Aktionen wie Löschen/Bearbeiten (One-Shot via Snackbar). */
+    val actionError: UiText? = null,
     val expandedSlots: Set<MealSlot> = MealSlot.entries.toSet(),
 )
 

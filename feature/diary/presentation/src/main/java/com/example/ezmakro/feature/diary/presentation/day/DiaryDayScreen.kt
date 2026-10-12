@@ -85,8 +85,9 @@ fun DiaryDayRoot(
     var editEntryId by remember { mutableStateOf<String?>(null) }
     var pickerSlot by remember { mutableStateOf<MealSlot?>(null) }
 
-    LaunchedEffect(state.copyYesterdayMessage) {
-        state.copyYesterdayMessage?.let {
+    val message = state.actionError ?: state.copyYesterdayMessage
+    LaunchedEffect(message) {
+        message?.let {
             snackbarHostState.showSnackbar(it.asString(context))
             viewModel.onAction(DiaryDayAction.OnMessageShown)
         }
