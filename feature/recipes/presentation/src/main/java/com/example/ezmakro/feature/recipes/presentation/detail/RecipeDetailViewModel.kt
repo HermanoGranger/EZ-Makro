@@ -84,6 +84,7 @@ class RecipeDetailViewModel(
                     repository
                         .duplicate(RecipeId(recipeId))
                         .onSuccess { _events.send(RecipeDetailEvent.NavigateBack) }
+                        .onFailure { error -> _state.update { it.copy(duplicateError = error.toUiText()) } }
                 }
 
             RecipeDetailAction.OnDeleteClick ->

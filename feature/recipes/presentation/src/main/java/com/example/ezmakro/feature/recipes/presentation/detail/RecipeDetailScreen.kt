@@ -207,6 +207,7 @@ fun RecipeDetailScreen(
             }
 
             state.deleteError?.let { Text(text = it.asString()) }
+            state.duplicateError?.let { Text(text = it.asString()) }
 
             Button(onClick = { onAction(RecipeDetailAction.OnEditClick) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.recipe_detail_edit))

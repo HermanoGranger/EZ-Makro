@@ -18,6 +18,7 @@ data class RecipeDetailState(
     val expandedIngredientIndex: Int? = null,
     val isLoading: Boolean = true,
     val deleteError: UiText? = null,
+    val duplicateError: UiText? = null,
 )
 
 sealed interface RecipeDetailAction {
