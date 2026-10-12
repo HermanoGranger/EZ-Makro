@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.calculation.createRecipeSnapshot
+import com.example.ezmakro.core.domain.calculation.gramsPerPortion
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.MealSlot
@@ -122,6 +123,8 @@ class FoodPickerViewModel(
                         selectedItemId = null,
                         selectedItemIsRecipe = false,
                         selectedItemHasServingUnit = false,
+                        selectedItemGramsPerPortion = null,
+                        selectedItemGramsPerPortionEstimated = false,
                         pendingIngredient = null,
                     )
                 }
@@ -340,6 +343,8 @@ class FoodPickerViewModel(
                 selectedItemId = foodId,
                 selectedItemIsRecipe = false,
                 selectedItemHasServingUnit = food?.servingLabel != null,
+                selectedItemGramsPerPortion = resolveFood(foodId)?.servingUnit?.gramsEquivalent,
+                selectedItemGramsPerPortionEstimated = false,
             )
         }
     }
@@ -372,11 +377,14 @@ class FoodPickerViewModel(
             recipeRepository.markUsed(RecipeId(recipeId))
         }
         _state.update {
+            val recipe = resolveRecipe(recipeId)
             it.copy(
                 selectedItemReady = true,
                 selectedItemId = recipeId,
                 selectedItemIsRecipe = true,
                 selectedItemHasServingUnit = true,
+                selectedItemGramsPerPortion = recipe?.gramsPerPortion()?.takeIf { grams -> grams > 0.0 },
+                selectedItemGramsPerPortionEstimated = recipe?.finalWeight == null,
             )
         }
     }
@@ -398,6 +406,8 @@ class FoodPickerViewModel(
                 selectedItemId = null,
                 selectedItemIsRecipe = false,
                 selectedItemHasServingUnit = false,
+                selectedItemGramsPerPortion = null,
+                selectedItemGramsPerPortionEstimated = false,
             )
         }
         viewModelScope.launch {

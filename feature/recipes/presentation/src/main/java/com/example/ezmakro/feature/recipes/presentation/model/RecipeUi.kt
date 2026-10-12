@@ -1,6 +1,7 @@
 package com.example.ezmakro.feature.recipes.presentation.model
 
 import com.example.ezmakro.core.domain.calculation.estimatedPer100g
+import com.example.ezmakro.core.domain.calculation.gramsPerPortion
 import com.example.ezmakro.core.domain.calculation.nutritionPer100g
 import com.example.ezmakro.core.domain.calculation.nutritionPerPortion
 import com.example.ezmakro.core.domain.calculation.totalNutrition
@@ -35,6 +36,8 @@ data class RecipeUi(
     val category: String?,
     val portions: Int,
     val ingredientCount: Int,
+    /** Weight of one portion in grams; estimated from raw weights when no final weight is set. */
+    val gramsPerPortion: Double? = null,
     val isEstimated: Boolean = false,
     val isFavorite: Boolean = false,
     val totalMacros: RecipeNutritionUi,
@@ -60,6 +63,7 @@ fun Recipe.toRecipeUi(): RecipeUi {
         category = category,
         portions = portions,
         ingredientCount = ingredients.size,
+        gramsPerPortion = gramsPerPortion().takeIf { it > 0.0 },
         isEstimated = finalWeight == null,
         isFavorite = isFavorite,
         totalMacros = total.toRecipeNutritionUi(),

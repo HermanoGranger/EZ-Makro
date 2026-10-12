@@ -31,6 +31,13 @@ fun Recipe.estimatedPer100g(): NutritionValues {
 
 fun Recipe.nutritionPerPortion(): NutritionValues = totalNutrition() * (1.0 / portions)
 
+/**
+ * Weight of a single portion in grams. Derived from the measured [Recipe.finalWeight]
+ * when present, otherwise estimated from the sum of the raw ingredient weights.
+ * `Recipe.portions` is guaranteed to be positive.
+ */
+fun Recipe.gramsPerPortion(): Double = (finalWeight?.grams ?: totalRawWeight().grams) / portions
+
 fun FoodItem.nutritionForGrams(amountGrams: Double): NutritionValues {
     require(amountGrams >= 0.0) { "amountGrams must be non-negative" }
     return nutritionPer100g?.times(amountGrams / 100.0) ?: NutritionValues.ZERO

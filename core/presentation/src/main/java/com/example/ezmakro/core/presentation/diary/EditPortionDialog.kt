@@ -30,7 +30,7 @@ import com.example.ezmakro.core.presentation.util.formatValue
 
 private enum class EditAmountMode { PORTIONS, GRAMS }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 fun EditPortionDialog(
     name: String,
@@ -38,6 +38,8 @@ fun EditPortionDialog(
     hasServingUnit: Boolean,
     initialAmountGrams: Double?,
     initialPortionCount: Double?,
+    gramsPerPortion: Double? = null,
+    gramsPerPortionEstimated: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (amountGrams: Double?, portionCount: Double?) -> Unit,
 ) {
@@ -93,6 +95,9 @@ fun EditPortionDialog(
                     } else {
                         R.string.diary_add_grams
                     }
+                if (showModeSelector && amountMode == EditAmountMode.PORTIONS) {
+                    GramsPerPortionHint(gramsPerPortion, gramsPerPortionEstimated)
+                }
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },

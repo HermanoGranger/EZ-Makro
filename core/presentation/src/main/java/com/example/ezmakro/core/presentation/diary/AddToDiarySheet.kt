@@ -29,10 +29,13 @@ import com.example.ezmakro.core.presentation.R
 
 private enum class RecipeAmountMode { PORTIONS, GRAMS }
 
+@Suppress("LongParameterList")
 @Composable
 fun AddToDiarySheet(
     isRecipe: Boolean,
     hasServingUnit: Boolean = false,
+    gramsPerPortion: Double? = null,
+    gramsPerPortionEstimated: Boolean = false,
     initialSlot: MealSlot = MealSlot.BREAKFAST,
     fixedSlot: MealSlot? = null,
     initialAmount: String = if (isRecipe || hasServingUnit) "1" else "100",
@@ -70,6 +73,9 @@ fun AddToDiarySheet(
                 }
                 if (showModeSelector) {
                     AmountModeSelector(amountMode = amountMode, onModeChange = { amountMode = it })
+                }
+                if (showModeSelector && amountMode == RecipeAmountMode.PORTIONS) {
+                    GramsPerPortionHint(gramsPerPortion, gramsPerPortionEstimated)
                 }
                 AmountField(
                     labelRes =

@@ -175,6 +175,41 @@ class RecipeCalculationTest {
     }
 
     @Test
+    fun `gramsPerPortion uses measured final weight`() {
+        val f = food()
+        val recipe =
+            recipe(
+                ingredients = listOf(ingredient(f, 100.0), ingredient(f, 100.0)),
+                finalWeight = FinalWeight(250.0),
+                portions = 2,
+            )
+        assertEquals(125.0, recipe.gramsPerPortion(), 1e-9)
+    }
+
+    @Test
+    fun `gramsPerPortion without final weight estimates from raw total`() {
+        val f = food()
+        val recipe =
+            recipe(
+                ingredients = listOf(ingredient(f, 100.0), ingredient(f, 100.0)),
+                finalWeight = null,
+                portions = 4,
+            )
+        assertEquals(50.0, recipe.gramsPerPortion(), 1e-9)
+    }
+
+    @Test
+    fun `gramsPerPortion with zero raw weight degrades to zero without NaN`() {
+        val recipe =
+            recipe(
+                ingredients = listOf(ingredient(food(), 0.0)),
+                finalWeight = null,
+                portions = 2,
+            )
+        assertEquals(0.0, recipe.gramsPerPortion(), 1e-9)
+    }
+
+    @Test
     fun `recipe requires positive portions`() {
         val f = food()
         assertFailsWith<IllegalArgumentException> {

@@ -137,6 +137,8 @@ fun DiaryDayRoot(
             hasServingUnit = editingEntry.hasServingUnit,
             initialAmountGrams = editingEntry.amountGrams,
             initialPortionCount = editingEntry.portionCount,
+            gramsPerPortion = editingEntry.gramsPerPortion,
+            gramsPerPortionEstimated = editingEntry.gramsPerPortionEstimated,
             onDismiss = { editEntryId = null },
             onConfirm = { amountGrams, portionCount ->
                 viewModel.onAction(DiaryDayAction.OnSaveEdit(editingEntry.id, amountGrams, portionCount))

@@ -40,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.model.NutritionValues
 import com.example.ezmakro.core.domain.model.RecipeIngredientDraft
 import com.example.ezmakro.core.domain.usecase.diary.DiaryRecipeEditScope
+import com.example.ezmakro.core.presentation.diary.GramsPerPortionHint
 import com.example.ezmakro.core.presentation.recipe.RecipeIngredientList
 import com.example.ezmakro.core.presentation.recipe.RecipeNutritionTotal
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
@@ -234,6 +235,9 @@ fun DiaryRecipeEditScreen(
                         ) {
                             Text(stringResource(R.string.diary_recipe_edit_amount_mode_grams))
                         }
+                    }
+                    if (state.amountMode == DiaryAmountMode.PORTIONS) {
+                        GramsPerPortionHint(state.gramsPerPortion, state.gramsPerPortionEstimated)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(

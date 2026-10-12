@@ -53,6 +53,10 @@ data class FoodPickerState(
     val selectedItemId: String? = null,
     val selectedItemIsRecipe: Boolean = false,
     val selectedItemHasServingUnit: Boolean = false,
+    /** Weight of one portion in grams for the selected item, when known. */
+    val selectedItemGramsPerPortion: Double? = null,
+    /** Whether [selectedItemGramsPerPortion] is estimated (recipe without measured final weight). */
+    val selectedItemGramsPerPortionEstimated: Boolean = false,
     /**
      * Set while the recipe-ingredient amount dialog is open: the item is
      * awaiting a raw weight / serving count before it is emitted as

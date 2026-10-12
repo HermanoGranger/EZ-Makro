@@ -22,6 +22,10 @@ data class DiaryRecipeEditState(
     val amountText: String = "",
     val portions: String = "",
     val finalWeight: String = "",
+    /** Weight of one portion in grams derived from the current form state, when known. */
+    val gramsPerPortion: Double? = null,
+    /** Whether [gramsPerPortion] is estimated (no measured final weight). */
+    val gramsPerPortionEstimated: Boolean = false,
     val ingredients: List<RecipeIngredientDraft> = emptyList(),
     val ingredientNutrition: List<NutritionValues> = emptyList(),
     val totalNutrition: NutritionValues = NutritionValues.ZERO,

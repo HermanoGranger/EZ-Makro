@@ -21,3 +21,12 @@ fun ServingUnit.servingAmountLabel(): String {
 }
 
 private val AMOUNT_IN_PARENS = Regex("\\(([^)]+)\\)")
+
+/**
+ * Gram amount of one portion, e.g. "300 g". An [isEstimated] value (a recipe
+ * without a measured final weight) is flagged with a leading "~".
+ */
+fun gramsPerPortionLabel(
+    grams: Double,
+    isEstimated: Boolean,
+): String = (if (isEstimated) "~ " else "") + "${grams.formatValue()} g"

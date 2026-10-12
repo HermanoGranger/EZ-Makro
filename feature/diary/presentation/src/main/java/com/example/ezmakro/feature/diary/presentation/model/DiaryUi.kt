@@ -1,6 +1,7 @@
 package com.example.ezmakro.feature.diary.presentation.model
 
 import com.example.ezmakro.core.domain.calculation.consumedNutrition
+import com.example.ezmakro.core.domain.calculation.gramsPerPortion
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
@@ -21,6 +22,9 @@ data class DiaryEntryUi(
     val amountGrams: Double?,
     val portionCount: Double?,
     val hasServingUnit: Boolean,
+    /** Weight of one portion in grams, when known; estimated for recipes without a final weight. */
+    val gramsPerPortion: Double? = null,
+    val gramsPerPortionEstimated: Boolean = false,
     val kcal: String,
     val protein: String,
     val fat: String,
@@ -56,6 +60,10 @@ internal fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
                     ?: amountGrams?.let { "${it.formatValue()} g" } ?: ""
             } ?: ""
         }
+    val gramsPerPortion =
+        food?.servingUnit?.gramsEquivalent
+            ?: recipe?.gramsPerPortion()?.takeIf { it > 0.0 }
+    val gramsPerPortionEstimated = food == null && recipe?.finalWeight == null
     return DiaryEntryUi(
         id = id.value,
         name = name,
@@ -65,6 +73,8 @@ internal fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
         amountGrams = amountGrams,
         portionCount = portionCount,
         hasServingUnit = food?.servingUnit != null,
+        gramsPerPortion = gramsPerPortion,
+        gramsPerPortionEstimated = gramsPerPortionEstimated,
         kcal = nutrition.kcal.formatValue(),
         protein = nutrition.proteinG.formatValue(),
         fat = nutrition.fatG.formatValue(),

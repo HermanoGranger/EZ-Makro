@@ -56,8 +56,11 @@ fun RecipeListRoot(
     )
 
     if (state.pendingAddRecipeId != null) {
+        val pendingRecipe = state.recipes.firstOrNull { it.id == state.pendingAddRecipeId }
         AddToDiarySheet(
             isRecipe = true,
+            gramsPerPortion = pendingRecipe?.gramsPerPortion,
+            gramsPerPortionEstimated = pendingRecipe?.isEstimated == true,
             onDismiss = { viewModel.onAction(RecipeListAction.OnDismissAddToDiary) },
             onConfirm = {
                 slot,

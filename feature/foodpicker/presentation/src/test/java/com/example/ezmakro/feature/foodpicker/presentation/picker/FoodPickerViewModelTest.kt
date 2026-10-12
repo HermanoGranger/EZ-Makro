@@ -780,7 +780,50 @@ class FoodPickerViewModelTest {
             assertThat(state.selectedItemId).isEqualTo("f1")
             assertThat(state.selectedItemIsRecipe).isFalse()
             assertThat(state.selectedItemHasServingUnit).isFalse()
+            assertThat(state.selectedItemGramsPerPortion).isNull()
+            assertThat(state.selectedItemGramsPerPortionEstimated).isFalse()
             assertThat(fakeFoodRepository.lastMarkedUsed).isEqualTo(FoodId("f1"))
+        }
+
+    @Test
+    fun `onAddClick food with serving unit exposes grams per portion`() =
+        runTest {
+            fakeFoodRepository.emitFoods(
+                listOf(testFood("f1", servingUnit = ServingUnit(label = "1 Scheibe", gramsEquivalent = 45.0))),
+            )
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddClick("f1"))
+
+            val state = vm.state.value
+            assertThat(state.selectedItemGramsPerPortion).isEqualTo(45.0)
+            assertThat(state.selectedItemGramsPerPortionEstimated).isFalse()
+        }
+
+    @Test
+    fun `onAddRecipeClick exposes grams per portion from final weight`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1")))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddRecipeClick("r1"))
+
+            val state = vm.state.value
+            assertThat(state.selectedItemGramsPerPortion).isEqualTo(200.0)
+            assertThat(state.selectedItemGramsPerPortionEstimated).isFalse()
+        }
+
+    @Test
+    fun `onAddRecipeClick without final weight marks grams per portion as estimated`() =
+        runTest {
+            fakeRecipeRepository.emitRecipes(listOf(testRecipe("r1", finalWeight = null, portions = 2)))
+            val vm = createViewModel(target = FoodPickerTarget.BROWSE)
+
+            vm.onAction(FoodPickerAction.OnAddRecipeClick("r1"))
+
+            val state = vm.state.value
+            assertThat(state.selectedItemGramsPerPortion).isEqualTo(50.0)
+            assertThat(state.selectedItemGramsPerPortionEstimated).isTrue()
         }
 
     @Test
@@ -1333,6 +1376,8 @@ class FoodPickerViewModelTest {
         isFavorite: Boolean = false,
         lastUsedAt: Long? = null,
         ingredientKcalPer100g: Double = 200.0,
+        finalWeight: FinalWeight? = FinalWeight(200.0),
+        portions: Int = 1,
     ): Recipe =
         Recipe(
             id = RecipeId(id),
@@ -1345,8 +1390,8 @@ class FoodPickerViewModelTest {
                         servingCount = null,
                     ),
                 ),
-            finalWeight = FinalWeight(200.0),
-            portions = 1,
+            finalWeight = finalWeight,
+            portions = portions,
             isFavorite = isFavorite,
             lastUsedAt = lastUsedAt,
         )

@@ -14,7 +14,6 @@ import com.example.ezmakro.core.domain.model.RecipeSnapshot
  */
 fun createRecipeSnapshot(recipe: Recipe): RecipeSnapshot {
     val totalRaw = recipe.totalRawWeight().grams
-    val totalWeight = recipe.finalWeight?.grams ?: totalRaw
     val nutritionPer100g =
         recipe.nutritionPer100g()
             ?: if (totalRaw > 0.0) {
@@ -22,7 +21,7 @@ fun createRecipeSnapshot(recipe: Recipe): RecipeSnapshot {
             } else {
                 NutritionValues.ZERO
             }
-    val gramsPerPortion = totalWeight / recipe.portions
+    val gramsPerPortion = recipe.gramsPerPortion()
     return RecipeSnapshot(
         recipeId = recipe.id,
         recipeName = recipe.name,

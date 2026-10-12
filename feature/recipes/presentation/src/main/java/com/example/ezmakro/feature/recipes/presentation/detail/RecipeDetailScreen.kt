@@ -110,6 +110,8 @@ fun RecipeDetailScreen(
             AddToDiarySheet(
                 isRecipe = true,
                 hasServingUnit = true,
+                gramsPerPortion = recipe.gramsPerPortion,
+                gramsPerPortionEstimated = recipe.isEstimated,
                 initialSlot = initialSlot ?: MealSlot.BREAKFAST,
                 fixedSlot = initialSlot,
                 onDismiss = { showAddSheet = false },

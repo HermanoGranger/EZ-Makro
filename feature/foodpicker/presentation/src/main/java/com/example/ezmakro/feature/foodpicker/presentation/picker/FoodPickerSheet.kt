@@ -146,6 +146,8 @@ fun FoodPickerContent(
         AddToDiarySheet(
             isRecipe = state.selectedItemIsRecipe,
             hasServingUnit = state.selectedItemHasServingUnit,
+            gramsPerPortion = state.selectedItemGramsPerPortion,
+            gramsPerPortionEstimated = state.selectedItemGramsPerPortionEstimated,
             initialSlot = state.slot ?: MealSlot.BREAKFAST,
             initialAmount =
                 state.lastDiaryAmount

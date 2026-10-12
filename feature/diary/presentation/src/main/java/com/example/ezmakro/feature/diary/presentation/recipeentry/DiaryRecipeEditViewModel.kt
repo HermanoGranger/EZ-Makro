@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ezmakro.core.domain.calculation.consumedNutrition
+import com.example.ezmakro.core.domain.calculation.gramsPerPortion
 import com.example.ezmakro.core.domain.calculation.nutrition
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.DiaryEntryId
@@ -423,6 +424,8 @@ class DiaryRecipeEditViewModel(
                         ingredientNutrition = List(drafts.size) { NutritionValues.ZERO },
                         totalNutrition = NutritionValues.ZERO,
                         consumedNutrition = NutritionValues.ZERO,
+                        gramsPerPortion = null,
+                        gramsPerPortionEstimated = false,
                         ingredientError = buildResult.error.toUiError(),
                     )
                 }
@@ -431,11 +434,16 @@ class DiaryRecipeEditViewModel(
                 val nutritionList = ingredients.map { it.nutrition() }
                 val total = nutritionList.fold(NutritionValues.ZERO) { acc, v -> acc + v }
                 val consumed = computeConsumedForCurrent(ingredients)
+                // `editedRecipeFromState` needs at least one ingredient; before the entry is
+                // seeded the list can still be empty, so keep the hint unavailable then.
+                val editedRecipe = ingredients.takeIf { it.isNotEmpty() }?.let { editedRecipeFromState(it) }
                 _state.update {
                     it.copy(
                         ingredientNutrition = nutritionList,
                         totalNutrition = total,
                         consumedNutrition = consumed,
+                        gramsPerPortion = editedRecipe?.gramsPerPortion()?.takeIf { grams -> grams > 0.0 },
+                        gramsPerPortionEstimated = editedRecipe?.finalWeight == null && editedRecipe != null,
                         ingredientError = null,
                     )
                 }
