@@ -5,14 +5,20 @@ import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
+import assertk.assertions.isTrue
 import com.example.ezmakro.core.domain.model.CachedFoodItemStatus
 import com.example.ezmakro.core.domain.model.DiaryEntry
 import com.example.ezmakro.core.domain.model.DiaryEntryId
+import com.example.ezmakro.core.domain.model.FinalWeight
 import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.FoodItem
 import com.example.ezmakro.core.domain.model.LocalDateRange
 import com.example.ezmakro.core.domain.model.MealSlot
 import com.example.ezmakro.core.domain.model.NutritionValues
+import com.example.ezmakro.core.domain.model.RawWeight
+import com.example.ezmakro.core.domain.model.Recipe
+import com.example.ezmakro.core.domain.model.RecipeId
+import com.example.ezmakro.core.domain.model.RecipeIngredient
 import com.example.ezmakro.core.domain.repository.DiaryRepository
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.Result
@@ -53,6 +59,42 @@ class CopyYesterdayUseCaseTest {
             recipe = null,
             amountGrams = amountGrams,
             portionCount = null,
+        )
+
+    private fun recipe(id: String): Recipe =
+        Recipe(
+            id = RecipeId(id),
+            name = "Recipe $id",
+            ingredients =
+                listOf(
+                    RecipeIngredient(
+                        food = food("f1"),
+                        recipeSnapshot = null,
+                        rawWeight = RawWeight(100.0),
+                        servingCount = null,
+                    ),
+                ),
+            finalWeight = FinalWeight(250.0),
+            portions = 2,
+        )
+
+    private fun entry(
+        id: String,
+        slot: MealSlot,
+        date: LocalDate,
+        recipe: Recipe,
+        portionCount: Double,
+        isRecipeOverridden: Boolean,
+    ): DiaryEntry =
+        DiaryEntry(
+            id = DiaryEntryId(id),
+            slot = slot,
+            date = date,
+            food = null,
+            recipe = recipe,
+            amountGrams = null,
+            portionCount = portionCount,
+            isRecipeOverridden = isRecipeOverridden,
         )
 
     private class FakeDiaryRepository : DiaryRepository {
@@ -118,5 +160,26 @@ class CopyYesterdayUseCaseTest {
             val repo = FakeDiaryRepository()
             val result = CopyYesterdayUseCase(repo)(today)
             assertThat(result).isEqualTo(Result.Success(0))
+        }
+
+    @Test
+    fun `copy yesterday preserves the recipe override flag`() =
+        runBlocking {
+            val repo = FakeDiaryRepository()
+            repo.entries +=
+                listOf(
+                    entry("a", MealSlot.LUNCH, yesterday, recipe("r1"), 1.0, isRecipeOverridden = true),
+                    entry("b", MealSlot.DINNER, yesterday, recipe("r2"), 2.0, isRecipeOverridden = false),
+                )
+
+            val result = CopyYesterdayUseCase(repo)(today)
+
+            assertThat(result).isEqualTo(Result.Success(2))
+            val copied = repo.entries.filter { it.date == today && it.id.value !in setOf("a", "b") }
+            assertThat(copied).hasSize(2)
+            val overriddenEntry = copied.first { it.recipe?.id?.value == "r1" }
+            val untouchedEntry = copied.first { it.recipe?.id?.value == "r2" }
+            assertThat(overriddenEntry.isRecipeOverridden).isTrue()
+            assertThat(untouchedEntry.isRecipeOverridden).isEqualTo(false)
         }
 }

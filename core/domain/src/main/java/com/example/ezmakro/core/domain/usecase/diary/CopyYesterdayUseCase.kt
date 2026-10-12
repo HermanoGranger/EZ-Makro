@@ -34,6 +34,7 @@ class CopyYesterdayUseCase(
                     recipe = original.recipe,
                     amountGrams = original.amountGrams,
                     portionCount = original.portionCount,
+                    isRecipeOverridden = original.isRecipeOverridden,
                 )
             when (val saved = repository.save(copy)) {
                 is Result.Success -> copied++
