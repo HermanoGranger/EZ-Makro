@@ -33,7 +33,6 @@ import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.FoodRepository
 import com.example.ezmakro.core.domain.repository.RecipeRepository
 import com.example.ezmakro.core.domain.result.Result
-import com.example.ezmakro.core.domain.result.onSuccess
 import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
 import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
 import com.example.ezmakro.core.presentation.util.encodeRouteParam
@@ -199,17 +198,20 @@ class MainActivity : ComponentActivity() {
                 if (isRecipe) {
                     val recipeRepository = get<RecipeRepository>()
                     val addUseCase = get<AddRecipeToDiaryUseCase>()
-                    recipeRepository
-                        .getById(RecipeId(foodId))
-                        .onSuccess { recipe ->
-                            recipe?.let {
-                                if (isGrams) {
-                                    addUseCase(it, slot, LocalDate.parse(date), amountGrams = amount)
-                                } else {
-                                    addUseCase(it, slot, LocalDate.parse(date), portionCount = amount)
-                                }
-                            }
+                    val recipe =
+                        when (val result = recipeRepository.getById(RecipeId(foodId))) {
+                            is Result.Success -> result.data
+                            is Result.Error -> null
                         }
+                    // Unresolved id (deleted/not found or read error): bail out
+                    // explicitly so no diary entry references a missing recipe,
+                    // symmetric to the food branch below.
+                    if (recipe == null) return@launch
+                    if (isGrams) {
+                        addUseCase(recipe, slot, LocalDate.parse(date), amountGrams = amount)
+                    } else {
+                        addUseCase(recipe, slot, LocalDate.parse(date), portionCount = amount)
+                    }
                 } else {
                     val foodRepository = get<FoodRepository>()
                     val addUseCase = get<AddFoodToDiaryUseCase>()
