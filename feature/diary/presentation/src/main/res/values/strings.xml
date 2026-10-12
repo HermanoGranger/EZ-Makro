@@ -65,6 +65,7 @@
     <string name="diary_recipe_edit_error_no_ingredients">Mindestens eine Zutat nötig</string>
     <string name="diary_recipe_edit_error_ingredient_weight">Zutat braucht Rohgewicht oder Anzahl</string>
     <string name="diary_recipe_edit_error_save_failed">Fehler beim Speichern</string>
+    <string name="diary_recipe_edit_error_entry_missing">Eintrag nicht gefunden</string>
     <string name="diary_recipe_edit_compare_label">Vergleich</string>
     <string name="diary_recipe_edit_scope_cancel">Abbrechen</string>
     <string name="diary_recipe_edit_logged_on">ins Tagebuch: %1$s</string>

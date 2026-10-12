@@ -608,4 +608,18 @@ class DiaryRecipeEditViewModelTest {
         assertThat(state.numberError).isNotNull()
         assertThat(state.isSaveScopeDialogOpen).isFalse()
     }
+
+    /** Regression: a deleted entry left `isLoading` stuck because `Success(null)` was swallowed. */
+    @Test
+    fun `a missing entry stops loading and navigates back`() =
+        runTest(testDispatcher) {
+            diaryRepo.entries.value = emptyList()
+
+            val vm = viewModel()
+
+            assertThat(vm.state.value.isLoading).isFalse()
+            vm.events.test {
+                assertThat(awaitItem()).isEqualTo(DiaryRecipeEditEvent.NavigateBack)
+            }
+        }
 }

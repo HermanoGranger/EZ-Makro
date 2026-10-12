@@ -118,7 +118,21 @@ class DiaryRecipeEditViewModel(
             val result = diaryRepository.getById(DiaryEntryId(entryId))
             when (result) {
                 is Result.Success -> {
-                    val entry = result.data ?: return@launch
+                    val entry = result.data
+                    if (entry == null) {
+                        // The entry vanished (deleted elsewhere) while this editor was
+                        // opening. Handle the not-found explicitly as a terminal case
+                        // instead of letting a nullable payload stall the screen in
+                        // `isLoading = true` forever.
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                saveError = UiText.StringResource(R.string.diary_recipe_edit_error_entry_missing),
+                            )
+                        }
+                        _events.send(DiaryRecipeEditEvent.NavigateBack)
+                        return@launch
+                    }
                     loadedEntry = entry
                     seedFromEntry(entry)
                 }
