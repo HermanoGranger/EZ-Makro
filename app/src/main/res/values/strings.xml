@@ -3,4 +3,5 @@
     <string name="diary_title">Tagebuch</string>
     <string name="food_title">Lebensmittel</string>
     <string name="recipe_title">Rezepte</string>
+    <string name="diary_add_failed">Eintrag konnte nicht gespeichert werden</string>
 </resources>

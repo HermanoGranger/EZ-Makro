@@ -11,10 +11,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -27,15 +30,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.example.ezmakro.core.designsystem.theme.EZMakroTheme
-import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.MealSlot
-import com.example.ezmakro.core.domain.model.RecipeId
-import com.example.ezmakro.core.domain.repository.FoodRepository
-import com.example.ezmakro.core.domain.repository.RecipeRepository
-import com.example.ezmakro.core.domain.result.Result
-import com.example.ezmakro.core.domain.usecase.diary.AddFoodToDiaryUseCase
-import com.example.ezmakro.core.domain.usecase.diary.AddRecipeToDiaryUseCase
 import com.example.ezmakro.core.presentation.util.encodeRouteParam
+import com.example.ezmakro.diary.DiaryEntryAdder
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.Goals
 import com.example.ezmakro.feature.diary.presentation.goals.navigation.goalsGraph
 import com.example.ezmakro.feature.diary.presentation.navigation.ROUTE_DIARY
@@ -65,16 +62,19 @@ class MainActivity : ComponentActivity() {
                 color = MaterialTheme.colorScheme.background,
             ) {
                 val navController = rememberNavController()
+                val diaryEntryAdder = remember { get<DiaryEntryAdder>() }
+                val snackbarHostState = remember { SnackbarHostState() }
 
                 val addFoodToDiary: (String, String, MealSlot, Double, Boolean) -> Unit =
-                    makeAddFoodToDiary(navController)
+                    makeAddFoodToDiary(navController, diaryEntryAdder, snackbarHostState)
                 val addRecipeToDiary: (String, String, MealSlot, Double, Boolean) -> Unit =
-                    makeAddRecipeToDiary(navController)
+                    makeAddRecipeToDiary(navController, diaryEntryAdder, snackbarHostState)
                 val addToDiaryFromPicker: (String, Boolean, String, MealSlot, Double, Boolean) -> Unit =
-                    makeAddToDiaryFromPicker()
+                    makeAddToDiaryFromPicker(diaryEntryAdder, snackbarHostState)
 
                 Scaffold(
                     bottomBar = { AppBottomBar(navController) },
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
                 ) { padding ->
                     AppNavHost(
                         navController = navController,
@@ -192,95 +192,66 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun makeAddToDiaryFromPicker(): (String, Boolean, String, MealSlot, Double, Boolean) -> Unit =
-        { foodId, isRecipe, date, slot, amount, isGrams ->
+    private fun makeAddToDiaryFromPicker(
+        diaryEntryAdder: DiaryEntryAdder,
+        snackbarHostState: SnackbarHostState,
+    ): (String, Boolean, String, MealSlot, Double, Boolean) -> Unit =
+        { itemId, isRecipe, date, slot, amount, isGrams ->
             lifecycleScope.launch {
-                if (isRecipe) {
-                    val recipeRepository = get<RecipeRepository>()
-                    val addUseCase = get<AddRecipeToDiaryUseCase>()
-                    val recipe =
-                        when (val result = recipeRepository.getById(RecipeId(foodId))) {
-                            is Result.Success -> result.data
-                            is Result.Error -> null
-                        }
-                    // Unresolved id (deleted/not found or read error): bail out
-                    // explicitly so no diary entry references a missing recipe,
-                    // symmetric to the food branch below.
-                    if (recipe == null) return@launch
-                    if (isGrams) {
-                        addUseCase(recipe, slot, LocalDate.parse(date), amountGrams = amount)
-                    } else {
-                        addUseCase(recipe, slot, LocalDate.parse(date), portionCount = amount)
-                    }
-                } else {
-                    val foodRepository = get<FoodRepository>()
-                    val addUseCase = get<AddFoodToDiaryUseCase>()
-                    val food =
-                        when (val result = foodRepository.getById(FoodId(foodId))) {
-                            is Result.Success -> result.data
-                            is Result.Error -> null
-                        } ?: foodRepository.getSessionItem(FoodId(foodId))
-                    if (food == null) return@launch
-                    // Session-only online items are not stored yet; persist them before
-                    // the diary references them, otherwise the entry is silently dropped.
-                    foodRepository.cacheRemoteItem(food)
-                    if (isGrams) {
-                        addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
-                    } else {
-                        addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
-                    }
+                val outcome =
+                    diaryEntryAdder.addFromPicker(
+                        itemId = itemId,
+                        isRecipe = isRecipe,
+                        date = LocalDate.parse(date),
+                        slot = slot,
+                        amount = amount,
+                        isGrams = isGrams,
+                    )
+                // The picker already reports "added"; a failed diary write on top
+                // of that must not go unnoticed.
+                if (outcome == DiaryEntryAdder.AddToDiaryOutcome.Failed) {
+                    snackbarHostState.showSnackbar(getString(R.string.diary_add_failed))
                 }
             }
         }
 
     private fun makeAddFoodToDiary(
         navController: NavHostController,
+        diaryEntryAdder: DiaryEntryAdder,
+        snackbarHostState: SnackbarHostState,
     ): (String, String, MealSlot, Double, Boolean) -> Unit =
         { foodId, date, slot, amount, isGrams ->
             lifecycleScope.launch {
-                val foodRepository = get<FoodRepository>()
-                val addUseCase = get<AddFoodToDiaryUseCase>()
-                val food =
-                    when (val result = foodRepository.getById(FoodId(foodId))) {
-                        is Result.Success -> result.data
-                        is Result.Error -> null
-                    } ?: foodRepository.getSessionItem(FoodId(foodId))
-                // Unresolved id: stay on this screen instead of navigating to the diary
-                // as if the entry had been added.
-                if (food == null) return@launch
-                // Persist online items that were only session-cached for the
-                // detail view once they are actually used in the diary.
-                foodRepository.cacheRemoteItem(food)
-                if (isGrams) {
-                    addUseCase(food, slot, LocalDate.parse(date), amountGrams = amount)
-                } else {
-                    addUseCase(food, slot, LocalDate.parse(date), portionCount = amount)
+                val outcome = diaryEntryAdder.addFood(foodId, LocalDate.parse(date), slot, amount, isGrams)
+                when (outcome) {
+                    DiaryEntryAdder.AddToDiaryOutcome.Added ->
+                        navController.popBackStack(ROUTE_DIARY, inclusive = false)
+                    // Unresolved id: stay on this screen instead of navigating to
+                    // the diary as if the entry had been added.
+                    DiaryEntryAdder.AddToDiaryOutcome.NotFound -> Unit
+                    DiaryEntryAdder.AddToDiaryOutcome.Failed ->
+                        snackbarHostState.showSnackbar(getString(R.string.diary_add_failed))
                 }
-                navController.popBackStack(ROUTE_DIARY, inclusive = false)
             }
         }
 
     private fun makeAddRecipeToDiary(
         navController: NavHostController,
+        diaryEntryAdder: DiaryEntryAdder,
+        snackbarHostState: SnackbarHostState,
     ): (String, String, MealSlot, Double, Boolean) -> Unit =
         { recipeId, date, slot, amount, isGrams ->
             lifecycleScope.launch {
-                val recipeRepository = get<RecipeRepository>()
-                val addUseCase = get<AddRecipeToDiaryUseCase>()
-                val recipe =
-                    when (val result = recipeRepository.getById(RecipeId(recipeId))) {
-                        is Result.Success -> result.data
-                        is Result.Error -> null
-                    }
-                // Unresolved id: stay on this screen instead of navigating to the diary
-                // as if the entry had been added.
-                if (recipe == null) return@launch
-                if (isGrams) {
-                    addUseCase(recipe, slot, LocalDate.parse(date), amountGrams = amount)
-                } else {
-                    addUseCase(recipe, slot, LocalDate.parse(date), portionCount = amount)
+                val outcome = diaryEntryAdder.addRecipe(recipeId, LocalDate.parse(date), slot, amount, isGrams)
+                when (outcome) {
+                    DiaryEntryAdder.AddToDiaryOutcome.Added ->
+                        navController.popBackStack(ROUTE_DIARY, inclusive = false)
+                    // Unresolved id: stay on this screen instead of navigating to
+                    // the diary as if the entry had been added.
+                    DiaryEntryAdder.AddToDiaryOutcome.NotFound -> Unit
+                    DiaryEntryAdder.AddToDiaryOutcome.Failed ->
+                        snackbarHostState.showSnackbar(getString(R.string.diary_add_failed))
                 }
-                navController.popBackStack(ROUTE_DIARY, inclusive = false)
             }
         }
 }
