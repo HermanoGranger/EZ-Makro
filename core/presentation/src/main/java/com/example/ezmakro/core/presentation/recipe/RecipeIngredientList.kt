@@ -15,7 +15,7 @@ import com.example.ezmakro.core.presentation.uitext.UiText
 
 // Rows no longer inherit the surrounding list's Arrangement, so the spacing
 // value is repeated here. Must stay in sync with the caller's list spacing.
-private val ITEM_SPACING = 12.dp
+private val ITEM_SPACING = 10.dp
 
 /**
  * Add-ingredient button, ingredient error and the ingredient rows of a recipe

@@ -108,33 +108,42 @@ fun DiaryRecipeEditScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
                 Column {
                     Text(text = state.recipeName, style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = stringResource(R.string.diary_recipe_edit_logged_amount),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
                         text = stringResource(R.string.diary_recipe_edit_logged_on, state.date.formattedDate()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row {
-                        Text(
-                            text = formatNutrition(state.originalConsumedNutrition),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        Text(" → ", style = MaterialTheme.typography.bodySmall)
-                        Text(
-                            text = formatNutrition(state.consumedNutrition),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = "Vergleich (Tagebucheintrag)",
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                text = "Ursprünglich: ${formatNutrition(state.originalConsumedNutrition)}",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Text(
+                                text = "Neu: ${formatNutrition(state.consumedNutrition)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                     }
                 }
             }
@@ -167,21 +176,22 @@ fun DiaryRecipeEditScreen(
             }
 
             item {
+                Text(
+                    text = "Zutaten",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+
+            item {
                 RecipeIngredientList(
                     ingredients = state.ingredients,
                     ingredientNutrition = state.ingredientNutrition,
                     expandedIngredientIndex = state.expandedIngredientIndex,
                     onAddIngredient = { onAction(DiaryRecipeEditAction.OnAddIngredientClick) },
-                    onRawWeightChange = {
-                        index,
-                        value,
-                        ->
+                    onRawWeightChange = { index, value ->
                         onAction(DiaryRecipeEditAction.OnIngredientRawWeightChange(index, value))
                     },
-                    onServingCountChange = {
-                        index,
-                        value,
-                        ->
+                    onServingCountChange = { index, value ->
                         onAction(DiaryRecipeEditAction.OnIngredientServingCountChange(index, value))
                     },
                     onRemoveIngredient = { index -> onAction(DiaryRecipeEditAction.OnRemoveIngredient(index)) },
@@ -192,34 +202,41 @@ fun DiaryRecipeEditScreen(
             }
 
             item {
-                Column {
-                    Text(stringResource(CoreR.string.recipe_editor_portions))
-                    OutlinedTextField(
-                        value = state.portions,
-                        onValueChange = { onAction(DiaryRecipeEditAction.OnPortionsChange(it)) },
-                        isError = state.numberError != null,
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Rezeptangaben",
+                        style = MaterialTheme.typography.titleMedium,
                     )
+                    Column {
+                        Text(stringResource(CoreR.string.recipe_editor_portions))
+                        OutlinedTextField(
+                            value = state.portions,
+                            onValueChange = { onAction(DiaryRecipeEditAction.OnPortionsChange(it)) },
+                            isError = state.numberError != null,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Column {
+                        Text(stringResource(CoreR.string.recipe_editor_final_weight))
+                        OutlinedTextField(
+                            value = state.finalWeight,
+                            onValueChange = { onAction(DiaryRecipeEditAction.OnFinalWeightChange(it)) },
+                            isError = state.numberError != null,
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(stringResource(CoreR.string.recipe_editor_final_weight_hint)) },
+                        )
+                    }
                 }
             }
 
             item {
-                Column {
-                    Text(stringResource(CoreR.string.recipe_editor_final_weight))
-                    OutlinedTextField(
-                        value = state.finalWeight,
-                        onValueChange = { onAction(DiaryRecipeEditAction.OnFinalWeightChange(it)) },
-                        isError = state.numberError != null,
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(CoreR.string.recipe_editor_final_weight_hint)) },
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Eingetragene Menge im Tagebuch",
+                        style = MaterialTheme.typography.titleMedium,
                     )
-                }
-            }
-
-            item {
-                Column {
                     Text(stringResource(R.string.diary_recipe_edit_amount_mode_label))
                     Row {
                         Button(
@@ -239,7 +256,6 @@ fun DiaryRecipeEditScreen(
                     if (state.amountMode == DiaryAmountMode.PORTIONS) {
                         GramsPerPortionHint(state.gramsPerPortion, state.gramsPerPortionEstimated)
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.amountText,
                         onValueChange = { onAction(DiaryRecipeEditAction.OnAmountChange(it)) },

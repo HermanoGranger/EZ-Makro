@@ -39,6 +39,7 @@
     <string name="recipe_editor_portions">Portionen</string>
     <string name="recipe_editor_final_weight">Endgewicht (g)</string>
     <string name="recipe_editor_final_weight_hint">Optional – für präzise pro 100g Werte</string>
+    <string name="recipe_editor_delete_ingredient">Zutat löschen</string>
     <string name="recipe_editor_save">Speichern</string>
     <string name="recipe_detail_total">Gesamt</string>
 </resources>

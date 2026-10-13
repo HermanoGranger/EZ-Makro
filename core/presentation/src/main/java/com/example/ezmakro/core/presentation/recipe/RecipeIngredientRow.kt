@@ -6,8 +6,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,54 +47,80 @@ fun RecipeIngredientRow(
     val servingCountVal = ingredient.servingCount.parseNonNegativeDouble()
     val servingLabel = ingredient.servingLabel
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        IngredientHeaderRow(
-            ingredient = ingredient,
-            onClick = onClick,
-            onRemove = onRemove,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedTextField(
-                value = ingredient.rawWeight,
-                onValueChange = onRawWeightChange,
-                label = { Text(stringResource(R.string.recipe_editor_ingredient_raw_weight)) },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
+            IngredientHeaderRow(
+                ingredient = ingredient,
+                onClick = onClick,
+                onRemove = onRemove,
             )
-            if (servingLabel != null) {
-                OutlinedTextField(
-                    value = ingredient.servingCount,
-                    onValueChange = onServingCountChange,
-                    label = {
-                        Text(
-                            stringResource(
-                                R.string.recipe_editor_ingredient_serving_count,
-                                servingLabel,
-                            ),
-                        )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
+            IngredientInputRow(
+                ingredient = ingredient,
+                servingLabel = servingLabel,
+                onRawWeightChange = onRawWeightChange,
+                onServingCountChange = onServingCountChange,
+            )
+            if (!isExpanded) {
+                IngredientKcalLine(nutrition = nutrition)
+            }
+            if (isExpanded) {
+                IngredientMacroDetail(
+                    rawWeight = rawWeight,
+                    servingCount = servingCountVal,
+                    servingLabel = ingredient.servingLabel,
+                    usesGenericServingLabel = ingredient.recipeId != null,
+                    nutrition = nutrition,
                 )
             }
         }
-        if (!isExpanded) {
-            IngredientKcalLine(nutrition = nutrition)
-        }
-        if (isExpanded) {
-            IngredientMacroDetail(
-                rawWeight = rawWeight,
-                servingCount = servingCountVal,
-                servingLabel = ingredient.servingLabel,
-                usesGenericServingLabel = ingredient.recipeId != null,
-                nutrition = nutrition,
+    }
+}
+
+@Composable
+private fun IngredientInputRow(
+    ingredient: RecipeIngredientDraft,
+    servingLabel: String?,
+    onRawWeightChange: (String) -> Unit,
+    onServingCountChange: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedTextField(
+            value = ingredient.rawWeight,
+            onValueChange = onRawWeightChange,
+            label = { Text(stringResource(R.string.recipe_editor_ingredient_raw_weight)) },
+            singleLine = true,
+            modifier = Modifier.weight(1f),
+        )
+        if (servingLabel != null) {
+            OutlinedTextField(
+                value = ingredient.servingCount,
+                onValueChange = onServingCountChange,
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.recipe_editor_ingredient_serving_count,
+                            servingLabel,
+                        ),
+                    )
+                },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
             )
         }
     }
-    HorizontalDivider()
 }
 
 @Composable
@@ -110,7 +141,12 @@ private fun IngredientHeaderRow(
                 fontStyle = FontStyle.Italic,
             )
         }
-        IconButton(onClick = onRemove) { Text("✕") }
+        IconButton(onClick = onRemove) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.recipe_editor_delete_ingredient),
+            )
+        }
     }
 }
 
