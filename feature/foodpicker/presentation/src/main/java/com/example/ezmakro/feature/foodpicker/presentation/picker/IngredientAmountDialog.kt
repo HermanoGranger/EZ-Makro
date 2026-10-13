@@ -19,6 +19,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.ezmakro.core.domain.util.parseDecimalFlexible
+import com.example.ezmakro.core.presentation.components.AmountMode
+import com.example.ezmakro.core.presentation.components.AmountModeSelector
 import com.example.ezmakro.feature.foodpicker.presentation.R
 import com.example.ezmakro.core.presentation.R as CoreR
 
@@ -41,21 +43,38 @@ fun IngredientAmountDialog(
     onDismiss: () -> Unit,
     onConfirm: (rawWeight: String, servingCount: String) -> Unit,
 ) {
+    val showModeSelector = servingLabel != null
+    var mode by remember {
+        mutableStateOf(
+            if (showModeSelector && initialServingCount.isNotBlank()) {
+                AmountMode.PORTIONS
+            } else {
+                AmountMode.GRAMS
+            },
+        )
+    }
     var rawWeight by remember { mutableStateOf(initialRawWeight) }
     var servingCount by remember { mutableStateOf(initialServingCount) }
 
     fun isValid(value: String): Boolean = value.parseDecimalFlexible()?.let { it >= 0.0 } == true
 
     val canConfirm =
-        (rawWeight.isNotBlank() && isValid(rawWeight)) ||
-            (servingCount.isNotBlank() && isValid(servingCount))
+        when (mode) {
+            AmountMode.GRAMS -> rawWeight.isNotBlank() && isValid(rawWeight)
+            AmountMode.PORTIONS -> servingCount.isNotBlank() && isValid(servingCount)
+        }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(
                 enabled = canConfirm,
-                onClick = { onConfirm(rawWeight, servingCount) },
+                onClick = {
+                    when (mode) {
+                        AmountMode.GRAMS -> onConfirm(rawWeight, "")
+                        AmountMode.PORTIONS -> onConfirm("", servingCount)
+                    }
+                },
             ) { Text(stringResource(android.R.string.ok)) }
         },
         dismissButton = {
@@ -63,28 +82,78 @@ fun IngredientAmountDialog(
         },
         title = { Text(stringResource(R.string.foodpicker_ingredient_amount_title)) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(itemName)
+            IngredientAmountDialogContent(
+                itemName = itemName,
+                showModeSelector = showModeSelector,
+                mode = mode,
+                onModeChange = { mode = it },
+                gramState =
+                    GramState(
+                        value = rawWeight,
+                        onChange = { rawWeight = it },
+                        error = rawWeight.isNotBlank() && !isValid(rawWeight),
+                    ),
+                servingState =
+                    ServingState(
+                        amount = servingAmount,
+                        count = servingCount,
+                        onCountChange = { servingCount = it },
+                        error = servingCount.isNotBlank() && !isValid(servingCount),
+                    ),
+            )
+        },
+    )
+}
+
+private data class GramState(
+    val value: String,
+    val onChange: (String) -> Unit,
+    val error: Boolean,
+)
+
+private data class ServingState(
+    val amount: String?,
+    val count: String,
+    val onCountChange: (String) -> Unit,
+    val error: Boolean,
+)
+
+@Composable
+private fun IngredientAmountDialogContent(
+    itemName: String,
+    showModeSelector: Boolean,
+    mode: AmountMode,
+    onModeChange: (AmountMode) -> Unit,
+    gramState: GramState,
+    servingState: ServingState,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(itemName)
+        if (showModeSelector) {
+            AmountModeSelector(mode = mode, onModeChange = onModeChange)
+        }
+        when (mode) {
+            AmountMode.GRAMS -> {
                 OutlinedTextField(
-                    value = rawWeight,
-                    onValueChange = { rawWeight = it },
+                    value = gramState.value,
+                    onValueChange = gramState.onChange,
                     label = { Text(stringResource(CoreR.string.recipe_editor_ingredient_raw_weight)) },
                     singleLine = true,
-                    isError = rawWeight.isNotBlank() && !isValid(rawWeight),
+                    isError = gramState.error,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 )
-                if (servingLabel != null) {
-                    ServingCountField(
-                        servingAmount = servingAmount,
-                        servingCount = servingCount,
-                        onServingCountChange = { servingCount = it },
-                        isError = servingCount.isNotBlank() && !isValid(servingCount),
-                    )
-                }
             }
-        },
-    )
+            AmountMode.PORTIONS -> {
+                ServingCountField(
+                    servingAmount = servingState.amount,
+                    servingCount = servingState.count,
+                    onServingCountChange = servingState.onCountChange,
+                    isError = servingState.error,
+                )
+            }
+        }
+    }
 }
 
 /**

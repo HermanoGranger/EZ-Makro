@@ -47,19 +47,38 @@ data class SlotSummaryUi(
     val fiber: String,
 )
 
+private fun buildDetail(
+    portionCount: Double?,
+    amountGrams: Double?,
+    foodGpp: Double?,
+    recipeGpp: Double?,
+    recipeFinalWeightNull: Boolean,
+): String {
+    portionCount?.let {
+        val gpp = foodGpp ?: recipeGpp
+        if (gpp != null && gpp > 0.0) {
+            return if (foodGpp != null || !recipeFinalWeightNull) {
+                "${it.formatValue()} Portionen (je ${gpp.formatValue()} g)"
+            } else {
+                "${it.formatValue()} Portionen (je ~${gpp.formatValue()} g)"
+            }
+        }
+        return "${it.formatValue()} Portionen"
+    }
+    return amountGrams?.let { "${it.formatValue()} g" } ?: ""
+}
+
 internal fun DiaryEntry.toDiaryEntryUi(): DiaryEntryUi {
     val nutrition = consumedNutrition()
     val name = food?.name ?: recipe?.name ?: ""
     val detail =
-        if (food != null) {
-            portionCount?.let { "${it.formatValue()} Portionen" }
-                ?: amountGrams?.let { "${it.formatValue()} g" } ?: ""
-        } else {
-            recipe?.let { r ->
-                portionCount?.let { "${it.formatValue()} Portionen" }
-                    ?: amountGrams?.let { "${it.formatValue()} g" } ?: ""
-            } ?: ""
-        }
+        buildDetail(
+            portionCount = portionCount,
+            amountGrams = amountGrams,
+            foodGpp = food?.servingUnit?.gramsEquivalent,
+            recipeGpp = recipe?.gramsPerPortion()?.takeIf { it > 0.0 },
+            recipeFinalWeightNull = recipe?.finalWeight == null,
+        )
     val gramsPerPortion =
         food?.servingUnit?.gramsEquivalent
             ?: recipe?.gramsPerPortion()?.takeIf { it > 0.0 }

@@ -11,12 +11,15 @@
     <string name="recipe_detail_no_final_weight">Endgewicht nicht erfasst – \"pro 100 g\" nicht verfügbar</string>
     <string name="recipe_detail_ingredients">Zutaten</string>
     <string name="recipe_detail_portions">Portionen: %1$d</string>
+    <string name="recipe_detail_portions_with_gpp_exact">Portionen: %1$d (je %2$s g)</string>
+    <string name="recipe_detail_portions_with_gpp_estimated">Portionen: %1$d (je ~%2$s g)</string>
     <string name="recipe_detail_category">Kategorie: %1$s</string>
     <string name="recipe_detail_duplicate">Duplizieren</string>
     <string name="recipe_detail_edit">Bearbeiten</string>
     <string name="recipe_detail_add">Hinzufügen</string>
     <string name="recipe_detail_delete">Löschen</string>
     <string name="recipe_detail_delete_confirm">Rezept wirklich löschen?</string>
+
     <string name="recipe_detail_ingredient_amount">Menge: %1$s</string>
     <string name="recipe_detail_ingredient_protein">Protein:</string>
     <string name="recipe_detail_ingredient_fat">Fett:</string>
@@ -32,7 +35,6 @@
     <string name="recipe_editor_error_invalid_number">Ungültiger Wert</string>
     <string name="recipe_editor_error_no_ingredients">Mindestens eine Zutat nötig</string>
     <string name="recipe_editor_error_ingredient_weight">Zutat braucht Rohgewicht oder Anzahl</string>
-
     <string name="recipe_editor_error_save_failed">Fehler beim Speichern</string>
 
     <string name="recipe_ingredient_picker_title">Zutat wählen</string>
@@ -40,6 +42,7 @@
     <string name="recipe_ingredient_picker_section_recipes">Rezepte</string>
     <string name="recipe_ingredient_picker_section_foods">Lebensmittel</string>
     <string name="recipe_ingredient_picker_recipe_badge">Rezept</string>
+
     <string name="recipe_editor_update_snapshot">Snapshot aktualisieren</string>
     <string name="recipe_editor_recipe_serving_count">Portionen</string>
 </resources>

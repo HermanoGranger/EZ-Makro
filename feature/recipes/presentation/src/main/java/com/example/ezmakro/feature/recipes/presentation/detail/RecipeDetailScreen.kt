@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
@@ -167,12 +169,33 @@ fun RecipeDetailScreen(
             return@Scaffold
         }
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(text = recipe.name)
             recipe.category?.let { Text(stringResource(R.string.recipe_detail_category, it)) }
-            Text(stringResource(R.string.recipe_detail_portions, recipe.portions))
+            val portionsText =
+                recipe.gramsPerPortion?.let { grams ->
+                    if (recipe.isEstimated) {
+                        stringResource(
+                            R.string.recipe_detail_portions_with_gpp_estimated,
+                            recipe.portions,
+                            grams.toString(),
+                        )
+                    } else {
+                        stringResource(
+                            R.string.recipe_detail_portions_with_gpp_exact,
+                            recipe.portions,
+                            grams.toString(),
+                        )
+                    }
+                } ?: stringResource(R.string.recipe_detail_portions, recipe.portions)
+            Text(portionsText)
 
             RecipeMacroSummary(
                 label = stringResource(CoreR.string.recipe_detail_total),

@@ -14,8 +14,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -93,26 +100,89 @@ private fun IngredientInputRow(
     onRawWeightChange: (String) -> Unit,
     onServingCountChange: (String) -> Unit,
 ) {
-    Row(
+    if (servingLabel == null) {
+        SimpleWeightField(ingredient.rawWeight, onRawWeightChange)
+        return
+    }
+
+    val initialUsesServing =
+        ingredient.servingCount.isNotBlank() ||
+            (ingredient.rawWeight.isBlank())
+    var usesServing by remember(ingredient.id) { mutableStateOf(initialUsesServing) }
+
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        OutlinedTextField(
-            value = ingredient.rawWeight,
-            onValueChange = onRawWeightChange,
-            label = { Text(stringResource(R.string.recipe_editor_ingredient_raw_weight)) },
-            singleLine = true,
-            modifier = Modifier.weight(1f),
+        ModeSelector(
+            usesServing = usesServing,
+            onSelectGrams = {
+                if (usesServing) {
+                    usesServing = false
+                    onServingCountChange("")
+                }
+            },
+            onSelectPortions = {
+                if (!usesServing) {
+                    usesServing = true
+                    onRawWeightChange("")
+                }
+            },
         )
-        if (servingLabel != null) {
-            OutlinedTextField(
-                value = ingredient.servingCount,
-                onValueChange = onServingCountChange,
-                label = { Text(stringResource(R.string.recipe_editor_ingredient_serving_count)) },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
+        if (usesServing) {
+            ServingField(ingredient.servingCount, onServingCountChange)
+        } else {
+            SimpleWeightField(ingredient.rawWeight, onRawWeightChange)
         }
+    }
+}
+
+@Composable
+private fun SimpleWeightField(
+    value: String,
+    onChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(stringResource(R.string.recipe_editor_ingredient_raw_weight)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun ServingField(
+    value: String,
+    onChange: (String) -> Unit,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(stringResource(R.string.recipe_editor_ingredient_serving_count)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun ModeSelector(
+    usesServing: Boolean,
+    onSelectGrams: () -> Unit,
+    onSelectPortions: () -> Unit,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        SegmentedButton(
+            selected = !usesServing,
+            onClick = onSelectGrams,
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+        ) { Text(stringResource(R.string.diary_add_mode_grams)) }
+
+        SegmentedButton(
+            selected = usesServing,
+            onClick = onSelectPortions,
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+        ) { Text(stringResource(R.string.diary_add_mode_portions)) }
     }
 }
 
