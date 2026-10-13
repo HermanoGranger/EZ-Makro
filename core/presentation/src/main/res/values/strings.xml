@@ -32,7 +32,7 @@
     <string name="diary_slot_snacks">Snacks</string>
 
     <string name="recipe_editor_ingredient_raw_weight">Rohgewicht (g)</string>
-    <string name="recipe_editor_ingredient_serving_count">Anzahl (%1$s)</string>
+    <string name="recipe_editor_ingredient_serving_count">Portionen</string>
     <string name="ingredient_serving_amount_hint">Pro Portion (%1$s)</string>
     <string name="recipe_editor_recipe_snapshot_changed">Rezept geändert</string>
     <string name="recipe_editor_add_ingredient">Zutat hinzufügen</string>

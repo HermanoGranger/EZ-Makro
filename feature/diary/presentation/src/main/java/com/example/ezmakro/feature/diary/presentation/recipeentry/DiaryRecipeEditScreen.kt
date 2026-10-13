@@ -123,9 +123,10 @@ fun DiaryRecipeEditScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     androidx.compose.material3.Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = androidx.compose.material3.CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        ),
+                        colors =
+                            androidx.compose.material3.CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            ),
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp),

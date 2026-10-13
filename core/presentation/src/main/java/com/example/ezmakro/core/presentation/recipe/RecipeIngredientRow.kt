@@ -108,14 +108,7 @@ private fun IngredientInputRow(
             OutlinedTextField(
                 value = ingredient.servingCount,
                 onValueChange = onServingCountChange,
-                label = {
-                    Text(
-                        stringResource(
-                            R.string.recipe_editor_ingredient_serving_count,
-                            servingLabel,
-                        ),
-                    )
-                },
+                label = { Text(stringResource(R.string.recipe_editor_ingredient_serving_count)) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )

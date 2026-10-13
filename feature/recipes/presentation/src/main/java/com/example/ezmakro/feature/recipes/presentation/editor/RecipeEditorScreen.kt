@@ -27,10 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ezmakro.core.domain.util.parseNonNegativeDouble
 import com.example.ezmakro.core.domain.util.parsePositiveInt
+import com.example.ezmakro.core.presentation.diary.GramsPerPortionHint
 import com.example.ezmakro.core.presentation.recipe.RecipeIngredientList
 import com.example.ezmakro.core.presentation.recipe.RecipeNutritionTotal
 import com.example.ezmakro.core.presentation.util.ObserveAsEvents
-import com.example.ezmakro.core.presentation.util.formatValue
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerSheet
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerTarget
 import com.example.ezmakro.feature.foodpicker.presentation.picker.FoodPickerViewModel
@@ -180,11 +180,7 @@ private fun EditorForm(
         item { FinalWeightField(state = state, onAction = onAction) }
         if (gramsPerPortion != null) {
             item {
-                val label = stringResource(R.string.recipe_editor_grams_per_portion)
-                Text(
-                    text = "~ ${gramsPerPortion.formatValue()} g / $label",
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                )
+                GramsPerPortionHint(gramsPerPortion, isEstimated = false)
             }
         }
 

@@ -76,7 +76,6 @@ fun IngredientAmountDialog(
                 )
                 if (servingLabel != null) {
                     ServingCountField(
-                        servingLabel = servingLabel,
                         servingAmount = servingAmount,
                         servingCount = servingCount,
                         onServingCountChange = { servingCount = it },
@@ -94,7 +93,6 @@ fun IngredientAmountDialog(
  */
 @Composable
 private fun ServingCountField(
-    servingLabel: String,
     servingAmount: String?,
     servingCount: String,
     onServingCountChange: (String) -> Unit,
@@ -111,14 +109,7 @@ private fun ServingCountField(
     OutlinedTextField(
         value = servingCount,
         onValueChange = onServingCountChange,
-        label = {
-            Text(
-                stringResource(
-                    CoreR.string.recipe_editor_ingredient_serving_count,
-                    servingLabel,
-                ),
-            )
-        },
+        label = { Text(stringResource(CoreR.string.recipe_editor_ingredient_serving_count)) },
         singleLine = true,
         isError = isError,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
