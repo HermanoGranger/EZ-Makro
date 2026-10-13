@@ -86,6 +86,13 @@ private class FakeRecipeDao : RecipeDao {
         ingredientsMap.value = ingredientsMap.value - recipeId
     }
 
+    override suspend fun getRecipeNamesUsingFood(foodItemId: String): List<String> =
+        ingredientsMap.value.entries
+            .filter { (_, ings) -> ings.any { it.foodItemId == foodItemId } }
+            .mapNotNull { (recipeId, _) -> recipes.value[recipeId]?.name }
+            .distinct()
+            .sorted()
+
     override fun observeFavorites(): Flow<List<RecipeEntity>> =
         recipes.map { entities ->
             entities.values
@@ -397,5 +404,38 @@ class RoomRecipeRepositoryTest {
             assertThat(resolved).hasSize(1)
             val ingredient = resolved.first().ingredients.single()
             assertThat(ingredient.food?.name).isEqualTo("Food f2")
+        }
+
+    @Test
+    fun `findRecipeNamesUsingFood returns distinct sorted names sharing the food`() =
+        runTest {
+            val dao = FakeRecipeDao()
+            val foodLocal = FakeFoodLocal()
+            val repo = RoomRecipeRepository(RoomRecipeLocalDataSource(dao, foodLocal))
+            repo.save(recipe("r1").copy(name = "Pfannkuchen"))
+            repo.save(
+                Recipe(
+                    id = RecipeId("r2"),
+                    name = "Omelett",
+                    ingredients =
+                        listOf(
+                            RecipeIngredient(
+                                food = food("f2"),
+                                rawWeight = RawWeight(50.0),
+                                servingCount = null,
+                            ),
+                        ),
+                    finalWeight = null,
+                    portions = 1,
+                ),
+            )
+
+            val usingF2 = (repo.findRecipeNamesUsingFood(FoodId("f2")) as Result.Success).data
+            val usingF1 = (repo.findRecipeNamesUsingFood(FoodId("f1")) as Result.Success).data
+            val unused = (repo.findRecipeNamesUsingFood(FoodId("f9")) as Result.Success).data
+
+            assertThat(usingF2).isEqualTo(listOf("Omelett", "Pfannkuchen"))
+            assertThat(usingF1).isEqualTo(listOf("Pfannkuchen"))
+            assertThat(unused).isEqualTo(emptyList())
         }
 }

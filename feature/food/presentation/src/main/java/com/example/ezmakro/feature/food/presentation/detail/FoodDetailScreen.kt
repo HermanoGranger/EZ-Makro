@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -102,6 +103,10 @@ fun FoodDetailScreen(
 
     if (state.showRefetchConfirm) {
         RefetchConfirmDialog(onAction = onAction)
+    }
+
+    if (state.showDeleteConfirm) {
+        DeleteConfirmDialog(state = state, onAction = onAction)
     }
 
     if (showAddSheet) {
@@ -181,9 +186,52 @@ fun FoodDetailScreen(
                     Text(stringResource(R.string.food_empty_search))
                 }
 
-            else -> FoodDetailContent(food = state.food, onAction = onAction, modifier = Modifier.padding(padding))
+            else ->
+                FoodDetailContent(
+                    food = state.food,
+                    isPersisted = state.isPersisted,
+                    onAction = onAction,
+                    modifier = Modifier.padding(padding),
+                )
         }
     }
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    state: FoodDetailState,
+    onAction: (FoodDetailAction) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { onAction(FoodDetailAction.OnDeleteDismiss) },
+        title = { Text(stringResource(R.string.food_delete_confirm_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.food_delete_confirm_message))
+                if (state.usedInRecipes.isNotEmpty()) {
+                    Text(
+                        stringResource(
+                            R.string.food_delete_confirm_used_in_recipes,
+                            state.usedInRecipes.joinToString(", "),
+                        ),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAction(FoodDetailAction.OnDeleteConfirm) },
+                modifier = Modifier.testTag("food_delete_confirm_button"),
+            ) {
+                Text(stringResource(R.string.food_delete_confirm_button))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onAction(FoodDetailAction.OnDeleteDismiss) }) {
+                Text(stringResource(R.string.food_dialog_cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -205,9 +253,11 @@ private fun RefetchConfirmDialog(onAction: (FoodDetailAction) -> Unit) {
     )
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun FoodDetailContent(
     food: FoodUi,
+    isPersisted: Boolean,
     onAction: (FoodDetailAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -257,6 +307,21 @@ private fun FoodDetailContent(
                     onClick = { onAction(FoodDetailAction.OnRefetchClick) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.food_action_refetch)) }
+            }
+        }
+
+        if (isPersisted) {
+            TextButton(
+                onClick = { onAction(FoodDetailAction.OnDeleteClick) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .testTag("food_delete_button"),
+            ) {
+                Text(
+                    text = stringResource(R.string.food_action_delete),
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }

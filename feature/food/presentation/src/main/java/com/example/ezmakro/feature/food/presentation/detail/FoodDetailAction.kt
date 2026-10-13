@@ -14,4 +14,10 @@ sealed interface FoodDetailAction {
     data object OnRefetchConfirm : FoodDetailAction
 
     data object OnRefetchDismiss : FoodDetailAction
+
+    data object OnDeleteClick : FoodDetailAction
+
+    data object OnDeleteConfirm : FoodDetailAction
+
+    data object OnDeleteDismiss : FoodDetailAction
 }

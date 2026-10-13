@@ -6,8 +6,15 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import com.example.ezmakro.core.database.EZDatabase
 import com.example.ezmakro.core.database.entity.FoodItemEntity
+import com.example.ezmakro.core.database.entity.RecipeEntity
+import com.example.ezmakro.core.database.entity.RecipeIngredientEntity
+import com.example.ezmakro.core.domain.model.FoodId
+import com.example.ezmakro.core.domain.result.Result
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -131,9 +138,55 @@ class RoomFoodLocalDataSourceTest {
             assertThat(results.map { it.id.value }).containsExactly("a")
         }
 
+    @Test
+    fun `deleteById removes the food and any recipe left without an ingredient`() =
+        runTest {
+            insert("a" to "Mehl", "b" to "Zucker")
+            val recipeDao = db.recipeDao()
+            recipeDao.upsertRecipeWithIngredients(
+                recipe("r1", "Nur Mehl"),
+                listOf(ingredient("r1", "a")),
+            )
+            recipeDao.upsertRecipeWithIngredients(
+                recipe("r2", "Mehl und Zucker"),
+                listOf(ingredient("r2", "a"), ingredient("r2", "b")),
+            )
+
+            val result = source.deleteById(FoodId("a"))
+
+            assertThat(result).isEqualTo(Result.Success(Unit))
+            assertThat(db.foodItemDao().getById("a")).isNull()
+            // r1 lost its only ingredient and is cleaned up atomically.
+            assertThat(recipeDao.getById("r1")).isNull()
+            // r2 still has the resolvable "b" ingredient and survives.
+            assertThat(recipeDao.getById("r2")).isNotNull()
+            assertThat(recipeDao.getIngredients("r2").none { it.foodItemId == "a" }).isEqualTo(true)
+        }
+
     private suspend fun insert(vararg pairs: Pair<String, String>) {
         pairs.forEach { (id, name) -> db.foodItemDao().upsertAll(listOf(entity(id, name))) }
     }
+
+    private fun recipe(
+        id: String,
+        name: String,
+    ) = RecipeEntity(
+        id = id,
+        name = name,
+        finalWeightGrams = null,
+        portions = 1,
+        category = null,
+    )
+
+    private fun ingredient(
+        recipeId: String,
+        foodItemId: String?,
+    ) = RecipeIngredientEntity(
+        recipeId = recipeId,
+        foodItemId = foodItemId,
+        rawWeightGrams = 100.0,
+        servingCount = null,
+    )
 
     private fun entity(
         id: String,

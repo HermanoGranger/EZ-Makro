@@ -1,5 +1,6 @@
 package com.example.ezmakro.core.domain.datasource
 
+import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.result.DataError
@@ -33,6 +34,9 @@ interface RecipeLocalDataSource {
     suspend fun upsertRecipeWithIngredients(recipe: Recipe): EmptyResult<DataError.Local>
 
     suspend fun deleteById(id: RecipeId): EmptyResult<DataError.Local>
+
+    /** Names of recipes that directly use [foodId] as an ingredient, name-sorted. */
+    suspend fun getRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local>
 
     /** Set the favorite flag for a recipe. */
     suspend fun setFavorite(

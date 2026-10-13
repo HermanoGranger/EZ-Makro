@@ -39,6 +39,11 @@ class FakeFoodRepository : FoodRepository {
 
     override suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError> = Result.Success(null)
 
+    override suspend fun delete(id: FoodId): EmptyResult<DataError.Local> {
+        store.value = store.value - id.value
+        return Result.Success(Unit)
+    }
+
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> = Result.Success(Unit)
 
     override suspend fun markUsed(id: FoodId): EmptyResult<DataError.Local> = Result.Success(Unit)

@@ -37,6 +37,10 @@ interface FoodLocalDataSource {
 
     suspend fun upsertAll(foodItems: List<FoodItem>): EmptyResult<DataError.Local>
 
+    /**
+     * Delete a food and, atomically, any recipe left without a resolvable
+     * ingredient as a result. Diary entries are unaffected (their snapshots stay).
+     */
     suspend fun deleteById(id: FoodId): EmptyResult<DataError.Local>
 
     /** ADR-004: flag a cached entry as locally edited so a sync never overwrites it. */

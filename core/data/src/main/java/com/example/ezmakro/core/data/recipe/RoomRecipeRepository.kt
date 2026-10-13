@@ -1,6 +1,7 @@
 package com.example.ezmakro.core.data.recipe
 
 import com.example.ezmakro.core.domain.datasource.RecipeLocalDataSource
+import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.RecipeRepository
@@ -15,6 +16,7 @@ import java.util.UUID
  * [local] is the sole Single Source of Truth. The UI observes only the local
  * flows.
  */
+@Suppress("TooManyFunctions")
 class RoomRecipeRepository(
     private val local: RecipeLocalDataSource,
 ) : RecipeRepository {
@@ -31,6 +33,9 @@ class RoomRecipeRepository(
     override fun observeRecent(limit: Int): Flow<List<Recipe>> = local.observeRecent(limit)
 
     override suspend fun delete(id: RecipeId): EmptyResult<DataError.Local> = local.deleteById(id)
+
+    override suspend fun findRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local> =
+        local.getRecipeNamesUsingFood(foodId)
 
     override suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local> {
         val current =

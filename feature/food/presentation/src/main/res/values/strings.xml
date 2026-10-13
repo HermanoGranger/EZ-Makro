@@ -21,6 +21,11 @@
     <string name="food_action_refetch">Neu von OpenFoodFacts</string>
     <string name="food_refetch_confirm_title">Neu von OpenFoodFacts laden?</string>
     <string name="food_refetch_confirm_message">Deine lokalen Anpassungen werden dabei verworfen.</string>
+    <string name="food_action_delete">Löschen</string>
+    <string name="food_delete_confirm_title">Lebensmittel löschen?</string>
+    <string name="food_delete_confirm_message">Das Lebensmittel wird dauerhaft aus der Datenbank entfernt.</string>
+    <string name="food_delete_confirm_used_in_recipes">Es wird in folgenden Rezepten verwendet: %1$s. Es wird dort aus den Zutaten entfernt; Rezepte ohne weitere Zutaten werden ebenfalls gelöscht.</string>
+    <string name="food_delete_confirm_button">Löschen</string>
     <string name="food_dialog_confirm">Fortfahren</string>
     <string name="food_dialog_cancel">Abbrechen</string>
 

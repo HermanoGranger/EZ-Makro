@@ -12,6 +12,7 @@ val foodPresentationModule =
             FoodDetailViewModel(
                 foodId = foodId,
                 repository = get(),
+                recipeRepository = get(),
             )
         }
         viewModel { (foodId: String?, prefillBarcode: String?) ->

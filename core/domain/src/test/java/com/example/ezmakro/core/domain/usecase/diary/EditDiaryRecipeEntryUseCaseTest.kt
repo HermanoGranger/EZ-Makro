@@ -207,6 +207,9 @@ class EditDiaryRecipeEntryUseCaseTest {
 
         override suspend fun delete(id: RecipeId): EmptyResult<DataError.Local> = Result.Success(Unit)
 
+        override suspend fun findRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local> =
+            Result.Success(emptyList())
+
         override suspend fun duplicate(id: RecipeId): Result<RecipeId, DataError.Local> =
             Result.Error(DataError.Local.UNKNOWN)
 

@@ -91,7 +91,7 @@ class RoomFoodLocalDataSource(
         runCatchingLocal { foodItems.forEach { dao.upsertFood(it) } }
 
     override suspend fun deleteById(id: FoodId): EmptyResult<DataError.Local> =
-        runCatchingLocal { dao.deleteById(id.value) }
+        runCatchingLocal { dao.deleteByIdAndCleanup(id.value) }
 
     override suspend fun markUserModified(id: FoodId): EmptyResult<DataError.Local> =
         runCatchingLocal { dao.markUserModified(id.value) }

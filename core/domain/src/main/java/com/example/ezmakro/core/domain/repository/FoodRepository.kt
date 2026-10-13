@@ -60,13 +60,25 @@ interface FoodRepository {
     /** Persist a user edit and flag the entry UserModified (ADR-004). */
     suspend fun saveUserEdit(foodItem: FoodItem): EmptyResult<DataError.Local>
 
+    /**
+     * Permanently remove a food from the local database. Also drops any
+     * session-only copy. Recipes that referenced it lose that ingredient; a
+     * recipe left without any resolvable ingredient is removed as well. Diary
+     * entries keep their materialized snapshot (FK `SET NULL` only clears the
+     * traceability id).
+     */
+    suspend fun delete(id: FoodId): EmptyResult<DataError.Local>
+
     /** ADR-004: restore the untouched OFF snapshot. */
     suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local>
 
     /**
-     * ADR-004: re-fetch the current OFF version and replace the local entry.
-     * A user-modified or user-created entry is never overwritten — it is
-     * returned unchanged instead. Callers confirm with the user beforehand.
+     * ADR-004: explicit, user-confirmed re-fetch of the current OFF version.
+     * Because the user confirmed, a locally edited ([FoodItem.cachedStatus] ==
+     * UserModified) entry **is** replaced and its local changes are discarded —
+     * this is the difference between a manual refetch and an automatic sync,
+     * which never overwrites UserModified data. User-created foods are never
+     * replaced. Callers confirm with the user beforehand.
      */
     suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError>
 

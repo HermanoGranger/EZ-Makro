@@ -3,6 +3,7 @@ package com.example.ezmakro.feature.food.presentation.detail
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.ezmakro.core.domain.model.MealSlot
@@ -138,6 +139,67 @@ class FoodDetailScreenTest {
 
         composeTestRule.onNodeWithText("Neu von OpenFoodFacts laden?").assertIsDisplayed()
         composeTestRule.onNodeWithText("Fortfahren").performClick()
+
+        assertEquals(true, confirmed)
+    }
+
+    @Test
+    fun deleteButton_visibleForPersistedFood_dispatchesDeleteClick() {
+        var deleteClicked = false
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false, isPersisted = true),
+                onAction = { if (it is FoodDetailAction.OnDeleteClick) deleteClicked = true },
+            )
+        }
+
+        composeTestRule.onNodeWithTag("food_delete_button").performClick()
+
+        assertEquals(true, deleteClicked)
+    }
+
+    @Test
+    fun deleteButton_hiddenForSessionOnlyFood() {
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false, isPersisted = false),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag("food_delete_button").assertDoesNotExist()
+    }
+
+    @Test
+    fun deleteDialog_listsRecipesUsingTheFood() {
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state =
+                    FoodDetailState(
+                        food = food,
+                        isLoading = false,
+                        showDeleteConfirm = true,
+                        usedInRecipes = listOf("Pfannkuchen"),
+                    ),
+                onAction = {},
+            )
+        }
+
+        composeTestRule.onNodeWithText("Lebensmittel löschen?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pfannkuchen", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun deleteDialog_confirm_dispatchesOnDeleteConfirm() {
+        var confirmed = false
+        composeTestRule.setContent {
+            FoodDetailScreen(
+                state = FoodDetailState(food = food, isLoading = false, showDeleteConfirm = true),
+                onAction = { if (it is FoodDetailAction.OnDeleteConfirm) confirmed = true },
+            )
+        }
+
+        composeTestRule.onNodeWithTag("food_delete_confirm_button").performClick()
 
         assertEquals(true, confirmed)
     }

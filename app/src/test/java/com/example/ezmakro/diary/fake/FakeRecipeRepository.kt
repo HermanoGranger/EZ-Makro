@@ -1,5 +1,6 @@
 package com.example.ezmakro.diary.fake
 
+import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.repository.RecipeRepository
@@ -32,6 +33,14 @@ class FakeRecipeRepository : RecipeRepository {
         store.value = store.value - id.value
         return Result.Success(Unit)
     }
+
+    override suspend fun findRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local> =
+        Result.Success(
+            store.value.values
+                .filter { recipe -> recipe.ingredients.any { it.food?.id == foodId } }
+                .map { it.name }
+                .sorted(),
+        )
 
     override fun observeFavorites(): Flow<List<Recipe>> = store.map { it.values.filter(Recipe::isFavorite) }
 

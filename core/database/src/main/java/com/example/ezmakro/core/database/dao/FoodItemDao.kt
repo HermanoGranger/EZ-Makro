@@ -2,6 +2,7 @@ package com.example.ezmakro.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.ezmakro.core.database.entity.FoodFtsEntity
 import com.example.ezmakro.core.database.entity.FoodItemEntity
 import kotlinx.coroutines.flow.Flow
@@ -147,6 +148,30 @@ interface FoodItemDao {
     /** Delete a food by its stable [FoodItemEntity.id]. */
     @Query("DELETE FROM food_items WHERE id = :id")
     fun deleteById(id: String)
+
+    /**
+     * Delete a food by its stable id and atomically remove every recipe left
+     * without a resolvable ingredient. The food FK uses `ON DELETE SET NULL`,
+     * so deleting the food nulls its ingredient references; a recipe whose only
+     * ingredient was that food would otherwise vanish from the UI while its row
+     * stays in the database. A resolvable ingredient is a live food reference
+     * (`food_item_id`) or a sub-recipe snapshot (`recipe_snapshot_json`).
+     */
+    @Transaction
+    fun deleteByIdAndCleanup(id: String) {
+        deleteById(id)
+        deleteEmptyRecipes()
+    }
+
+    @Query(
+        """
+        DELETE FROM recipes WHERE id NOT IN (
+            SELECT recipe_id FROM recipe_ingredients
+            WHERE food_item_id IS NOT NULL OR recipe_snapshot_json IS NOT NULL
+        )
+        """,
+    )
+    fun deleteEmptyRecipes()
 
     @Query("SELECT * FROM food_items WHERE id = :id")
     fun getById(id: String): FoodItemEntity?

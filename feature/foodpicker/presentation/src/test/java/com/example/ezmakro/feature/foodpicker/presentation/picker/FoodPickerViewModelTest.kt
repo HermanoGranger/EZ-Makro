@@ -1448,6 +1448,11 @@ private class FakeFoodRepository : FoodRepository {
 
     override suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError> = Result.Success(null)
 
+    override suspend fun delete(id: FoodId): EmptyResult<DataError.Local> {
+        foodItems.value = foodItems.value.filter { it.id != id }
+        return Result.Success(Unit)
+    }
+
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
         lastToggledFavorite = id
         foodItems.value =
@@ -1519,6 +1524,14 @@ private class FakeRecipeRepository : RecipeRepository {
         recipeItems.value = recipeItems.value.filter { it.id != id }
         return Result.Success(Unit)
     }
+
+    override suspend fun findRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local> =
+        Result.Success(
+            recipeItems.value
+                .filter { recipe -> recipe.ingredients.any { it.food?.id == foodId } }
+                .map { it.name }
+                .sorted(),
+        )
 
     override suspend fun toggleFavorite(id: RecipeId): EmptyResult<DataError.Local> {
         lastToggledFavorite = id

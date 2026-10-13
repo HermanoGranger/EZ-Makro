@@ -37,6 +37,11 @@ class FakeFoodRepository : FoodRepository {
 
     var shouldFailSave = false
 
+    var shouldFailDelete = false
+
+    var lastDeleted: FoodId? = null
+        private set
+
     fun emitFoods(foods: List<FoodItem>) {
         items.value = foods
     }
@@ -87,6 +92,14 @@ class FakeFoodRepository : FoodRepository {
         } else {
             Result.Success(null)
         }
+
+    override suspend fun delete(id: FoodId): EmptyResult<DataError.Local> {
+        if (shouldFailDelete) return Result.Error(DataError.Local.UNKNOWN)
+        lastDeleted = id
+        items.value = items.value.filter { it.id != id }
+        sessionItems.remove(id)
+        return Result.Success(Unit)
+    }
 
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> {
         lastToggledFavorite = id

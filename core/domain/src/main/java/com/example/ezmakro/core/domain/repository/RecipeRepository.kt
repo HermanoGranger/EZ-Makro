@@ -1,5 +1,6 @@
 package com.example.ezmakro.core.domain.repository
 
+import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.result.DataError
@@ -39,6 +40,13 @@ interface RecipeRepository {
 
     /** Delete a recipe and its ingredient lines (cascade). */
     suspend fun delete(id: RecipeId): EmptyResult<DataError.Local>
+
+    /**
+     * Names of all recipes that directly use [foodId] as an ingredient, sorted
+     * by name. Used to warn before deleting a food. Returns an empty list when
+     * no recipe references the food.
+     */
+    suspend fun findRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local>
 
     /** Duplicate an existing recipe under a new id with a "(Kopie)" suffix. */
     suspend fun duplicate(id: RecipeId): Result<RecipeId, DataError.Local>

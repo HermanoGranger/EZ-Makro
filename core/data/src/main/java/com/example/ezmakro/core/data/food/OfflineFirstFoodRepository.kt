@@ -18,9 +18,10 @@ import java.util.concurrent.ConcurrentHashMap
  * OFF results are persisted into Room and never observed directly.
  *
  * ADR-004: a remote refresh never overwrites a [CachedFoodItemStatus.UserModified]
- * entry automatically. [refetchFromOff] is the explicit, user-confirmed override
- * for untouched entries; it still never replaces user content — UserModified and
- * user-created entries are returned unchanged.
+ * entry automatically. [refetchFromOff] is the explicit, user-confirmed override:
+ * because the user confirmed, it discards the local edits of a UserModified entry
+ * and replaces it with the fresh OFF payload. User-created foods are never
+ * replaced. Automatic caching (e.g. [cacheRemoteItem]) still preserves user edits.
  */
 @Suppress("TooManyFunctions")
 class OfflineFirstFoodRepository(
@@ -91,6 +92,12 @@ class OfflineFirstFoodRepository(
 
     override suspend fun resetToOriginal(id: FoodId): EmptyResult<DataError.Local> = local.resetToOriginal(id)
 
+    override suspend fun delete(id: FoodId): EmptyResult<DataError.Local> {
+        // A deleted food must not linger in the in-memory session cache.
+        sessionItems.remove(id)
+        return local.deleteById(id)
+    }
+
     override suspend fun refetchFromOff(id: FoodId): Result<FoodItem?, DataError> {
         val existing =
             when (val result = local.getById(id)) {
@@ -99,9 +106,10 @@ class OfflineFirstFoodRepository(
             }
         val barcode = existing?.barcode
         return when {
-            // Option A: never overwrite user content, not even on an explicit,
-            // user-confirmed refetch. The local entry is returned unchanged so
-            // the caller keeps the state it already observes (idempotent).
+            // A user-created food has no OFF counterpart to refetch from; it is
+            // returned unchanged. A UserModified entry IS replaced here, because
+            // this path only runs after the user explicitly confirmed discarding
+            // the local edits (ADR-004).
             existing != null && existing.isProtectedFromRefetch() -> Result.Success(existing)
             barcode == null -> Result.Error(DataError.Local.NOT_FOUND)
             else -> replaceWithFreshOffEntry(id, barcode)
@@ -129,11 +137,11 @@ class OfflineFirstFoodRepository(
         }
 
     /**
-     * ADR-004 / Option A: user content must survive a refetch. That covers
-     * locally edited entries and foods the user created themselves.
+     * ADR-004: a user-created food has no OFF source and is never replaced by a
+     * refetch. A UserModified entry is not protected: the refetch is an explicit,
+     * user-confirmed action that intentionally discards local edits.
      */
-    private fun FoodItem.isProtectedFromRefetch(): Boolean =
-        isUserCreated || cachedStatus == CachedFoodItemStatus.UserModified
+    private fun FoodItem.isProtectedFromRefetch(): Boolean = isUserCreated
 
     override suspend fun toggleFavorite(id: FoodId): EmptyResult<DataError.Local> =
         when (val result = local.getById(id)) {

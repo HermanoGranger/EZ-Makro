@@ -330,20 +330,50 @@ class OfflineFirstFoodRepositoryTest {
         }
 
     @Test
-    fun `refetchFromOff keeps a UserModified entry untouched`() =
+    fun `refetchFromOff replaces a UserModified entry with the fresh OFF version`() =
         runTest {
             val local = FakeLocal()
             local.upsert(food("1", "My Edit", barcode = "999", status = CachedFoodItemStatus.UserModified))
             val remote = FakeRemote(barcodeResult = Result.Success(food("1", "OFF Latest", barcode = "999")))
             val repo = OfflineFirstFoodRepository(local, remote)
-            val before = local.store.value["1"]
 
             val result = repo.refetchFromOff(FoodId("1"))
 
-            assertThat((result as Result.Success).data).isEqualTo(before)
-            assertThat(local.store.value["1"]).isEqualTo(before)
+            assertThat((result as Result.Success).data?.name).isEqualTo("OFF Latest")
+            assertThat(local.store.value["1"]?.name).isEqualTo("OFF Latest")
+            assertThat(local.store.value["1"]?.cachedStatus).isEqualTo(CachedFoodItemStatus.Original)
+        }
+
+    @Test
+    fun `refetchFromOff errors and keeps local data when the remote call fails`() =
+        runTest {
+            val local = FakeLocal()
+            local.upsert(food("1", "My Edit", barcode = "999", status = CachedFoodItemStatus.UserModified))
+            val remote = FakeRemote(barcodeResult = Result.Error(DataError.Network.NO_INTERNET))
+            val repo = OfflineFirstFoodRepository(local, remote)
+
+            val result = repo.refetchFromOff(FoodId("1"))
+
+            assertThat(result).isEqualTo(Result.Error(DataError.Network.NO_INTERNET))
+            assertThat(local.store.value["1"]?.name).isEqualTo("My Edit")
             assertThat(local.store.value["1"]?.cachedStatus)
                 .isEqualTo(CachedFoodItemStatus.UserModified)
+        }
+
+    @Test
+    fun `delete removes a persisted food and clears the session cache`() =
+        runTest {
+            val local = FakeLocal()
+            val repo = OfflineFirstFoodRepository(local, FakeRemote())
+            val item = food("1", "Alpro", barcode = "999")
+            local.upsert(item)
+            repo.rememberRemoteItem(item)
+
+            val result = repo.delete(FoodId("1"))
+
+            assertThat(result).isEqualTo(Result.Success(Unit))
+            assertThat(local.store.value["1"]).isNull()
+            assertThat(repo.getSessionItem(FoodId("1"))).isNull()
         }
 
     @Test

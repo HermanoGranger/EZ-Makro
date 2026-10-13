@@ -7,13 +7,16 @@ import com.example.ezmakro.core.database.dao.RecipeDao
 import com.example.ezmakro.core.database.entity.RecipeEntity
 import com.example.ezmakro.core.domain.datasource.FoodLocalDataSource
 import com.example.ezmakro.core.domain.datasource.RecipeLocalDataSource
+import com.example.ezmakro.core.domain.model.FoodId
 import com.example.ezmakro.core.domain.model.Recipe
 import com.example.ezmakro.core.domain.model.RecipeId
 import com.example.ezmakro.core.domain.result.DataError
 import com.example.ezmakro.core.domain.result.EmptyResult
 import com.example.ezmakro.core.domain.result.Result
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Room-backed Single Source of Truth for recipes (ADR-002). Wraps [RecipeDao],
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.map
  * [FoodLocalDataSource]) and DAO exceptions to [DataError.Local]. Recipe +
  * ingredients are written atomically through the DAO transaction.
  */
+@Suppress("TooManyFunctions")
 class RoomRecipeLocalDataSource(
     private val dao: RecipeDao,
     private val foodLocalDataSource: FoodLocalDataSource,
@@ -70,6 +74,11 @@ class RoomRecipeLocalDataSource(
             dao.deleteRecipe(entity)
         }
 
+    override suspend fun getRecipeNamesUsingFood(foodId: FoodId): Result<List<String>, DataError.Local> =
+        runCatchingLocal {
+            dao.getRecipeNamesUsingFood(foodId.value)
+        }
+
     override suspend fun setFavorite(
         id: RecipeId,
         favorite: Boolean,
@@ -98,13 +107,15 @@ class RoomRecipeLocalDataSource(
 
 /** Map DAO exceptions to a typed [DataError.Local], preserving cancellation. */
 @Suppress("TooGenericExceptionCaught")
-private suspend inline fun <T> runCatchingLocal(block: suspend () -> T): Result<T, DataError.Local> =
-    try {
-        Result.Success(block())
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        android.util.Log.e("RoomRecipeLocalDataSource", "Local recipe data error", e)
-        AppLogger.e("Local recipe data error", e, tag = "RoomRecipeLocalDataSource")
-        Result.Error(DataError.Local.UNKNOWN)
+private suspend fun <T> runCatchingLocal(block: suspend () -> T): Result<T, DataError.Local> =
+    withContext(Dispatchers.IO) {
+        try {
+            Result.Success(block())
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e("RoomRecipeLocalDataSource", "Local recipe data error", e)
+            AppLogger.e("Local recipe data error", e, tag = "RoomRecipeLocalDataSource")
+            Result.Error(DataError.Local.UNKNOWN)
+        }
     }

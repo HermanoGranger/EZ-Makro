@@ -48,6 +48,21 @@ interface RecipeDao {
     @Query("DELETE FROM recipe_ingredients WHERE recipe_id = :recipeId")
     fun deleteIngredientsFor(recipeId: String)
 
+    /**
+     * Names of all recipes that directly reference the food [foodItemId], sorted
+     * by name. Used to warn the user before deleting a food: recipe ingredients
+     * store no snapshot, so deleting the food removes it from those recipes.
+     */
+    @Query(
+        """
+        SELECT DISTINCT r.name FROM recipes r
+        INNER JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+        WHERE ri.food_item_id = :foodItemId
+        ORDER BY r.name COLLATE NOCASE
+        """,
+    )
+    suspend fun getRecipeNamesUsingFood(foodItemId: String): List<String>
+
     @Query("SELECT * FROM recipes WHERE is_favorite = 1 ORDER BY name COLLATE NOCASE")
     fun observeFavorites(): Flow<List<RecipeEntity>>
 
