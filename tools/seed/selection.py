@@ -242,7 +242,8 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, int]]]] = [
             ("melone", 1), ("granatapfel", 1), ("avocado", 1), ("feige", 1),
             ("dattel", 1), ("himbeere", 1), ("brombeere", 1), ("erdbeere", 1),
             ("johannisbeere", 1), ("stachelbeere", 1), ("holunderbeere", 1),
-            ("sanddorn", 1), ("physalis", 1), ("quitte", 1),
+            ("sanddorn", 1), ("physalis", 1), ("quitte", 1), ("heidelbeere", 1),
+            ("maracuja", 1),
         ],
     ),
     (
@@ -260,7 +261,7 @@ CATEGORIES: list[tuple[str, str, list[tuple[str, int]]]] = [
             ("radicchio", 1), ("rucola", 1), ("salat", 1), ("radieschen", 1),
             ("mangold", 1), ("spargel", 1), ("artischocke", 1), ("fenchel", 1),
             ("pastinake", 1), ("chicoree", 1), ("kresse", 1),
-            ("petersilie", 1), ("schnittlauch", 1), ("basilikum", 1),
+            ("petersilie", 1), ("schnittlauch", 1), ("basilikum", 1), ("rettich", 1),
         ],
     ),
 ]
